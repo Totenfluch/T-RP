@@ -44,6 +44,11 @@ char g_cProgressBarInfo[MAXPLAYERS + 1][64];
 
 int g_iPlayerPrevButtons[MAXPLAYERS + 1];
 
+Handle g_hOnJobAccepted;
+Handle g_hOnJobQuit;
+Handle g_hOnJobLevelUp;
+Handle g_hOnProgressBarFinished;
+Handle g_hOnProgressBarInterrupted;
 
 public Plugin myinfo = 
 {
@@ -63,6 +68,191 @@ public void OnPluginStart()
 	char createTableQuery[4096];
 	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE `t_rpg_jobs` ( `Id` BIGINT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP on update CURRENT_TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `playername` VARCHAR(36) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `jobname` VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `level` INT NOT NULL , `experience` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , `special_flags` VARCHAR(64) NOT NULL , PRIMARY KEY (`Id`), UNIQUE (`playerid`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
+}
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
+	/*
+		Gets a clients job
+		
+		@Param1 -> int client
+		@Param2 -> char jobBuffer[128]
+		
+		@return none
+	*/
+	CreateNative("jobs_getActiveJob", Native_getActiveJob);
+	
+	/*
+		Check if the given job is the Active
+		
+		@Param1 -> int client
+		@Param2 -> char job[128]
+		
+		@return true or false
+	*/
+	CreateNative("jobs_isActiveJob", Native_isActiveJob);
+	
+	/*
+		Get current Job experience
+		
+		@Param1 -> int client
+		
+		@return none
+	*/
+	CreateNative("jobs_getExperience", Native_getExperience);
+	
+	/*
+		add to current job experience
+		
+		@Param1 -> int client
+		@Param2 -> int amount
+		@Param3- > char jobname[128];
+		
+		@return none
+	*/
+	CreateNative("jobs_addExperience", Native_addExperience);
+	
+	/*
+		removes experience from the client
+		
+		@Param1 -> int client
+		@Param2 -> int amount
+		@Param3- > char jobname[128];
+		
+		@return none
+	*/
+	CreateNative("jobs_removeExperience", Native_removeExperience);
+	
+	/*
+		Get current Job level
+		
+		@Param1 -> int client
+		
+		@return int current_job_level
+	*/
+	CreateNative("jobs_getLevel", Native_getLevel);
+	
+	/*
+		Starts the progressbar
+		
+		@Param1 -> int client
+		@Param2 -> float time
+		@Param3 -> char info[64]
+		
+		@return none
+	*/
+	CreateNative("jobs_startProgressBar", Native_startProgressBar);
+	
+	/*
+		Stops the progressbar
+		
+		@Param1 -> int client
+		
+		@return none
+	*/
+	CreateNative("jobs_stopProgressBar", Native_stopProgressBar);
+	
+	/*
+		Forward on Job Accepted
+		
+		@Param1 -> int client
+		@Param3 -> char jobnameBuffer[128]
+		
+		@return -
+	*/
+	g_hOnJobAccepted = CreateGlobalForward("jobs_OnJobAccepted", ET_Ignore, Param_Cell, Param_String);
+	
+	/*
+		Forward on Job Quit
+		
+		@Param1 -> int client
+		@Param3 -> char jobnameBuffer[128]
+		
+		@return -
+	*/
+	g_hOnJobQuit = CreateGlobalForward("jobs_OnJobQuit", ET_Ignore, Param_Cell, Param_String);
+	
+	/*
+		Forward on Client job levelup
+		
+		@Param1 -> int client
+		@Param2 -> int newLevel
+		@Param3 -> char jobnameBuffer[128]
+		
+		@return -
+	*/
+	g_hOnJobLevelUp = CreateGlobalForward("jobs_OnJobLevelUp", ET_Ignore, Param_Cell, Param_Cell, Param_String);
+	
+	/*
+		Forward on Client ProgressBarFinished
+		
+		@Param1 -> int client
+		@Param3 -> char info[64]
+		
+		@return -
+	*/
+	g_hOnProgressBarFinished = CreateGlobalForward("jobs_OnProgressBarFinished", ET_Ignore, Param_Cell, Param_String);
+	
+	/*
+		Forward on Client ProgressBarInterrupted
+		
+		@Param1 -> int client
+		@Param3 -> char info[64]
+		
+		@return -
+	*/
+	g_hOnProgressBarInterrupted = CreateGlobalForward("jobs_OnProgressBarInterrupted ", ET_Ignore, Param_Cell, Param_String);
+	
+}
+
+public int Native_getActiveJob(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	SetNativeString(2, g_ePlayerJob[client][pjJobname], 128);
+}
+
+public int Native_isActiveJob(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	char jobBuffer[128];
+	GetNativeString(2, jobBuffer, sizeof(jobBuffer));
+	return StrEqual(jobBuffer, g_ePlayerJob[client][pjJobname]);
+}
+
+public int Native_getExperience(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	return g_ePlayerJob[client][pjJobExperience];
+}
+
+public int Native_addExperience(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	int amount = GetNativeCell(2);
+	char jobBuffer[128];
+	GetNativeString(3, jobBuffer, sizeof(jobBuffer));
+	increaseExperience(client, amount, jobBuffer);
+}
+
+public int Native_removeExperience(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	int amount = GetNativeCell(2);
+	char jobBuffer[128];
+	GetNativeString(3, jobBuffer, sizeof(jobBuffer));
+	decreaseExperience(client, amount, jobBuffer);
+}
+
+public int Native_getLevel(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	return g_ePlayerJob[client][pjJobLevel];
+}
+
+public int Native_startProgressBar(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	float time = GetNativeCell(2);
+	char info[64];
+	GetNativeString(3, info, sizeof(info));
+	startProgress(client, time, info);
+}
+
+public int Native_stopProgressBar(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	interruptProgressBar(client);
 }
 
 public void OnMapStart() {
@@ -106,12 +296,25 @@ public void registerJob(char jobname[128], char jobdescription[512], int maxJobL
 	g_iLoadedJobs++;
 }
 
-public void leaveJob(int client){
+public void leaveJob(int client) {
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	char leaveJobQuery[1024];
 	Format(leaveJobQuery, sizeof(leaveJobQuery), "DELETE FROM t_rpg_jobs WHERE playerid = '%s';", playerid);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, leaveJobQuery);
+	
+	Call_StartForward(g_hOnJobQuit);
+	Call_PushCell(client);
+	Call_PushString(g_ePlayerJob[client][pjJobname]);
+	Call_Finish();
+	
+	resetJob(client);
+}
+
+public void resetJob(int client){
+	strcopy(g_ePlayerJob[client][pjJobname], 128, "");
+	g_ePlayerJob[client][pjJobLevel] = -1;
+	g_ePlayerJob[client][pjJobExperience] = -1;
 }
 
 public void acceptJob(int client, char jobname[128]) {
@@ -131,15 +334,21 @@ public void acceptJob(int client, char jobname[128]) {
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, acceptJobQuery);
 	
 	int jobId = findLoadedJobIdByName(jobname);
-	if(jobId == -1)
+	if (jobId == -1)
 		return;
 	strcopy(g_ePlayerJob[client][pjJobname], 128, g_eLoadedJobs[jobId][gJobname]);
 	g_ePlayerJob[client][pjJobLevel] = 1;
 	g_ePlayerJob[client][pjJobExperience] = 0;
+	
+	Call_StartForward(g_hOnJobAccepted);
+	Call_PushCell(client);
+	Call_PushString(g_ePlayerJob[client][pjJobname]);
+	Call_Finish();
 }
 
-public void increaseExperience(int client, int amount, char jobname[128]){
-	if (StrEqual(g_ePlayerJob[client][pjJobname], "")) return;
+public void increaseExperience(int client, int amount, char jobname[128]) {
+	if (StrEqual(g_ePlayerJob[client][pjJobname], ""))return;
+	if (!StrEqual(g_ePlayerJob[client][pjJobname], jobname))return;
 	
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
@@ -147,9 +356,9 @@ public void increaseExperience(int client, int amount, char jobname[128]){
 	
 	g_ePlayerJob[client][pjJobExperience] += amount;
 	int jobId = findLoadedJobIdByName(jobname);
-	if(jobId == -1)
+	if (jobId == -1)
 		return;
-	while((g_ePlayerJob[client][pjJobExperience] >= g_eLoadedJobs[jobId][gJobExperience] * (g_ePlayerJob[client][pjJobLevel] * g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage])) && g_ePlayerJob[client][pjJobLevel] <= g_eLoadedJobs[jobId][gMaxJobLevels]){
+	while ((g_ePlayerJob[client][pjJobExperience] >= g_eLoadedJobs[jobId][gJobExperience] * (g_ePlayerJob[client][pjJobLevel] * g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage])) && g_ePlayerJob[client][pjJobLevel] <= g_eLoadedJobs[jobId][gMaxJobLevels]) {
 		g_ePlayerJob[client][pjJobExperience] -= g_eLoadedJobs[jobId][gJobExperience] * (g_ePlayerJob[client][pjJobLevel] * g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage]);
 		g_ePlayerJob[client][pjJobLevel]++;
 		triggerLevelUp(client, jobname);
@@ -164,8 +373,26 @@ public void increaseExperience(int client, int amount, char jobname[128]){
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateExperienceQuery);
 }
 
-public void triggerLevelUp(int client, char jobname[128]){
-	// Notify observers
+public void decreaseExperience(int client, int amount, char jobname[128]){
+	if (StrEqual(g_ePlayerJob[client][pjJobname], ""))return;
+	if (!StrEqual(g_ePlayerJob[client][pjJobname], jobname))return;
+	
+	g_ePlayerJob[client][pjJobExperience] -= amount;
+	
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	char updateExperienceQuery[512];
+	Format(updateExperienceQuery, sizeof(updateExperienceQuery), "UPDATE t_rpg_jobs SET experience = %i WHERE playerid = '%s'", g_ePlayerJob[client][pjJobExperience], playerid);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateExperienceQuery);
+}
+
+public void triggerLevelUp(int client, char jobname[128]) {
+	Call_StartForward(g_hOnJobLevelUp);
+	Call_PushCell(client);
+	Call_PushCell(g_ePlayerJob[client][pjJobLevel]);
+	Call_PushString(jobname);
+	Call_Finish();
 }
 
 public void SQLLoadJobQueryCallback(Handle owner, Handle hndl, const char[] error, any data) {
@@ -210,6 +437,12 @@ public void startProgress(int client, float time, char info[64]) {
 }
 
 public void interruptProgressBar(int client) {
+	Call_StartForward(g_hOnProgressBarInterrupted);
+	Call_PushCell(client);
+	Call_PushString(g_cProgressBarInfo[client]);
+	Call_Finish();
+	
+	
 	g_bProgressBarActive[client] = false;
 	g_iProgressBarProgress[client] = -1;
 	g_iProgressBarTarget[client] = -1;
@@ -218,17 +451,21 @@ public void interruptProgressBar(int client) {
 }
 
 public void completeProgressBar(int client) {
+	Call_StartForward(g_hOnProgressBarFinished);
+	Call_PushCell(client);
+	Call_PushString(g_cProgressBarInfo[client]);
+	Call_Finish();
+	
 	g_bProgressBarActive[client] = false;
 	g_iProgressBarProgress[client] = -1;
 	g_iProgressBarTarget[client] = -1;
 	char info[64];
-	strcopy(info, 64, g_cProgressBarInfo[client]);
-	// FIRE ME TO EVERYONE DARLING with the info we need.... to do stuff.....
+	strcopy(info, 64, "");
 }
 
-public int findLoadedJobIdByName(char jobname[128]){
-	for (int i = 0; i < g_iLoadedJobs; i++){
-		if(StrEqual(g_eLoadedJobs[i][gJobname], jobname))
+public int findLoadedJobIdByName(char jobname[128]) {
+	for (int i = 0; i < g_iLoadedJobs; i++) {
+		if (StrEqual(g_eLoadedJobs[i][gJobname], jobname))
 			return i;
 	}
 	return -1;

@@ -1,4 +1,4 @@
-#if defined _rpg_tcrimeincluded_
+#if defined _rpg_tcrime_included_
   #endinput
 #endif
 #define _rpg_tcrime_included_
@@ -9,7 +9,7 @@
 
 		@return crime amount
 	*/
-native int tCrime_getCrime(int client, int amount);
+native int tCrime_getCrime(int client);
 	
 	/*
 		Sets the Crime amount on client

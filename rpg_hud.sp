@@ -7,6 +7,7 @@
 #include <sdktools>
 #include <tConomy>
 #include <smlib>
+#include <tCrime>
 
 #pragma newdecls required
 
@@ -33,24 +34,29 @@ public Action updateHUD(Handle Timer) {
 		char printHudString[1024];
 		if (GetClientAimTarget(client, true) > -1) {
 			int target = GetClientAimTarget(client, true);
-			Format(printHudString, sizeof(printHudString), "<font size='18' color='#00ff00'>Target: %N\n", target);
+			Format(printHudString, sizeof(printHudString), "<font size='16'>Target: %N\n", target);
 		} else if (GetClientAimTarget(client, false) > -1) {
 			int ent = GetClientAimTarget(client, false);
 			if (HasEntProp(ent, Prop_Data, "m_iName") && HasEntProp(ent, Prop_Data, "m_iGlobalname")) {
 				char entName[256];
 				Entity_GetGlobalName(ent, entName, sizeof(entName));
 				//GetEntPropString(ent, Prop_Data, "m_iGlobalName", entName, sizeof(entName));
-				Format(printHudString, sizeof(printHudString), "<font color='#00ff00'>Target: %s</font>\n", entName);
+				Format(printHudString, sizeof(printHudString), "<font size='16'>Target: %s\n", entName);
 			}
 		} else {
-			Format(printHudString, sizeof(printHudString), "Target:<font color='#ff0000'> none</font>\n");
+			Format(printHudString, sizeof(printHudString), "<font size='16'>Target: none\n");
 		}
 		
 		int money = tConomy_getCurrency(client);
-		Format(printHudString, sizeof(printHudString), "%sMoney:<font color='#ffa500'> %i</font>\n", printHudString, money);
+		Format(printHudString, sizeof(printHudString), "%sMoney: %i\n", printHudString, money);
 		
-		Format(printHudString, sizeof(printHudString), "%sJob:<font color='#ff0000'> none</font></font>", printHudString);
+		Format(printHudString, sizeof(printHudString), "%sJob: none\n", printHudString);
 		
+		int crime = tCrime_getCrime(client);
+		if(crime > 0)
+			Format(printHudString, sizeof(printHudString), "%sCrime: %i</font>", printHudString, crime);
+		else
+			Format(printHudString, sizeof(printHudString), "%sCrime: 0</font>", printHudString);
 		PrintHintText(client, printHudString);
 	}
 }

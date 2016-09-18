@@ -4,6 +4,20 @@
 #define _rpg_jobs_core_included_
 
 	/*
+		Register a new job - do this OnPluginStart
+		
+		@Param1 -> char jobname[128]
+		@Param2 -> char jobdescription[512]
+		@Param3 -> int maxJobLevels
+		@Param4 -> int jobExperiencePerLevel
+		@Param5 -> float jobExperienceIncreasePercentagePerLevel
+		
+		
+		@return none
+	*/
+native int jobs_registerJob(char jobname[128], char jobdescription[512], int maxJobLevels, int jobExperiencePerLevel, float jobExperienceIncreasePercentagePerLevel);
+    
+	/*
 		Gets a clients job
 		
 		@Param1 -> int client

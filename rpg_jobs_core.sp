@@ -72,6 +72,20 @@ public void OnPluginStart()
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	/*
+		Register a new job - do this OnPluginStart
+		
+		@Param1 -> char jobname[128]
+		@Param2 -> char jobdescription[512]
+		@Param3 -> int maxJobLevels
+		@Param4 -> int jobExperiencePerLevel
+		@Param5 -> float jobExperienceIncreasePercentagePerLevel
+		
+		
+		@return none
+	*/
+	CreateNative("jobs_registerJob", Native_registerJob);
+	
+	/*
 		Gets a clients job
 		
 		@Param1 -> int client
@@ -96,7 +110,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		
 		@Param1 -> int client
 		
-		@return none
+		@return job_experience
 	*/
 	CreateNative("jobs_getExperience", Native_getExperience);
 	
@@ -155,7 +169,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		Forward on Job Accepted
 		
 		@Param1 -> int client
-		@Param3 -> char jobnameBuffer[128]
+		@Param3 -> char jobname[128]
 		
 		@return -
 	*/
@@ -165,7 +179,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		Forward on Job Quit
 		
 		@Param1 -> int client
-		@Param3 -> char jobnameBuffer[128]
+		@Param3 -> char jobname[128]
 		
 		@return -
 	*/
@@ -176,7 +190,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		
 		@Param1 -> int client
 		@Param2 -> int newLevel
-		@Param3 -> char jobnameBuffer[128]
+		@Param3 -> char jobname[128]
 		
 		@return -
 	*/
@@ -202,6 +216,17 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	*/
 	g_hOnProgressBarInterrupted = CreateGlobalForward("jobs_OnProgressBarInterrupted ", ET_Ignore, Param_Cell, Param_String);
 	
+}
+
+public int Native_registerJob(Handle plugin, int numParams) {
+	char jobname[128];
+	GetNativeString(1, jobname, sizeof(jobname));
+	char jobdescription[512];
+	GetNativeString(2, jobdescription, sizeof(jobdescription));
+	int maxJobLevel = GetNativeCell(3);
+	int jobExperiencePerLevel = GetNativeCell(4);
+	float jobExperienceIncreasePercentagePerLevel = GetNativeCell(5);
+	registerJob(jobname, jobdescription, maxJobLevel, jobExperiencePerLevel, jobExperienceIncreasePercentagePerLevel);
 }
 
 public int Native_getActiveJob(Handle plugin, int numParams) {
@@ -288,6 +313,11 @@ public void loadClientJob(int client) {
 }
 
 public void registerJob(char jobname[128], char jobdescription[512], int maxJobLevels, int jobExperience, float jobExperienceIncreasePercentage) {
+	for (int i = 0; i < g_iLoadedJobs; i++)
+	if (StrEqual(g_eLoadedJobs[i][gJobname], jobname))
+		return;
+	
+	
 	strcopy(g_eLoadedJobs[g_iLoadedJobs][gJobname], 128, jobname);
 	strcopy(g_eLoadedJobs[g_iLoadedJobs][gJobdescription], 512, jobdescription);
 	g_eLoadedJobs[g_iLoadedJobs][gMaxJobLevels] = maxJobLevels;
@@ -311,7 +341,7 @@ public void leaveJob(int client) {
 	resetJob(client);
 }
 
-public void resetJob(int client){
+public void resetJob(int client) {
 	strcopy(g_ePlayerJob[client][pjJobname], 128, "");
 	g_ePlayerJob[client][pjJobLevel] = -1;
 	g_ePlayerJob[client][pjJobExperience] = -1;
@@ -373,7 +403,7 @@ public void increaseExperience(int client, int amount, char jobname[128]) {
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateExperienceQuery);
 }
 
-public void decreaseExperience(int client, int amount, char jobname[128]){
+public void decreaseExperience(int client, int amount, char jobname[128]) {
 	if (StrEqual(g_ePlayerJob[client][pjJobname], ""))return;
 	if (!StrEqual(g_ePlayerJob[client][pjJobname], jobname))return;
 	

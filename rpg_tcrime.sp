@@ -14,7 +14,7 @@ Database g_DB;
 
 
 enum crimeProperties {
-	cCrime,
+	cCrime, 
 	String:cFlags[64]
 }
 
@@ -22,10 +22,10 @@ int g_ePlayerCrime[MAXPLAYERS + 1][crimeProperties];
 
 public Plugin myinfo = 
 {
-	name = "tCrime",
-	author = PLUGIN_AUTHOR,
-	description = "Crime System for T-RP",
-	version = PLUGIN_VERSION,
+	name = "tCrime", 
+	author = PLUGIN_AUTHOR, 
+	description = "Crime System for T-RP", 
+	version = PLUGIN_VERSION, 
 	url = "http://ggc-base.de"
 };
 
@@ -47,7 +47,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 		@return crime amount
 	*/
-	CreateNative("tCrime_getCrime", Native_getCrime);	
+	CreateNative("tCrime_getCrime", Native_getCrime);
 	
 	/*
 		Sets the Crime amount on client
@@ -56,7 +56,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 		@return -
 	*/
-	CreateNative("tCrime_setCrime", Native_setCrime);	
+	CreateNative("tCrime_setCrime", Native_setCrime);
 	
 	/*
 		Adds the Crime amount on client
@@ -65,7 +65,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 		@return -
 	*/
-	CreateNative("tCrime_addCrime", Native_addCrime);	
+	CreateNative("tCrime_addCrime", Native_addCrime);
 	
 	/*
 		Removes the Crime amount on client
@@ -74,7 +74,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 		@return -
 	*/
-	CreateNative("tCrime_removeCrime", Native_removeCrime);	
+	CreateNative("tCrime_removeCrime", Native_removeCrime);
 	
 	/*
 		Adds flags to the client
@@ -92,7 +92,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 		@return -
 	*/
-	CreateNative("tCrime_removeFlags", Native_removeFlags);	
+	CreateNative("tCrime_removeFlags", Native_removeFlags);
 	
 	/*
 		Clears flags from the client
@@ -100,7 +100,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 		@return -
 	*/
-	CreateNative("tCrime_clearFlags", Native_clearFlags);	
+	CreateNative("tCrime_clearFlags", Native_clearFlags);
 	
 	/*
 		Sets flags from the client
@@ -108,7 +108,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 		@return -
 	*/
-	CreateNative("tCrime_setFlags", Native_setFlags);	
+	CreateNative("tCrime_setFlags", Native_setFlags);
 	
 	/*
 		Sets flags from the client
@@ -117,7 +117,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		
 		@return -
 	*/
-	CreateNative("tCrime_getFlags", Native_getFlags);	
+	CreateNative("tCrime_getFlags", Native_getFlags);
 }
 
 public int Native_getCrime(Handle plugin, int numParams) {
@@ -169,7 +169,7 @@ public int Native_getFlags(Handle plugin, int numParams) {
 	SetNativeString(2, flags, sizeof(flags), false);
 }
 
-public void OnClientAuthorized(int client){
+public void OnClientAuthorized(int client) {
 	g_ePlayerCrime[client][cCrime] = -1;
 	strcopy(g_ePlayerCrime[client][cFlags], 64, "");
 	
@@ -189,12 +189,12 @@ public void OnClientAuthorized(int client){
 	CreateTimer(1.0, loadCrime, client);
 }
 
-public void OnClientDisconnect(int client){
+public void OnClientDisconnect(int client) {
 	g_ePlayerCrime[client][cCrime] = -1;
 	strcopy(g_ePlayerCrime[client][cFlags], 64, "");
 }
 
-public Action loadCrime(Handle Timer, int client){
+public Action loadCrime(Handle Timer, int client) {
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
@@ -215,7 +215,7 @@ public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error,
 		LogError(error);
 }
 
-public void increaseCrime(int client, int amount){
+public void increaseCrime(int client, int amount) {
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
@@ -226,7 +226,7 @@ public void increaseCrime(int client, int amount){
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateCrimeQuery);
 }
 
-public void decreaseCrime(int client, int amount){
+public void decreaseCrime(int client, int amount) {
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
@@ -237,7 +237,7 @@ public void decreaseCrime(int client, int amount){
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateCrimeQuery);
 }
 
-public void setCrime(int client, int amount){
+public void setCrime(int client, int amount) {
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
@@ -248,7 +248,7 @@ public void setCrime(int client, int amount){
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateCrimeQuery);
 }
 
-public void addFlags(int client, char flags[64]){
+public void addFlags(int client, char flags[64]) {
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
@@ -261,7 +261,7 @@ public void addFlags(int client, char flags[64]){
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFlagsQuery);
 }
 
-public void removeFlags(int client, char flags[64]){
+public void removeFlags(int client, char flags[64]) {
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
@@ -272,7 +272,7 @@ public void removeFlags(int client, char flags[64]){
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFlagsQuery);
 }
 
-public void clearFlags(int client){
+public void clearFlags(int client) {
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
@@ -283,7 +283,7 @@ public void clearFlags(int client){
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFlagsQuery);
 }
 
-public void setFlags(int client, char flags[64]){
+public void setFlags(int client, char flags[64]) {
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
@@ -300,4 +300,4 @@ stock bool isValidClient(int client) {
 		return false;
 	
 	return true;
-}
+} 

@@ -7,6 +7,7 @@
 #include <sdktools>
 #include <smlib>
 #include <rpg_npc_core>
+#include <multicolors>
 
 #pragma newdecls required
 
@@ -21,7 +22,7 @@ enum GlobalJobProperties {
 	String:gJobdescription[512], 
 	gMaxJobLevels, 
 	gJobExperience, 
-	float:gJobExperienceIncreasePercentage
+	Float:gJobExperienceIncreasePercentage
 }
 
 int g_iLoadedJobs = 0;
@@ -137,6 +138,15 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("jobs_removeExperience", Native_removeExperience);
 	
 	/*
+		Gets the Experience needed for the next level
+		
+		@Param1 -> int client
+		
+		@return none
+	*/
+	CreateNative("jobs_getExperienceForNextLevel", Native_getExperienceForNextLevel);
+	
+	/*
 		Get current Job level
 		
 		@Param1 -> int client
@@ -164,6 +174,35 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		@return none
 	*/
 	CreateNative("jobs_stopProgressBar", Native_stopProgressBar);
+	
+	/*
+		Returns if the Progressbar is active
+		
+		@Param1 -> int client
+		
+		@return true or false
+	*/
+	CreateNative("jobs_isInProgressBar", Native_isInProgressBar);
+
+	/*
+		Gives a Job to a client
+		
+		@Param1 -> int client
+		@Param2 -> char jobname[128]
+		
+		@return none
+	*/
+	CreateNative("jobs_giveJob", Native_giveJob);
+	
+	/*
+		Quits the current job of the client
+		
+		@Param1 -> int client
+		@Param2 -> char jobname[128]
+		
+		@return none
+	*/
+	CreateNative("jobs_quitJob", Native_quitJob);
 	
 	/*
 		Forward on Job Accepted
@@ -269,7 +308,7 @@ public int Native_getLevel(Handle plugin, int numParams) {
 
 public int Native_startProgressBar(Handle plugin, int numParams) {
 	int client = GetNativeCell(1);
-	float time = GetNativeCell(2);
+	int time = GetNativeCell(2);
 	char info[64];
 	GetNativeString(3, info, sizeof(info));
 	startProgress(client, time, info);
@@ -278,6 +317,43 @@ public int Native_startProgressBar(Handle plugin, int numParams) {
 public int Native_stopProgressBar(Handle plugin, int numParams) {
 	int client = GetNativeCell(1);
 	interruptProgressBar(client);
+}
+
+public int Native_isInProgressBar(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	return g_bProgressBarActive[client];
+}
+
+public int Native_giveJob(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	char jobName[128];
+	GetNativeString(2, jobName, sizeof(jobName));
+	acceptJob(client, jobName);
+}
+
+public int Native_quitJob(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	leaveJob(client);
+}
+
+public int Native_getExperienceForNextLevel(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	if(StrEqual(g_ePlayerJob[client][pjJobname], ""))
+		return -1;
+	
+	char jobname[128];
+	strcopy(jobname, 128, g_ePlayerJob[client][pjJobname]);
+	int jobId = findLoadedJobIdByName(jobname);
+	if (jobId == -1)
+		return -1;
+		
+	if(g_ePlayerJob[client][pjJobLevel] >= g_eLoadedJobs[jobId][gMaxJobLevels])
+		return 0;
+		
+	float level = float(g_ePlayerJob[client][pjJobLevel]);
+	int iExperienceNeeded = RoundToNearest(g_eLoadedJobs[jobId][gJobExperience] * (level * g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage]));
+	
+	return iExperienceNeeded;
 }
 
 public void OnMapStart() {
@@ -296,6 +372,7 @@ public Action refreshTimer(Handle Timer) {
 }
 
 public void OnClientAuthorized(int client) {
+	resetJob(client);
 	loadClientJob(client);
 	g_bProgressBarActive[client] = false;
 	g_iProgressBarProgress[client] = -1;
@@ -366,7 +443,8 @@ public void acceptJob(int client, char jobname[128]) {
 	int jobId = findLoadedJobIdByName(jobname);
 	if (jobId == -1)
 		return;
-	strcopy(g_ePlayerJob[client][pjJobname], 128, g_eLoadedJobs[jobId][gJobname]);
+		
+	strcopy(g_ePlayerJob[client][pjJobname], 128, jobname);
 	g_ePlayerJob[client][pjJobLevel] = 1;
 	g_ePlayerJob[client][pjJobExperience] = 0;
 	
@@ -388,11 +466,18 @@ public void increaseExperience(int client, int amount, char jobname[128]) {
 	int jobId = findLoadedJobIdByName(jobname);
 	if (jobId == -1)
 		return;
-	while ((g_ePlayerJob[client][pjJobExperience] >= g_eLoadedJobs[jobId][gJobExperience] * (g_ePlayerJob[client][pjJobLevel] * g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage])) && g_ePlayerJob[client][pjJobLevel] <= g_eLoadedJobs[jobId][gMaxJobLevels]) {
-		g_ePlayerJob[client][pjJobExperience] -= g_eLoadedJobs[jobId][gJobExperience] * (g_ePlayerJob[client][pjJobLevel] * g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage]);
+		
+	float level = float(g_ePlayerJob[client][pjJobLevel]);
+	int iExperienceNeeded = RoundToNearest(g_eLoadedJobs[jobId][gJobExperience] * (level * g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage]));
+	while ((g_ePlayerJob[client][pjJobExperience] >= iExperienceNeeded) && g_ePlayerJob[client][pjJobLevel] <= g_eLoadedJobs[jobId][gMaxJobLevels]) {
+		level = float(g_ePlayerJob[client][pjJobLevel]);
+		iExperienceNeeded = RoundToNearest(g_eLoadedJobs[jobId][gJobExperience] * (level * g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage]));
+		g_ePlayerJob[client][pjJobExperience] -= iExperienceNeeded;
 		g_ePlayerJob[client][pjJobLevel]++;
 		triggerLevelUp(client, jobname);
 	}
+	
+	CPrintToChat(client, "{olive}[%s] {green}Gained {olive}%i{green} experience!", g_ePlayerJob[client][pjJobname], amount);
 	
 	char updateLevelQuery[512];
 	Format(updateLevelQuery, sizeof(updateLevelQuery), "UPDATE t_rpg_jobs SET level = %i WHERE playerid = '%s'", g_ePlayerJob[client][pjJobLevel], playerid);
@@ -418,6 +503,7 @@ public void decreaseExperience(int client, int amount, char jobname[128]) {
 }
 
 public void triggerLevelUp(int client, char jobname[128]) {
+	CPrintToChat(client, "{olive}[%s]}{green}You have reached Level: {olive}%i{green}!", g_ePlayerJob[client][pjJobname], g_ePlayerJob[client][pjJobLevel]);
 	Call_StartForward(g_hOnJobLevelUp);
 	Call_PushCell(client);
 	Call_PushCell(g_ePlayerJob[client][pjJobLevel]);
@@ -444,26 +530,29 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 			interruptProgressBar(client);
 		if (!(g_iPlayerPrevButtons[client] & IN_BACK) && iButtons & IN_BACK)
 			interruptProgressBar(client);
-		if (!(g_iPlayerPrevButtons[client] & IN_LEFT) && iButtons & IN_LEFT)
+		if (!(g_iPlayerPrevButtons[client] & IN_MOVELEFT) && iButtons & IN_MOVELEFT)
 			interruptProgressBar(client);
-		if (!(g_iPlayerPrevButtons[client] & IN_RIGHT) && iButtons & IN_RIGHT)
+		if (!(g_iPlayerPrevButtons[client] & IN_MOVERIGHT) && iButtons & IN_MOVERIGHT)
 			interruptProgressBar(client);
 		if (!(g_iPlayerPrevButtons[client] & IN_DUCK) && iButtons & IN_DUCK)
 			interruptProgressBar(client);
-		
+		if (!(g_iPlayerPrevButtons[client] & IN_JUMP) && iButtons & IN_JUMP)
+			interruptProgressBar(client);
+			
 		g_iPlayerPrevButtons[client] = iButtons;
 	}
 	
 }
 
-public void startProgress(int client, float time, char info[64]) {
+public void startProgress(int client, int time, char info[64]) {
 	SetEntPropFloat(client, Prop_Send, "m_flProgressBarStartTime", GetGameTime());
 	SetEntProp(client, Prop_Send, "m_iProgressBarDuration", time);
 	g_bProgressBarActive[client] = true;
 	g_iProgressBarProgress[client] = 0;
-	time *= 10;
-	int target = RoundToNearest(time);
-	g_iProgressBarTarget[client] = target;
+	time *= 10; 
+	//int target = RoundToNearest(time);
+	g_iProgressBarTarget[client] = time;
+	PrintHintText(client, "\n\n<font size='18'>%s</font>", info);
 }
 
 public void interruptProgressBar(int client) {
@@ -477,7 +566,7 @@ public void interruptProgressBar(int client) {
 	g_iProgressBarProgress[client] = -1;
 	g_iProgressBarTarget[client] = -1;
 	strcopy(g_cProgressBarInfo[client], 64, "");
-	PrintHintText(client, "Interrupted Action");
+	SetEntProp(client, Prop_Send, "m_iProgressBarDuration", 0);
 }
 
 public void completeProgressBar(int client) {
@@ -489,6 +578,7 @@ public void completeProgressBar(int client) {
 	g_bProgressBarActive[client] = false;
 	g_iProgressBarProgress[client] = -1;
 	g_iProgressBarTarget[client] = -1;
+	SetEntProp(client, Prop_Send, "m_iProgressBarDuration", 0);
 	char info[64];
 	strcopy(info, 64, "");
 }

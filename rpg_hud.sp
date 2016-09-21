@@ -8,6 +8,7 @@
 #include <tConomy>
 #include <smlib>
 #include <tCrime>
+#include <rpg_jobs_core>
 
 #pragma newdecls required
 
@@ -30,6 +31,9 @@ public Action updateHUD(Handle Timer) {
 	for (int client = 1; client < MAXPLAYERS; client++) {
 		if (!isValidClient(client))
 			continue;
+		if (jobs_isInProgressBar(client))
+			continue;
+		
 		
 		char printHudString[1024];
 		if (GetClientAimTarget(client, true) > -1) {
@@ -50,10 +54,17 @@ public Action updateHUD(Handle Timer) {
 		int money = tConomy_getCurrency(client);
 		Format(printHudString, sizeof(printHudString), "%sMoney: %i\n", printHudString, money);
 		
-		Format(printHudString, sizeof(printHudString), "%sJob: none\n", printHudString);
+		char jobname[128];
+		jobs_getActiveJob(client, jobname);
+		
+		if (StrEqual(jobname, ""))
+			Format(printHudString, sizeof(printHudString), "%sJob: none\n", printHudString);
+		else {
+			Format(printHudString, sizeof(printHudString), "%sJob: %s | Level: %i | XP: %i/%i\n", printHudString, jobname, jobs_getLevel(client), jobs_getExperience(client), jobs_getExperienceForNextLevel(client));
+		}
 		
 		int crime = tCrime_getCrime(client);
-		if(crime > 0)
+		if (crime > 0)
 			Format(printHudString, sizeof(printHudString), "%sCrime: %i</font>", printHudString, crime);
 		else
 			Format(printHudString, sizeof(printHudString), "%sCrime: 0</font>", printHudString);

@@ -76,18 +76,56 @@ native void jobs_removeExperience(int client, int amount, char jobname[128]);
 		@return int current_job_level
 	*/
 native int jobs_getLevel(int client);
+
+	/*
+		Gets the Experience needed for the next level
+		
+		@Param1 -> int client
+		
+		@return none
+	*/
+native int jobs_getExperienceForNextLevel(int client);
 	
 	/*
 		Starts the progressbar
 		
 		@Param1 -> int client
-		@Param2 -> float time
+		@Param2 -> int time
 		@Param3 -> char info[64]
 		
 		@return none
 	*/
-native void jobs_startProgressBar(int client, float time, char info[64]);
+native void jobs_startProgressBar(int client, int time, char info[64]);
+
+	/*
+		Returns if the Progressbar is active
+		
+		@Param1 -> int client
+		
+		@return true or false
+	*/
+native bool jobs_isInProgressBar(int client);
+    
+	/*
+		Gives a Job to a client
+		
+		@Param1 -> int client
+		@Param2 -> char jobname[128]
+		
+		@return none
+	*/
+native void jobs_giveJob(int client, char jobname[128]);
 	
+	/*
+		Quits the current job of the client
+		
+		@Param1 -> int client
+		@Param2 -> char jobname[128]
+		
+		@return none
+	*/
+native void jobs_quitJob(int client);
+    
 	/*
 		Stops the progressbar
 		

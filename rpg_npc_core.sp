@@ -661,10 +661,9 @@ public int typeChooserHandler(Handle menu, MenuAction action, int client, int it
 
 public void onNpcInteract(int client, char uniqueId[128], int entIndex) {
 	int id;
-	if ((id = getNpcLoadedIdFromUniqueId(uniqueId)) == -1) {
-		PrintToChat(client, "This NPC does not belong to the RPG Plugin.");
+	if ((id = getNpcLoadedIdFromUniqueId(uniqueId)) == -1)
 		return;
-	}
+	
 	char name[64];
 	Entity_GetGlobalName(entIndex, name, sizeof(name));
 	PrintToChat(client, "Hello! My name is %s", name);

@@ -67,7 +67,7 @@ public void OnPluginStart()
 	SQL_SetCharset(g_DB, "utf8");
 	
 	char createTableQuery[4096];
-	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE `t_rpg_jobs` ( `Id` BIGINT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP on update CURRENT_TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `playername` VARCHAR(36) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `jobname` VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `level` INT NOT NULL , `experience` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , `special_flags` VARCHAR(64) NOT NULL , PRIMARY KEY (`Id`), UNIQUE (`playerid`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
+	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS `t_rpg_jobs` ( `Id` BIGINT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP on update CURRENT_TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `playername` VARCHAR(36) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `jobname` VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `level` INT NOT NULL , `experience` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , `special_flags` VARCHAR(64) NOT NULL , PRIMARY KEY (`Id`), UNIQUE (`playerid`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
 }
 
@@ -183,7 +183,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		@return true or false
 	*/
 	CreateNative("jobs_isInProgressBar", Native_isInProgressBar);
-
+	
 	/*
 		Gives a Job to a client
 		
@@ -338,7 +338,7 @@ public int Native_quitJob(Handle plugin, int numParams) {
 
 public int Native_getExperienceForNextLevel(Handle plugin, int numParams) {
 	int client = GetNativeCell(1);
-	if(StrEqual(g_ePlayerJob[client][pjJobname], ""))
+	if (StrEqual(g_ePlayerJob[client][pjJobname], ""))
 		return -1;
 	
 	char jobname[128];
@@ -346,10 +346,10 @@ public int Native_getExperienceForNextLevel(Handle plugin, int numParams) {
 	int jobId = findLoadedJobIdByName(jobname);
 	if (jobId == -1)
 		return -1;
-		
-	if(g_ePlayerJob[client][pjJobLevel] >= g_eLoadedJobs[jobId][gMaxJobLevels])
+	
+	if (g_ePlayerJob[client][pjJobLevel] >= g_eLoadedJobs[jobId][gMaxJobLevels])
 		return 0;
-		
+	
 	float level = float(g_ePlayerJob[client][pjJobLevel]);
 	int iExperienceNeeded = RoundToNearest(g_eLoadedJobs[jobId][gJobExperience] * (level * g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage]));
 	
@@ -366,6 +366,25 @@ public Action refreshTimer(Handle Timer) {
 			continue;
 		if (!g_bProgressBarActive[client])
 			continue;
+		char progressBarPrint[512];
+		float split = g_iProgressBarTarget[client] / 50.0;
+		float fill = 0.0;
+		int bars = 50;
+		
+		while (fill < g_iProgressBarProgress[client]) {
+			fill += split;
+			bars--;
+		}
+		
+		while (bars-- > 0)
+			Format(progressBarPrint, sizeof(progressBarPrint), "%s|", progressBarPrint);
+		
+		
+		int diff = g_iProgressBarTarget[client] - g_iProgressBarProgress[client];
+		float timeLeft = diff / 10.0;
+		
+		Format(progressBarPrint, sizeof(progressBarPrint), "%s\n~~~~~~~~~ | %.2f | ~~~~~~~~~\n%s\n%s", progressBarPrint, timeLeft, progressBarPrint, g_cProgressBarInfo[client]);
+		PrintHintText(client, progressBarPrint);
 		if (++g_iProgressBarProgress[client] >= g_iProgressBarTarget[client] && g_iProgressBarTarget[client] != -1)
 			completeProgressBar(client);
 	}
@@ -443,7 +462,7 @@ public void acceptJob(int client, char jobname[128]) {
 	int jobId = findLoadedJobIdByName(jobname);
 	if (jobId == -1)
 		return;
-		
+	
 	strcopy(g_ePlayerJob[client][pjJobname], 128, jobname);
 	g_ePlayerJob[client][pjJobLevel] = 1;
 	g_ePlayerJob[client][pjJobExperience] = 0;
@@ -466,7 +485,7 @@ public void increaseExperience(int client, int amount, char jobname[128]) {
 	int jobId = findLoadedJobIdByName(jobname);
 	if (jobId == -1)
 		return;
-		
+	
 	float level = float(g_ePlayerJob[client][pjJobLevel]);
 	int iExperienceNeeded = RoundToNearest(g_eLoadedJobs[jobId][gJobExperience] * (level * g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage]));
 	while ((g_ePlayerJob[client][pjJobExperience] >= iExperienceNeeded) && g_ePlayerJob[client][pjJobLevel] <= g_eLoadedJobs[jobId][gMaxJobLevels]) {
@@ -538,21 +557,21 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 			interruptProgressBar(client);
 		if (!(g_iPlayerPrevButtons[client] & IN_JUMP) && iButtons & IN_JUMP)
 			interruptProgressBar(client);
-			
+		
 		g_iPlayerPrevButtons[client] = iButtons;
 	}
 	
 }
 
 public void startProgress(int client, int time, char info[64]) {
-	SetEntPropFloat(client, Prop_Send, "m_flProgressBarStartTime", GetGameTime());
-	SetEntProp(client, Prop_Send, "m_iProgressBarDuration", time);
+	//SetEntPropFloat(client, Prop_Send, "m_flProgressBarStartTime", GetGameTime());
+	//SetEntProp(client, Prop_Send, "m_iProgressBarDuration", time);
 	g_bProgressBarActive[client] = true;
 	g_iProgressBarProgress[client] = 0;
-	time *= 10; 
+	time *= 10;
 	//int target = RoundToNearest(time);
 	g_iProgressBarTarget[client] = time;
-	PrintHintText(client, "\n\n<font size='18'>%s</font>", info);
+	//PrintHintText(client, "\n\n<font size='18'>%s</font>", info);
 }
 
 public void interruptProgressBar(int client) {
@@ -566,7 +585,7 @@ public void interruptProgressBar(int client) {
 	g_iProgressBarProgress[client] = -1;
 	g_iProgressBarTarget[client] = -1;
 	strcopy(g_cProgressBarInfo[client], 64, "");
-	SetEntProp(client, Prop_Send, "m_iProgressBarDuration", 0);
+	//SetEntProp(client, Prop_Send, "m_iProgressBarDuration", 0);
 }
 
 public void completeProgressBar(int client) {
@@ -578,7 +597,7 @@ public void completeProgressBar(int client) {
 	g_bProgressBarActive[client] = false;
 	g_iProgressBarProgress[client] = -1;
 	g_iProgressBarTarget[client] = -1;
-	SetEntProp(client, Prop_Send, "m_iProgressBarDuration", 0);
+	//SetEntProp(client, Prop_Send, "m_iProgressBarDuration", 0);
 	char info[64];
 	strcopy(info, 64, "");
 }

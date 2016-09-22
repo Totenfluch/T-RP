@@ -21,7 +21,9 @@ public Plugin myinfo =
 	url = "http://ggc-base.de"
 };
 
-public void OnPluginStart() {  }
+public void OnPluginStart() {
+	RegConsoleCmd("sm_testbar", cmdTestBar);
+}
 
 public void OnMapStart() {
 	CreateTimer(0.2, updateHUD, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
@@ -52,7 +54,13 @@ public Action updateHUD(Handle Timer) {
 		}
 		
 		int money = tConomy_getCurrency(client);
-		Format(printHudString, sizeof(printHudString), "%sMoney: %i\n", printHudString, money);
+		Format(printHudString, sizeof(printHudString), "%sMoney: %i ~ ", printHudString, money);
+		
+		int crime = tCrime_getCrime(client);
+		if (crime > 0)
+			Format(printHudString, sizeof(printHudString), "%sCrime: %i\n", printHudString, crime);
+		else
+			Format(printHudString, sizeof(printHudString), "%sCrime: 0\n<", printHudString);
 		
 		char jobname[128];
 		jobs_getActiveJob(client, jobname);
@@ -63,14 +71,19 @@ public Action updateHUD(Handle Timer) {
 			Format(printHudString, sizeof(printHudString), "%sJob: %s | Level: %i | XP: %i/%i\n", printHudString, jobname, jobs_getLevel(client), jobs_getExperience(client), jobs_getExperienceForNextLevel(client));
 		}
 		
-		int crime = tCrime_getCrime(client);
-		if (crime > 0)
-			Format(printHudString, sizeof(printHudString), "%sCrime: %i</font>", printHudString, crime);
-		else
-			Format(printHudString, sizeof(printHudString), "%sCrime: 0</font>", printHudString);
+		
 		PrintHintText(client, printHudString);
 	}
 }
+
+public Action cmdTestBar(int client, int args) {
+	char cmdBuffer[64];
+	GetCmdArg(client, cmdBuffer, sizeof(cmdBuffer));
+	int time = StringToInt(cmdBuffer);
+	jobs_startProgressBar(client, time, "testBar");
+}
+
+
 
 stock bool isValidClient(int client) {
 	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))

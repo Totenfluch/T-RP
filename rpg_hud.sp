@@ -60,7 +60,7 @@ public Action updateHUD(Handle Timer) {
 		if (crime > 0)
 			Format(printHudString, sizeof(printHudString), "%sCrime: %i\n", printHudString, crime);
 		else
-			Format(printHudString, sizeof(printHudString), "%sCrime: 0\n<", printHudString);
+			Format(printHudString, sizeof(printHudString), "%sCrime: 0\n", printHudString);
 		
 		char jobname[128];
 		jobs_getActiveJob(client, jobname);

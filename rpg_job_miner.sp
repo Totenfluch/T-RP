@@ -10,6 +10,7 @@
 #include <devzones>
 #include <multicolors>
 #include <tConomy>
+#include <rpg_inventory_core>
 
 #pragma newdecls required
 
@@ -90,14 +91,15 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 public void jobs_OnProgressBarFinished(int client, char info[64]) {
 	if (!jobs_isActiveJob(client, "Mining"))
 		return;
-	if (!(StrContains("Mining", info, false) != -1))
+	if (StrContains(info, "Mining", false) == -1)
 		return;
 	
 	if (++g_iCollectedLoot[client][g_iPlayerZoneId[client]] >= MAX_COLLECT)
 		g_iMiningZoneCooldown[client][g_iPlayerZoneId[client]] = g_iZoneCooldown + GetRandomInt(0, 50);
 	char addCurrencyReason[256];
 	Format(addCurrencyReason, sizeof(addCurrencyReason), "Mining Ore (Level %i)", jobs_getLevel(client));
-	tConomy_addCurrency(client, 10 * jobs_getLevel(client), addCurrencyReason);
+	//tConomy_addCurrency(client, 10 * jobs_getLevel(client), addCurrencyReason);
+	inventory_givePlayerItem(client, "Iron ore", 20, "", "Crafting Materials", "Mining", 1, addCurrencyReason);
 	jobs_addExperience(client, 10, "Mining");
 }
 
@@ -142,32 +144,46 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		return;
 	char activeJob[128];
 	jobs_getActiveJob(client, activeJob);
-	if (StrEqual(activeJob, "")) {
-		Panel panel = CreatePanel();
-		SetPanelTitle(panel, "You already have a job! Want to quit it and becoma a miner?");
-		DrawPanelItem(panel, "No");
-		DrawPanelItem(panel, "Not now.");
-		DrawPanelItem(panel, "Yes");
-		SendPanelToClient(panel, client, JobPanelHandler, 30);
-	} else {
-		Panel panel = CreatePanel();
-		SetPanelTitle(panel, "Do you want to become a Miner?");
-		DrawPanelItem(panel, "No");
-		DrawPanelItem(panel, "Not now.");
-		DrawPanelItem(panel, "Yes");
-		SendPanelToClient(panel, client, JobPanelHandler, 30);
+	Menu panel = CreateMenu(JobPanelHandler);
+	if (StrEqual(activeJob, "") || !jobs_isActiveJob(client, "Mining")) {
+		SetMenuTitle(panel, "You already have a job! Want to quit it and becoma a miner?");
+		AddMenuItem(panel, "x", "No");
+		AddMenuItem(panel, "x", "Not now.");
+		AddMenuItem(panel, "givejob", "Yes");
+	} else if (jobs_isActiveJob(client, "Mining")) {
+		SetMenuTitle(panel, "Welcome Miner!");
+		if (inventory_hasPlayerItem(client, "Iron ore") && tConomy_getCurrency(client) >= 10)
+			AddMenuItem(panel, "refine", "Refine Iron ore (10)");
+		else
+			AddMenuItem(panel, "x", "Refine Iron ore (10)", ITEMDRAW_DISABLED);
+		
+		if (inventory_hasPlayerItem(client, "Iron Bar"))
+			AddMenuItem(panel, "sellIronBar", "Sell Iron Bar");
+		else
+			AddMenuItem(panel, "x", "Sell Iron Bar", ITEMDRAW_DISABLED);
+		
 	}
+	DisplayMenu(panel, client, 60);
 }
 
 public int JobPanelHandler(Handle menu, MenuAction action, int client, int item) {
 	if (action == MenuAction_Select) {
-		if (item == 1) {
-			
-		} else if (item == 2) {
-			
-		} else if (item == 3) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "givejob")) {
 			jobs_quitJob(client);
 			jobs_giveJob(client, "Mining");
+		} else if (StrEqual(cValue, "refine")) {
+			if (inventory_hasPlayerItem(client, "Iron ore") && tConomy_getCurrency(client) >= 10) {
+				tConomy_removeCurrency(client, 10, "Refined Iron");
+				inventory_removePlayerItems(client, "Iron ore", 1, "Gave to Vendor");
+				inventory_givePlayerItem(client, "Iron Bar", 60, "", "Crafting Material", "Mining", 2, "Refined ore to Bar");
+			}
+		} else if (StrEqual(cValue, "sellIronBar")) {
+			if (inventory_hasPlayerItem(client, "Iron Bar")) {
+				tConomy_addCurrency(client, 50, "Sold Iron Bar to Vendor");
+				inventory_removePlayerItems(client, "Iron Bar", 1, "Sold to Vendor");
+			}
 		}
 	}
 }

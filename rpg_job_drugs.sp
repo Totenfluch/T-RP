@@ -12,6 +12,7 @@
 #include <tConomy>
 #include <tCrime>
 #include <smlib>
+#include <rpg_inventory_core>
 
 #pragma newdecls required
 
@@ -24,6 +25,8 @@ int g_iPlayerPrevButtons[MAXPLAYERS + 1];
 int g_iLastInteractedWith[MAXPLAYERS + 1];
 
 char npctype[128] = "Drug Shop";
+
+int g_iHarvestIndex[MAXPLAYERS + 1];
 
 public Plugin myinfo = 
 {
@@ -49,7 +52,6 @@ enum plantProperties {
 int g_ePlayerPlants[MAX_PLANTS][plantProperties];
 int g_iPlantsActive = 0;
 
-int g_iPlayerSeeds[MAXPLAYERS + 1];
 int g_iPlayerPlanted[MAXPLAYERS + 1];
 
 
@@ -72,7 +74,7 @@ public void OnPluginStart() {
 
 public void OnClientAuthorized(int client) {
 	g_iPlayerPlanted[client] = 0;
-	g_iPlayerSeeds[client] = 0;
+	g_iHarvestIndex[client] = 0;
 }
 
 public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex) {
@@ -83,10 +85,14 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 	SetMenuTitle(menu, "Drug Dealer");
 	if (!jobs_isActiveJob(client, "Drug Planter"))
 		AddMenuItem(menu, "takejob", "Quit job and become a Drug Planter");
-	if (tConomy_getCurrency(client) >= 100)
+	if (tConomy_getCurrency(client) >= 100 && jobs_isActiveJob(client, "Drug Planter"))
 		AddMenuItem(menu, "seeds", "Buy a seed (100)");
 	else
 		AddMenuItem(menu, "x", "Buy a seed (100)", ITEMDRAW_DISABLED);
+	if (inventory_hasPlayerItem(client, "Fresh Marijuana"))
+		AddMenuItem(menu, "sellDrugs", "Sell Fresh Marijuana");
+	else
+		AddMenuItem(menu, "x", "Sell Fresh Marijuana", ITEMDRAW_DISABLED);
 	
 	DisplayMenu(menu, client, 60);
 }
@@ -110,7 +116,10 @@ public int drugMenuHandler(Handle menu, MenuAction action, int client, int item)
 			jobs_giveJob(client, "Drug Planter");
 		} else if (StrEqual(cValue, "seeds")) {
 			tConomy_removeCurrency(client, 100, "Bought Seeds");
-			g_iPlayerSeeds[client]++;
+			inventory_givePlayerItem(client, "Marijuana Seeds", 1, "", "Plant seeds", "Drug Item", 1, "Bought from Vendor");
+		} else if (StrEqual(cValue, "sellDrugs") && inventory_hasPlayerItem(client, "Fresh Marijuana")) {
+			tConomy_addCurrency(client, 50, "Sold Fresh Marijuana");
+			inventory_removePlayerItems(client, "Fresh Marijuana", 1, "Sold to Drug Dealer");
 		}
 	}
 }
@@ -188,8 +197,8 @@ public void SQLLoadPlantsQuery(Handle owner, Handle hndl, const char[] error, an
 }
 
 public Action cmdPlantCommand(int client, int args) {
-	if (g_iPlayerSeeds[client] > 0)
-		g_iPlayerSeeds[client]--;
+	if (inventory_hasPlayerItem(client, "Marijuana Seeds"))
+		inventory_removePlayerItems(client, "Marijuana Seeds", 1, "Planted Marijuana");
 	else
 		return Plugin_Handled;
 	
@@ -231,6 +240,7 @@ public void spawnPlant(char owner[20], int state, int time, float pos[3], char f
 	TeleportEntity(drugPlant, pos, NULL_VECTOR, NULL_VECTOR);
 	Entity_SetGlobalName(drugPlant, "Drug Plant");
 	
+	
 	int whereToStore = findLowestUnusedPlantSlot();
 	g_ePlayerPlants[whereToStore][pEntRef] = EntIndexToEntRef(drugPlant);
 	strcopy(g_ePlayerPlants[whereToStore][pOwner], 20, owner);
@@ -248,20 +258,23 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 	if (IsClientInGame(client) && IsPlayerAlive(client)) {
 		if (!(g_iPlayerPrevButtons[client] & IN_USE) && iButtons & IN_USE) {
 			int ent = GetClientAimTarget(client, false);
+			if (!IsValidEntity(ent)) {
+				g_iPlayerPrevButtons[client] = iButtons;
+				return;
+			}
 			if (HasEntProp(ent, Prop_Data, "m_iName") && HasEntProp(ent, Prop_Data, "m_iGlobalname")) {
 				char entName[256];
 				Entity_GetGlobalName(ent, entName, sizeof(entName));
 				if (StrEqual(entName, "Drug Plant")) {
-					int plantId;
-					if ((plantId = findPlantLoadedIdByIndex(ent)) == -1) {
+					if (findPlantLoadedIdByIndex(ent) == -1) {
 						g_iPlayerPrevButtons[client] = iButtons;
 						return;
 					}
-					if (g_ePlayerPlants[plantId][pState] == 3) {
-						harvestPlant(client, ent, plantId);
-					} else {
-						CPrintToChat(client, "{red}[Drug] {darkred}This plant is not ready yet");
-					}
+					
+					jobs_startProgressBar(client, 10, "Harvest Plant");
+					g_iHarvestIndex[client] = ent;
+					//harvestPlant(client, ent, plantId, g_ePlayerPlants[plantId][pState]);
+					
 				}
 			}
 		}
@@ -269,14 +282,41 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 	}
 }
 
-public void harvestPlant(int client, int ent, int plantId) {
+public void jobs_OnProgressBarInterrupted(int client, char info[64]) {
+	g_iHarvestIndex[client] = -1;
+}
+
+public void jobs_OnProgressBarFinished(int client, char info[64]) {
+	if (StrEqual(info, "Harvest Plant")) {
+		int plantId;
+		if ((plantId = findPlantLoadedIdByIndex(g_iHarvestIndex[client])) == -1)
+			return;
+		
+		harvestPlant(client, g_iHarvestIndex[client], plantId, g_ePlayerPlants[plantId][pState]);
+	}
+}
+
+public void harvestPlant(int client, int ent, int plantId, int state) {
 	char deletePlantsQuery[512];
 	Format(deletePlantsQuery, sizeof(deletePlantsQuery), "DELETE FROM t_rpg_drugs WHERE flags = '%s';", g_ePlayerPlants[plantId][pFlags]);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, deletePlantsQuery);
 	
 	AcceptEntityInput(ent, "kill");
-	tConomy_addCurrency(client, 200, "Harvest of Drug Plant");
+	//tConomy_addCurrency(client, 200, "Harvest of Drug Plant");
 	
+	if (state == 1) {
+		for (int i = 0; i < 1; i++) {
+			inventory_givePlayerItem(client, "Fresh Marijuana", 2, "", "Plant", "Drug Item", 2, "Harvested Plant");
+		}
+	} else if (state == 2) {
+		for (int i = 0; i < 2; i++) {
+			inventory_givePlayerItem(client, "Fresh Marijuana", 2, "", "Plant", "Drug Item", 2, "Harvested Plant");
+		}
+	} else if (state == 3) {
+		for (int i = 0; i < 4; i++) {
+			inventory_givePlayerItem(client, "Fresh Marijuana", 2, "", "Plant", "Drug Item", 2, "Harvested Plant");
+		}
+	}
 	
 	if (jobs_isActiveJob(client, "Drug Planter"))
 		jobs_addExperience(client, 200, "Drug Planter");

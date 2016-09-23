@@ -40,6 +40,21 @@ public void OnPluginStart()
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, CreateCrimeTableQuery);
 }
 
+public void OnMapStart() {
+	CreateTimer(1.0, refreshTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+}
+
+public Action refreshTimer(Handle Timer) {
+	for (int i = 1; i < MAXPLAYERS; i++) {
+		if (!isValidClient(i))
+			continue;
+		if(g_ePlayerCrime[i][cCrime] == -1)
+			continue;
+		if (g_ePlayerCrime[i][cCrime] > 0)
+			decreaseCrime(i, 1);
+	}
+}
+
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	/*
 		Get the crime amount of client

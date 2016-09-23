@@ -383,7 +383,7 @@ public Action refreshTimer(Handle Timer) {
 		int diff = g_iProgressBarTarget[client] - g_iProgressBarProgress[client];
 		float timeLeft = diff / 10.0;
 		
-		Format(progressBarPrint, sizeof(progressBarPrint), "%s\n~~~~~~~~~ | %.2f | ~~~~~~~~~\n%s\n%s", progressBarPrint, timeLeft, progressBarPrint, g_cProgressBarInfo[client]);
+		Format(progressBarPrint, sizeof(progressBarPrint), "<font size='16'>%s\n~~~~~~~~~ | %.2f | ~~~~~~~~~\n%s\n%s</font>", progressBarPrint, timeLeft, progressBarPrint, g_cProgressBarInfo[client]);
 		PrintHintText(client, progressBarPrint);
 		if (++g_iProgressBarProgress[client] >= g_iProgressBarTarget[client] && g_iProgressBarTarget[client] != -1)
 			completeProgressBar(client);
@@ -522,7 +522,7 @@ public void decreaseExperience(int client, int amount, char jobname[128]) {
 }
 
 public void triggerLevelUp(int client, char jobname[128]) {
-	CPrintToChat(client, "{olive}[%s]}{green}You have reached Level: {olive}%i{green}!", g_ePlayerJob[client][pjJobname], g_ePlayerJob[client][pjJobLevel]);
+	CPrintToChat(client, "{olive}[%s] {green}You have reached Level: {purple}%i{green}!", g_ePlayerJob[client][pjJobname], g_ePlayerJob[client][pjJobLevel]);
 	Call_StartForward(g_hOnJobLevelUp);
 	Call_PushCell(client);
 	Call_PushCell(g_ePlayerJob[client][pjJobLevel]);
@@ -566,6 +566,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 public void startProgress(int client, int time, char info[64]) {
 	//SetEntPropFloat(client, Prop_Send, "m_flProgressBarStartTime", GetGameTime());
 	//SetEntProp(client, Prop_Send, "m_iProgressBarDuration", time);
+	strcopy(g_cProgressBarInfo[client], 64, info);
 	g_bProgressBarActive[client] = true;
 	g_iProgressBarProgress[client] = 0;
 	time *= 10;

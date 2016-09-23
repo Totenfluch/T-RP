@@ -68,9 +68,9 @@ public void OnMapStart() {
 }
 
 public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
-	for (int i = 0; i < MAX_GARBAGE; i++)
-	g_eGarbageSpawnPoints[g_iLoadedGarbage][gIsActive] = false;
-	
+	for (int i = 0; i < MAX_GARBAGE; i++){
+		g_eGarbageSpawnPoints[i][gIsActive] = false;
+	}
 	
 	randomNumbers = CreateArray(g_iBaseGarbageSpawns, g_iBaseGarbageSpawns);
 	ClearArray(randomNumbers);
@@ -87,6 +87,8 @@ public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 	int spawns = 0;
 	if (g_iBaseGarbageSpawns > g_iLoadedGarbage)
 		spawns = g_iLoadedGarbage;
+	else
+		spawns = g_iBaseGarbageSpawns;
 	for (int i = 0; i < spawns; i++) {
 		int spawnId = GetArrayCell(randomNumbers, 0);
 		RemoveFromArray(randomNumbers, 0);

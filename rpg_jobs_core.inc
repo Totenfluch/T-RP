@@ -120,7 +120,6 @@ native void jobs_giveJob(int client, char jobname[128]);
 		Quits the current job of the client
 		
 		@Param1 -> int client
-		@Param2 -> char jobname[128]
 		
 		@return none
 	*/

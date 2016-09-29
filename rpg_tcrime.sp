@@ -48,7 +48,7 @@ public Action refreshTimer(Handle Timer) {
 	for (int i = 1; i < MAXPLAYERS; i++) {
 		if (!isValidClient(i))
 			continue;
-		if(g_ePlayerCrime[i][cCrime] == -1)
+		if (g_ePlayerCrime[i][cCrime] == -1)
 			continue;
 		if (g_ePlayerCrime[i][cCrime] > 0)
 			decreaseCrime(i, 1);

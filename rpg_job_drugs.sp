@@ -319,7 +319,7 @@ public void harvestPlant(int client, int ent, int plantId, int state) {
 	}
 	
 	if (jobs_isActiveJob(client, "Drug Planter"))
-		jobs_addExperience(client, 200, "Drug Planter");
+		jobs_addExperience(client, 50 + 50 * state, "Drug Planter");
 	else
 		tCrime_addCrime(client, 100);
 	

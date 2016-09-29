@@ -68,7 +68,7 @@ public void OnMapStart() {
 }
 
 public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
-	for (int i = 0; i < MAX_GARBAGE; i++){
+	for (int i = 0; i < MAX_GARBAGE; i++) {
 		g_eGarbageSpawnPoints[i][gIsActive] = false;
 	}
 	

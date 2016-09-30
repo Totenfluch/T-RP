@@ -12,6 +12,11 @@
 #include <rpg_inventory_core>
 #include <playtime>
 #include <autoexecconfig>
+#include <smlib>
+#include <sdkhooks>
+#include <emitsoundany-ttt>
+#include <multicolors>
+#include <cstrike>
 
 #pragma newdecls required
 
@@ -122,25 +127,6 @@ int g_iM4A1SValue;
 Handle g_hAk47Value;
 int g_iAk47Value;
 
-/* HP and Armor */
-Handle g_hMaxHp;
-int g_iMaxHp;
-
-Handle g_hMaxArmor;
-int g_iMaxArmor;
-
-Handle g_h50HpCost;
-int g_i50HpCost;
-
-Handle g_h100HpCost;
-int g_i100HpCost;
-
-Handle g_h50ArmorCost;
-int g_i50ArmorCost;
-
-Handle g_h100ArmorCost;
-int g_i100ArmorCost;
-
 /* Special Weapons */
 Handle g_hAwpValue;
 int g_iAwpValue;
@@ -161,13 +147,30 @@ Handle g_hNegevValue;
 int g_iNegevValue;
 
 
-
+int g_iHaloSprite;
+int g_iFire;
 
 bool g_bCuffed[MAXPLAYERS + 1] = false;
 
 int g_iPlayerHandCuffs[MAXPLAYERS + 1];
 int g_iCuffed = 0;
 
+char g_sEquipWeapon[MAXPLAYERS + 1][32];
+
+int gc_iHandCuffsDistance = 5;
+
+char g_sSoundCuffsPath[256];
+char g_sOverlayCuffsPath[256];
+char g_sSoundBreakCuffsPath[256];
+char g_sSoundUnLockCuffsPath[256];
+bool g_bSounds;
+
+
+ConVar gc_sSoundBreakCuffsPath;
+ConVar gc_sSoundUnLockCuffsPath;
+ConVar gc_sSoundCuffsPath;
+ConVar gc_sOverlayCuffsPath;
+ConVar gc_bSounds;
 
 public Plugin myinfo = 
 {
@@ -194,6 +197,8 @@ public void OnPluginStart() {
 	
 	AutoExecConfig_SetFile("rpg_job_police");
 	AutoExecConfig_SetCreateFile(true);
+	
+	g_hPlayTimeNeededForPolice = AutoExecConfig_CreateConVar("rpg_playTimeForPolice", "180000", "Playtime needed for Police in seconds");
 	
 	g_hHandCuffsPrice = AutoExecConfig_CreateConVar("rpg_handcuffs", "30", "Price of the handcuffs in menu");
 	g_hKevlarPrice = AutoExecConfig_CreateConVar("rpg_kevlar", "35", "Price of the kevlar in menu");
@@ -233,14 +238,6 @@ public void OnPluginStart() {
 	g_hM4A1SValue = AutoExecConfig_CreateConVar("rpg_m4a1s", "150", "Price of the M4a1s in menu");
 	g_hAk47Value = AutoExecConfig_CreateConVar("rpg_ak47", "150", "Price of the Ak47 in menu");
 	
-	g_hMaxHp = AutoExecConfig_CreateConVar("rpg_health_max", "150", "Maximum Health a player can have");
-	g_hMaxArmor = AutoExecConfig_CreateConVar("rpg_health_max", "150", "Maximum Armor a player can have");
-	
-	g_h50HpCost = AutoExecConfig_CreateConVar("rpg_50hpCost", "100", "Cost of +50 Health");
-	g_h100HpCost = AutoExecConfig_CreateConVar("rpg_100hpCost", "150", "Cost of +50 Health");
-	g_h50ArmorCost = AutoExecConfig_CreateConVar("rpg_50armorCost", "100", "Cost of +50 Health");
-	g_h100ArmorCost = AutoExecConfig_CreateConVar("rpg_100armorCost", "150", "Cost of +50 Health");
-	
 	g_hAwpValue = AutoExecConfig_CreateConVar("rpg_awp", "200", "Price of the awp in menu");
 	g_hScoutValue = AutoExecConfig_CreateConVar("rpg_scout", "120", "Price of the scout in menu");
 	g_hG3SG1Value = AutoExecConfig_CreateConVar("rpg_g3sg1", "250", "Price of the g3sg1 in menu");
@@ -248,11 +245,20 @@ public void OnPluginStart() {
 	g_hM249Value = AutoExecConfig_CreateConVar("rpg_m249", "200", "Price of the m249 in menu");
 	g_hNegevValue = AutoExecConfig_CreateConVar("rpg_negev", "225", "Price of the negev in menu");
 	
+	gc_sOverlayCuffsPath = AutoExecConfig_CreateConVar("rpg_overlays_cuffs", "overlays/MyJailbreak/cuffs" , "Path to the cuffs Overlay DONT TYPE .vmt or .vft");
+	gc_sSoundCuffsPath = AutoExecConfig_CreateConVar("rpg_sounds_cuffs", "music/MyJailbreak/cuffs.mp3", "Path to the soundfile which should be played for cuffed player.");
+	gc_sSoundBreakCuffsPath = AutoExecConfig_CreateConVar("rpg_sounds_breakcuffs", "music/MyJailbreak/breakcuffs.mp3", "Path to the soundfile which should be played for break cuffs.");
+	gc_sSoundUnLockCuffsPath = AutoExecConfig_CreateConVar("rpg_sounds_unlock", "music/MyJailbreak/unlock.mp3", "Path to the soundfile which should be played for unlocking cuffs.");
+	
+	gc_bSounds = AutoExecConfig_CreateConVar("rpg_sounds_enable", "1", "0 - disabled, 1 - enable sounds ", _, true, 0.1, true, 1.0);
+	
 	AutoExecConfig_CleanFile();
 	AutoExecConfig_ExecuteFile();
 }
 
-public void OnConfigsExecuted() {
+public void OnConfigsExecuted() {	
+	g_iPlayTimeNeededForPolice = GetConVarInt(g_hPlayTimeNeededForPolice);
+	
 	g_iHandCuffsPrice = GetConVarInt(g_hHandCuffsPrice);
 	g_iKevlarPrice = GetConVarInt(g_hKevlarPrice);
 	g_iHelmetKevlarPrice = GetConVarInt(g_hHelmetKevlarPrice);
@@ -290,20 +296,19 @@ public void OnConfigsExecuted() {
 	g_iM4A1SValue = GetConVarInt(g_hM4A1SValue);
 	g_iAk47Value = GetConVarInt(g_hAk47Value);
 	
-	g_iMaxHp = GetConVarInt(g_hMaxHp);
-	g_iMaxArmor = GetConVarInt(g_hMaxArmor);
-	
-	g_i50HpCost = GetConVarInt(g_h50HpCost);
-	g_i100HpCost = GetConVarInt(g_h100HpCost);
-	g_i50ArmorCost = GetConVarInt(g_h50ArmorCost);
-	g_i100ArmorCost = GetConVarInt(g_h100ArmorCost);
-	
 	g_iAwpValue = GetConVarInt(g_hAwpValue);
 	g_iScoutValue = GetConVarInt(g_hScoutValue);
 	g_iG3SG1Value = GetConVarInt(g_hG3SG1Value);
 	g_iScar20Value = GetConVarInt(g_hScar20Value);
 	g_iM249Value = GetConVarInt(g_hM249Value);
 	g_iNegevValue = GetConVarInt(g_hNegevValue);
+	
+	GetConVarString(gc_sOverlayCuffsPath, g_sSoundCuffsPath, sizeof(g_sSoundCuffsPath));
+	GetConVarString(gc_sSoundCuffsPath, g_sSoundCuffsPath, sizeof(g_sSoundCuffsPath));
+	GetConVarString(gc_sSoundBreakCuffsPath, g_sSoundBreakCuffsPath, sizeof(g_sSoundBreakCuffsPath));
+	GetConVarString(gc_sSoundUnLockCuffsPath, g_sSoundUnLockCuffsPath, sizeof(g_sSoundUnLockCuffsPath));
+	
+	g_bSounds = GetConVarBool(gc_bSounds);
 }
 
 public void OnNpcInteract(int client, char npcType[64], char uniqueId[128], int entIndex) {
@@ -726,7 +731,7 @@ public void showArmorHpPanelToClient(int client) {
 		AddMenuItem(rpgPanel, "6", smokegrenadeItem);
 	else
 		AddMenuItem(rpgPanel, "6", smokegrenadeItem, ITEMDRAW_DISABLED);
-		
+	
 	DisplayMenu(rpgPanel, client, 60);
 }
 
@@ -801,7 +806,7 @@ public void showSpecialWeaponsPanelToClient(int client) {
 		AddMenuItem(rpgPanel, "6", NegevItem);
 	else
 		AddMenuItem(rpgPanel, "6", NegevItem, ITEMDRAW_DISABLED);
-
+	
 	
 	DisplayMenu(rpgPanel, client, 60);
 }
@@ -835,7 +840,7 @@ public int SpecialWeaponsPanelHandler(Handle menu, MenuAction action, int client
 	}
 }
 
-public void t_GiveClientItem(int client, char[] weaponItem){
+public void t_GiveClientItem(int client, char[] weaponItem) {
 	char item[128];
 	strcopy(item, sizeof(item), weaponItem);
 	inventory_givePlayerItem(client, item, 40, "", "Weapon", "Weapon", 1, "Bough from Police Weapon Vendor");
@@ -852,26 +857,70 @@ public int policeRecruiterHandler(Handle menu, MenuAction action, int client, in
 	}
 }
 
-public Action cmdPurgeCallback(int client, int args){
+public Action cmdPurgeCallback(int client, int args) {
 	/* TODO */
 	return Plugin_Handled;
 }
 
-public Action cmdHelpCallback(int client, int args){
-	/* TODO */
+public Action cmdHelpCallback(int client, int args) {
+	if (!jobs_isActiveJob(client, "Police"))
+		return Plugin_Handled;
+	
+	float origin[3];
+	GetClientAbsOrigin(client, origin);
+	
+	int color[4] =  { 188, 220, 255, 255 };
+	TE_SetupBeamRingPoint(origin, 10.0, 750.0, g_iFire, g_iHaloSprite, 0, 66, 2.0, 64.0, 0.2, color, 25, 0);
+	TE_SendToAll();
+	
+	for (int i = 1; i < MAXPLAYERS; i++) {
+		if (!isValidClient(i))
+			continue;
+		if (!jobs_isActiveJob(client, "Police"))
+			continue;
+		if (i == client)
+			continue;
+		PrintToChat(i, "Officer %N is under attack at %.2f %.2f %.2f !!", client, origin[0], origin[1], origin[2]);
+	}
+	
 	return Plugin_Handled;
 }
 
-public Action cmdCriminalsCallback(int client, int args){
-	/* TODO */
+public Action cmdCriminalsCallback(int client, int args) {
+	Menu criminals = CreateMenu(criminalsHandler);
+	for (int i = 1; i < MAXPLAYERS; i++) {
+		if (!isValidClient(i))
+			continue;
+		if (tCrime_getCrime(i) == 0)
+			continue;
+		
+		char cInfo[8];
+		IntToString(i, cInfo, sizeof(cInfo));
+		char cName[MAX_NAME_LENGTH + 8];
+		GetClientName(i, cName, sizeof(cName));
+		char DisplayString[MAX_NAME_LENGTH + 36];
+		Format(DisplayString, sizeof(DisplayString), "%s (%i)", cName, tCrime_getCrime(i));
+		AddMenuItem(criminals, cInfo, DisplayString, ITEMDRAW_DISABLED);
+	}
+	DisplayMenu(criminals, client, 60);
 	return Plugin_Handled;
+}
+
+public int criminalsHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "...")) {
+			
+		}
+	}
 }
 
 public void OnRoundStart(Event event, const char[] name, bool dontBroadcast) {
 	g_iCuffed = 0;
 	
 	for (int i = 1; i < MAXPLAYERS; i++) {
-		g_iPlayerHandCuffs[i] = gc_iHandCuffsNumber.IntValue;
+		g_iPlayerHandCuffs[i] = 10000;
 		g_bCuffed[i] = false;
 	}
 }
@@ -894,7 +943,7 @@ public void HandCuffs_Event_WeaponFire(Event event, char[] name, bool dontBroadc
 {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	
-	if (jobs_isActiveJob(client, "Police") &&  && ((g_iPlayerHandCuffs[client] != 0) || ((g_iPlayerHandCuffs[client] == 0) && (g_iCuffed > 0))))
+	if (jobs_isActiveJob(client, "Police") && (g_iPlayerHandCuffs[client] != 0 || (g_iPlayerHandCuffs[client] == 0 && g_iCuffed > 0)))
 	{
 		char sWeapon[64];
 		event.GetString("weapon", sWeapon, sizeof(sWeapon));
@@ -923,12 +972,12 @@ public Action HandCuffs_OnPlayerRunCmd(int client, int &buttons, int &impulse, f
 		{
 			int Target = GetClientAimTarget(client, true);
 			
-			if (IsValidClient(Target, true, false) && (g_bCuffed[Target] == true))
+			if (isValidClient(Target) && (g_bCuffed[Target] == true))
 			{
 				float distance = Entity_GetDistance(client, Target);
 				distance = Math_UnitsToMeters(distance);
 				
-				if ((gc_iHandCuffsDistance.IntValue > distance) && !Client_IsLookingAtWall(client, Entity_GetDistance(client, Target) + 40.0))
+				if ((gc_iHandCuffsDistance > distance) && !Client_IsLookingAtWall(client, Entity_GetDistance(client, Target) + 40.0))
 				{
 					float origin[3];
 					GetClientAbsOrigin(client, origin);
@@ -951,7 +1000,7 @@ public Action HandCuffs_OnPlayerRunCmd(int client, int &buttons, int &impulse, f
 
 public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3], int damagecustom)
 {
-	if (!isValidClient(victim) || attacker == victim || !IsValidClient(attacker, true, false))return Plugin_Continue;
+	if (!isValidClient(victim) || attacker == victim || !isValidClient(attacker))return Plugin_Continue;
 	
 	char sWeapon[32];
 	if (IsValidEntity(weapon))GetEntityClassname(weapon, sWeapon, sizeof(sWeapon));
@@ -959,7 +1008,7 @@ public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &dam
 	if (g_bCuffed[attacker])
 		return Plugin_Handled;
 	
-	if (jobs_isActiveJob(client, "Police") && !IsValidEdict(weapon))
+	if (jobs_isActiveJob(attacker, "Police") && !IsValidEdict(weapon))
 		return Plugin_Continue;
 	
 	
@@ -994,6 +1043,8 @@ public void OnMapEnd()
 
 public void OnMapStart()
 {
+	g_iHaloSprite = PrecacheModel("materials/sprites/halo01.vmt");
+	g_iFire = PrecacheModel("materials/sprites/fire2.vmt");
 	PrecacheSoundAnyDownload(g_sSoundCuffsPath);
 	PrecacheSoundAnyDownload(g_sSoundBreakCuffsPath);
 	PrecacheSoundAnyDownload(g_sSoundUnLockCuffsPath);
@@ -1018,14 +1069,14 @@ public Action CuffsEm(int client, int attacker)
 		ShowOverlay(client, g_sOverlayCuffsPath, 0.0);
 		g_iPlayerHandCuffs[attacker]--;
 		g_iCuffed++;
-		if (gc_bSounds)EmitSoundToAllAny(g_sSoundCuffsPath);
+		if (g_bSounds)EmitSoundToAllAny(g_sSoundCuffsPath);
 		
 		CPrintToChatAll("%t %t", "warden_tag", "warden_cuffson", attacker, client);
 		CPrintToChat(attacker, "%t %t", "warden_tag", "warden_cuffsgot", g_iPlayerHandCuffs[attacker]);
-		if (CheckVipFlag(client, g_sAdminFlagCuffs))
+		/*if (CheckVipFlag(client, g_sAdminFlagCuffs))
 		{
 			CreateTimer(2.5, HasPaperClip, client);
-		}
+		}*/
 	}
 }
 
@@ -1038,12 +1089,12 @@ public Action FreeEm(int client, int attacker)
 	g_bCuffed[client] = false;
 	CreateTimer(0.0, DeleteOverlay, client);
 	g_iCuffed--;
-	if (gc_bSounds)StopSoundAny(client, SNDCHAN_AUTO, g_sSoundUnLockCuffsPath);
+	if (g_bSounds)StopSoundAny(client, SNDCHAN_AUTO, g_sSoundUnLockCuffsPath);
 	if ((attacker != 0) && (g_iCuffed == 0) && (g_iPlayerHandCuffs[attacker] < 1))SetPlayerWeaponAmmo(attacker, Client_GetActiveWeapon(attacker), _, 0);
 	if (attacker != 0)CPrintToChatAll("%t %t", "warden_tag", "warden_cuffsoff", attacker, client);
 }
 
-public Action HasPaperClip(Handle timer, int client)
+/*public Action HasPaperClip(Handle timer, int client)
 {
 	if (g_bCuffed[client])
 	{
@@ -1054,21 +1105,21 @@ public Action HasPaperClip(Handle timer, int client)
 			CPrintToChat(client, "%t", "warden_gotpaperclip");
 			PrintCenterText(client, "%t", "warden_gotpaperclip");
 			CreateTimer(unlocktime, BreakTheseCuffs, client);
-			if (gc_bSounds)EmitSoundToClientAny(client, g_sSoundUnLockCuffsPath);
+			if (g_bSounds)EmitSoundToClientAny(client, g_sSoundUnLockCuffsPath);
 		}
 	}
-}
+}*/
 
-public Action BreakTheseCuffs(Handle timer, int client)
+/*public Action BreakTheseCuffs(Handle timer, int client)
 {
-	if (IsValidClient(client, false, false) && g_bCuffed[client])
+	if (isValidClient(client) && g_bCuffed[client])
 	{
 		int unlocked = GetRandomInt(1, gc_iPaperClipUnLockChance.IntValue);
 		if (unlocked == 1)
 		{
 			CPrintToChat(client, "%t", "warden_unlock");
 			PrintCenterText(client, "%t", "warden_unlock");
-			if (gc_bSounds)EmitSoundToAllAny(g_sSoundBreakCuffsPath);
+			if (g_bSounds)EmitSoundToAllAny(g_sSoundBreakCuffsPath);
 			SetEntityMoveType(client, MOVETYPE_WALK);
 			SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 1.0);
 			SetEntityRenderColor(client, 255, 255, 255, 255);
@@ -1082,7 +1133,7 @@ public Action BreakTheseCuffs(Handle timer, int client)
 			PrintCenterText(client, "%t", "warden_brokepaperclip");
 		}
 	}
-}
+}*/
 
 stock void StripZeus()
 {
@@ -1108,4 +1159,105 @@ stock bool isValidClient(int client) {
 		return false;
 	
 	return true;
+}
+
+stock void PrecacheModelAnyDownload(char[] sModel)
+{
+	char sBuffer[256];
+	Format(sBuffer, sizeof(sBuffer), "materials/%s.vmt", sModel);
+	AddFileToDownloadsTable(sBuffer);
+	PrecacheModel(sBuffer, true);
+	Format(sBuffer, sizeof(sBuffer), "materials/%s.vtf", sModel);
+	AddFileToDownloadsTable(sBuffer);
+	PrecacheModel(sBuffer, true);
+}
+
+stock void PrecacheDecalAnyDownload(char[] sDecal)
+{
+	char sBuffer[256];
+	Format(sBuffer, sizeof(sBuffer), "%s.vmt", sDecal);
+	PrecacheDecal(sBuffer, true);
+	Format(sBuffer, sizeof(sBuffer), "materials/%s.vmt", sDecal);
+	AddFileToDownloadsTable(sBuffer);
+	
+	Format(sBuffer, sizeof(sBuffer), "%s.vtf", sDecal);
+	PrecacheDecal(sBuffer, true);
+	Format(sBuffer, sizeof(sBuffer), "materials/%s.vtf", sDecal);
+	AddFileToDownloadsTable(sBuffer);
+}
+
+stock void PrecacheSoundAnyDownload(char[] sSound)
+{
+	char sBuffer[256];
+	PrecacheSoundAny(sSound);
+	Format(sBuffer, sizeof(sBuffer), "sound/%s", sSound);
+	AddFileToDownloadsTable(sBuffer);
+}
+
+public Action DeleteOverlay(Handle timer, any client)
+{
+	if (isValidClient(client))
+	{
+		int iFlag = GetCommandFlags("r_screenoverlay") & (~FCVAR_CHEAT);
+		SetCommandFlags("r_screenoverlay", iFlag);
+		ClientCommand(client, "r_screenoverlay \"\"");
+	}
+}
+
+stock void SetPlayerWeaponAmmo(int client, int weaponEnt, int clip = -1, int ammo = -1)
+{
+	if (weaponEnt == INVALID_ENT_REFERENCE)
+		return;
+	
+	if (clip != -1)
+		SetEntProp(weaponEnt, Prop_Send, "m_iClip1", clip);
+	
+	if (ammo != -1)
+	{
+		int iOffset = FindDataMapInfo(client, "m_iAmmo") + (GetEntProp(weaponEnt, Prop_Data, "m_iPrimaryAmmoType") * 4);
+		SetEntData(client, iOffset, ammo, 4, true);
+		
+		if (GetEngineVersion() == Engine_CSGO)
+		{
+			SetEntProp(weaponEnt, Prop_Send, "m_iPrimaryReserveAmmoCount", ammo);
+		}
+	}
+}
+
+stock void ShowOverlay(int client, char [] path, float lifetime) 
+{
+	if (isValidClient(client))
+	{
+		int iFlag = GetCommandFlags( "r_screenoverlay" ) & ( ~FCVAR_CHEAT ); 
+		SetCommandFlags( "r_screenoverlay", iFlag ); 
+		ClientCommand( client, "r_screenoverlay \"%s.vtf\"", path);
+		if (lifetime != 0.0) CreateTimer(lifetime, DeleteOverlay, client);
+	}
+}
+
+stock void StripAllPlayerWeapons(int client)
+{
+	int weapon;
+	for (int i = 0; i <= 4; i++)
+	{
+		if ((weapon = GetPlayerWeaponSlot(client, i)) != -1)
+		{
+			SDKHooks_DropWeapon(client, weapon, NULL_VECTOR, NULL_VECTOR); 
+			AcceptEntityInput(weapon, "Kill"); 
+		}
+	}
+	if ((weapon = GetPlayerWeaponSlot(client, CS_SLOT_KNIFE)) != -1)   //strip knife slot 2 times for taser
+	{
+		SDKHooks_DropWeapon(client, weapon, NULL_VECTOR, NULL_VECTOR); 
+		AcceptEntityInput(weapon, "Kill"); 
+	}
+}
+
+stock bool CheckVipFlag(int client, const char[] flagsNeed)
+{
+	if ((GetUserFlagBits(client) & ReadFlagString(flagsNeed) == ReadFlagString(flagsNeed)) || (GetUserFlagBits(client) & ADMFLAG_ROOT))
+	{
+		return true;
+	}
+	return false;
 }

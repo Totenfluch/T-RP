@@ -71,7 +71,7 @@ int g_iTecValue;
 
 Handle g_hCzValue;
 int g_iCzValue;
-/*               */
+
 
 /* SMG VALUES */
 Handle g_hMac10Value;
@@ -245,7 +245,7 @@ public void OnPluginStart() {
 	g_hM249Value = AutoExecConfig_CreateConVar("rpg_m249", "200", "Price of the m249 in menu");
 	g_hNegevValue = AutoExecConfig_CreateConVar("rpg_negev", "225", "Price of the negev in menu");
 	
-	gc_sOverlayCuffsPath = AutoExecConfig_CreateConVar("rpg_overlays_cuffs", "overlays/MyJailbreak/cuffs" , "Path to the cuffs Overlay DONT TYPE .vmt or .vft");
+	gc_sOverlayCuffsPath = AutoExecConfig_CreateConVar("rpg_overlays_cuffs", "overlays/MyJailbreak/cuffs", "Path to the cuffs Overlay DONT TYPE .vmt or .vft");
 	gc_sSoundCuffsPath = AutoExecConfig_CreateConVar("rpg_sounds_cuffs", "music/MyJailbreak/cuffs.mp3", "Path to the soundfile which should be played for cuffed player.");
 	gc_sSoundBreakCuffsPath = AutoExecConfig_CreateConVar("rpg_sounds_breakcuffs", "music/MyJailbreak/breakcuffs.mp3", "Path to the soundfile which should be played for break cuffs.");
 	gc_sSoundUnLockCuffsPath = AutoExecConfig_CreateConVar("rpg_sounds_unlock", "music/MyJailbreak/unlock.mp3", "Path to the soundfile which should be played for unlocking cuffs.");
@@ -256,7 +256,7 @@ public void OnPluginStart() {
 	AutoExecConfig_ExecuteFile();
 }
 
-public void OnConfigsExecuted() {	
+public void OnConfigsExecuted() {
 	g_iPlayTimeNeededForPolice = GetConVarInt(g_hPlayTimeNeededForPolice);
 	
 	g_iHandCuffsPrice = GetConVarInt(g_hHandCuffsPrice);
@@ -1027,9 +1027,12 @@ public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &dam
 }
 
 
-public void OnClientDisconnect(int client)
-{
+public void OnClientDisconnect(int client) {
 	if (g_bCuffed[client])g_iCuffed--;
+}
+
+public void OnClientPostAdminCheck(int client) {
+	g_iPlayerHandCuffs[client] = 10000;
 }
 
 public void OnMapEnd()
@@ -1224,14 +1227,14 @@ stock void SetPlayerWeaponAmmo(int client, int weaponEnt, int clip = -1, int amm
 	}
 }
 
-stock void ShowOverlay(int client, char [] path, float lifetime) 
+stock void ShowOverlay(int client, char[] path, float lifetime)
 {
 	if (isValidClient(client))
 	{
-		int iFlag = GetCommandFlags( "r_screenoverlay" ) & ( ~FCVAR_CHEAT ); 
-		SetCommandFlags( "r_screenoverlay", iFlag ); 
-		ClientCommand( client, "r_screenoverlay \"%s.vtf\"", path);
-		if (lifetime != 0.0) CreateTimer(lifetime, DeleteOverlay, client);
+		int iFlag = GetCommandFlags("r_screenoverlay") & (~FCVAR_CHEAT);
+		SetCommandFlags("r_screenoverlay", iFlag);
+		ClientCommand(client, "r_screenoverlay \"%s.vtf\"", path);
+		if (lifetime != 0.0)CreateTimer(lifetime, DeleteOverlay, client);
 	}
 }
 
@@ -1242,14 +1245,14 @@ stock void StripAllPlayerWeapons(int client)
 	{
 		if ((weapon = GetPlayerWeaponSlot(client, i)) != -1)
 		{
-			SDKHooks_DropWeapon(client, weapon, NULL_VECTOR, NULL_VECTOR); 
-			AcceptEntityInput(weapon, "Kill"); 
+			SDKHooks_DropWeapon(client, weapon, NULL_VECTOR, NULL_VECTOR);
+			AcceptEntityInput(weapon, "Kill");
 		}
 	}
-	if ((weapon = GetPlayerWeaponSlot(client, CS_SLOT_KNIFE)) != -1)   //strip knife slot 2 times for taser
+	if ((weapon = GetPlayerWeaponSlot(client, CS_SLOT_KNIFE)) != -1) //strip knife slot 2 times for taser
 	{
-		SDKHooks_DropWeapon(client, weapon, NULL_VECTOR, NULL_VECTOR); 
-		AcceptEntityInput(weapon, "Kill"); 
+		SDKHooks_DropWeapon(client, weapon, NULL_VECTOR, NULL_VECTOR);
+		AcceptEntityInput(weapon, "Kill");
 	}
 }
 
@@ -1260,4 +1263,4 @@ stock bool CheckVipFlag(int client, const char[] flagsNeed)
 		return true;
 	}
 	return false;
-}
+} 

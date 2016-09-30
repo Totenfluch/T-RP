@@ -10,7 +10,7 @@
 
 #pragma newdecls required
 
-#define MAX_ITEMS 512
+#define MAX_ITEMS 756
 
 enum Item {
 	String:iTimestamp[64], 
@@ -118,10 +118,17 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	
 	/*
 		On Item used
+		@Param1 -> int client
+		@Param2 -> char Itemname[128]
+		@Param3 -> int weight
+		@Param4 -> category[64]
+		@Param5 -> category2[64]
+		@Param6 -> int rarity
+		@Param7 -> char timestamp[64]
 	
 	*/
 	
-	g_hOnItemUsed = CreateGlobalForward("inventory_onItemUsed", ET_Ignore, Param_Cell, Param_Cell);
+	g_hOnItemUsed = CreateGlobalForward("inventory_onItemUsed", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_String, Param_String, Param_Cell, Param_String);
 }
 
 public int Native_givePlayerItem(Handle plugin, int numParams) {
@@ -350,7 +357,17 @@ public int inventoryMenuHandler(Handle menu, MenuAction action, int client, int 
 		GetMenuItem(menu, item, info, sizeof(info));
 		int id = StringToInt(info);
 		
-		PrintToChat(client, "Selected: %s | flags: %s", g_ePlayerInventory[client][id][iItemname], g_ePlayerInventory[client][id][iFlags]);
+		//PrintToChat(client, "Selected: %s | flags: %s", g_ePlayerInventory[client][id][iItemname], g_ePlayerInventory[client][id][iFlags]);
+		
+		Call_StartForward(g_hOnItemUsed);
+		Call_PushCell(client);
+		Call_PushString(g_ePlayerInventory[client][id][iItemname]);
+		Call_PushCell(g_ePlayerInventory[client][id][iWeight]);
+		Call_PushString(g_ePlayerInventory[client][id][iCategory]);
+		Call_PushString(g_ePlayerInventory[client][id][iCategory2]);
+		Call_PushCell(g_ePlayerInventory[client][id][iRarity]);
+		Call_PushString(g_ePlayerInventory[client][id][iTimestamp]);
+		Call_Finish();
 	}
 }
 

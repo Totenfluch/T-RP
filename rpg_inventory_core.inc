@@ -49,3 +49,16 @@ native int inventory_getPlayerItemAmount(int client, char itemname[128]);
 		@return true if successfull - false if not (false still removes items!!)
 	*/
 native bool inventory_removePlayerItems(int client, char itemname[128], int amount, char reason[256]);
+
+/*
+		On Item used
+		@Param1 -> int client
+		@Param2 -> char Itemname[128]
+		@Param3 -> int weight
+		@Param4 -> category[64]
+		@Param5 -> category2[64]
+		@Param6 -> int rarity
+		@Param7 -> char timestamp[64]
+	
+	*/
+forward void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]);

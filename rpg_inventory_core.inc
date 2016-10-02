@@ -62,3 +62,14 @@ native bool inventory_removePlayerItems(int client, char itemname[128], int amou
 	
 	*/
 forward void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]);
+
+
+/*
+		Shows the inventory of client1 to client2
+		
+		@Param1 -> int client1
+		@Param2 -> int client2
+		
+		@return -
+	*/
+native void inventory_showInventoryOfClientToOtherClient(int client1, int client2); 

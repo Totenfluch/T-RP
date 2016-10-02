@@ -117,6 +117,16 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("inventory_removePlayerItems", Native_removePlayerItems);
 	
 	/*
+		Shows the inventory of client1 to client2
+		
+		@Param1 -> int client1
+		@Param2 -> int client2
+		
+		@return -
+	*/
+	CreateNative("inventory_showInventoryOfClientToOtherClient", Native_showInventoryOfClientToOtherClient);
+	
+	/*
 		On Item used
 		@Param1 -> int client
 		@Param2 -> char Itemname[128]
@@ -172,6 +182,12 @@ public int Native_removePlayerItems(Handle plugin, int numParams) {
 	char reason[256];
 	GetNativeString(4, reason, sizeof(reason));
 	return takePlayerItem(client, itemname, amount, reason);
+}
+
+public int Native_showInventoryOfClientToOtherClient(Handle plugin, int numParams) {
+	int client1 = GetNativeCell(1);
+	int client2 = GetNativeCell(2);
+	showInventoryOfClientToOtherClient(client1, client2);
 }
 
 public void OnClientAuthorized(int client) {
@@ -349,6 +365,27 @@ public Action cmdOpenInventory(int client, const char[] command, int argc)
 	DisplayMenu(menu, client, 60);
 	
 	return Plugin_Continue;
+}
+
+public void showInventoryOfClientToOtherClient(int client1, int client2) {
+	Handle menu = CreateMenu(showInventoryHandler);
+	char menuTitle[512];
+	Format(menuTitle, sizeof(menuTitle), "%Ns Inventory", client1);
+	SetMenuTitle(menu, menuTitle);
+	for (int i = 0; i < MAX_ITEMS; i++) {
+		if (g_ePlayerInventory[client1][i][iIsActive]) {
+			char id[8];
+			IntToString(i, id, sizeof(id));
+			AddMenuItem(menu, id, g_ePlayerInventory[client1][i][iItemname], ITEMDRAW_DISABLED);
+		}
+	}
+	DisplayMenu(menu, client2, 60);
+}
+
+public int showInventoryHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		
+	}
 }
 
 public int inventoryMenuHandler(Handle menu, MenuAction action, int client, int item) {

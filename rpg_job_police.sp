@@ -159,12 +159,13 @@ char g_sEquipWeapon[MAXPLAYERS + 1][32];
 
 int gc_iHandCuffsDistance = 5;
 
+int g_iOfficerTarget[MAXPLAYERS + 1];
+
 char g_sSoundCuffsPath[256];
 char g_sOverlayCuffsPath[256];
 char g_sSoundBreakCuffsPath[256];
 char g_sSoundUnLockCuffsPath[256];
 bool g_bSounds;
-
 
 ConVar gc_sSoundBreakCuffsPath;
 ConVar gc_sSoundUnLockCuffsPath;
@@ -995,7 +996,41 @@ public Action HandCuffs_OnPlayerRunCmd(int client, int &buttons, int &impulse, f
 				}
 			}
 		}
+	} else if (buttons & IN_USE) {
+		if (StrEqual(g_sEquipWeapon[client], "taser") && jobs_isActiveJob(client, "Police")) {
+			int Target = GetClientAimTarget(client, true);
+			
+			if (isValidClient(Target) && (g_bCuffed[Target] == true)) {
+				float distance = Entity_GetDistance(client, Target);
+				distance = Math_UnitsToMeters(distance);
+				if ((gc_iHandCuffsDistance > distance)) {
+					g_iOfficerTarget[client] = Target;
+					Menu m = CreateMenu(searchMenuHandler);
+					SetMenuTitle(m, "What do you want to do?");
+					AddMenuItem(m, "arrest", "Arrest Player");
+					AddMenuItem(m, "search", "Search Inventory");
+					DisplayMenu(m, client, 60);
+				}
+			}
+		}
 	}
+}
+
+public int searchMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "arrest")) {
+			putInJail(g_iOfficerTarget[client]);
+		} else if (StrEqual(cValue, "search")) {
+			inventory_showInventoryOfClientToOtherClient(g_iOfficerTarget[client], client);
+		}
+		g_iOfficerTarget[client] = -1;
+	}
+}
+
+public void putInJail(int client) {
+	/* TODO */
 }
 
 public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3], int damagecustom)
@@ -1033,6 +1068,7 @@ public void OnClientDisconnect(int client) {
 
 public void OnClientPostAdminCheck(int client) {
 	g_iPlayerHandCuffs[client] = 10000;
+	g_iOfficerTarget[client] = -1;
 }
 
 public void OnMapEnd()

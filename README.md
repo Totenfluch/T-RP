@@ -14,6 +14,8 @@ Usage:
       - sm_plant
   - Job (Gardener)
       - Zone name: garden_*
+  - Job (Garbage Collector)
+      - sm_garbagespawns
   - Job (Police)
       - sm_purge
       - sm_helpme
@@ -21,3 +23,6 @@ Usage:
   - Npc Creation
       - sm_npc -- blank npc
       - sm_editnpc -- Aim at npc to edit
+  - Money
+      - sm_givemoney
+      - sm_givebankedmoney

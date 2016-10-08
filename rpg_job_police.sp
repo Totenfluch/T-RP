@@ -195,6 +195,7 @@ public void OnPluginStart() {
 	HookEvent("round_end", OnRoundEnd);
 	HookEvent("player_death", OnPlayerTeamDeath);
 	HookEvent("player_team", OnPlayerTeamDeath);
+	HookEvent("weapon_fire", Event_WeaponFire);
 	
 	AutoExecConfig_SetFile("rpg_job_police");
 	AutoExecConfig_SetCreateFile(true);
@@ -327,9 +328,9 @@ public void OnNpcInteract(int client, char npcType[64], char uniqueId[128], int 
 }
 
 public void showTopPanelToClient(int client) {
-	if (jobs_getActiveJob(client, "Police")) {
+	if (jobs_isActiveJob(client, "Police")) {
 		Panel wPanel = CreatePanel();
-		SetMenuTitle(wPanel, "Police Weapon Vendor");
+		SetPanelTitle(wPanel, "Police Weapon Vendor");
 		DrawPanelText(wPanel, "^-.-^-.-^-.-^-.-^");
 		DrawPanelItem(wPanel, "Pistols");
 		if (jobs_getLevel(client) >= 2) {
@@ -940,7 +941,7 @@ public void OnPlayerTeamDeath(Event event, const char[] name, bool dontBroadcast
 	}
 }
 
-public void HandCuffs_Event_WeaponFire(Event event, char[] name, bool dontBroadcast)
+public void Event_WeaponFire(Event event, char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	
@@ -965,11 +966,13 @@ public void OnRoundEnd(Event event, const char[] name, bool dontBroadcast)
 	}
 }
 
-public Action HandCuffs_OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
+public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
 {
+	char wName[128];
+	GetClientWeapon(client, wName, sizeof(wName));
 	if ((buttons & IN_ATTACK2))
 	{
-		if (StrEqual(g_sEquipWeapon[client], "taser") && jobs_isActiveJob(client, "Police"))
+		if (StrContains(wName, "taser") != -1 && jobs_isActiveJob(client, "Police"))
 		{
 			int Target = GetClientAimTarget(client, true);
 			
@@ -997,7 +1000,7 @@ public Action HandCuffs_OnPlayerRunCmd(int client, int &buttons, int &impulse, f
 			}
 		}
 	} else if (buttons & IN_USE) {
-		if (StrEqual(g_sEquipWeapon[client], "taser") && jobs_isActiveJob(client, "Police")) {
+		if (StrContains(wName, "taser") != -1 && jobs_isActiveJob(client, "Police")) {
 			int Target = GetClientAimTarget(client, true);
 			
 			if (isValidClient(Target) && (g_bCuffed[Target] == true)) {
@@ -1039,25 +1042,25 @@ public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &dam
 	
 	char sWeapon[32];
 	if (IsValidEntity(weapon))GetEntityClassname(weapon, sWeapon, sizeof(sWeapon));
-	
+
 	if (g_bCuffed[attacker])
 		return Plugin_Handled;
 	
-	if (jobs_isActiveJob(attacker, "Police") && !IsValidEdict(weapon))
+	if (!jobs_isActiveJob(attacker, "Police") || !IsValidEdict(weapon))
 		return Plugin_Continue;
-	
+
 	
 	if (!StrEqual(sWeapon, "weapon_taser"))
 		return Plugin_Continue;
-	
+
 	if ((g_iPlayerHandCuffs[attacker] == 0) && (g_iCuffed == 0))
 		return Plugin_Continue;
-	
+
 	if (g_bCuffed[victim])
 		FreeEm(victim, attacker);
 	else
 		CuffsEm(victim, attacker);
-	
+
 	return Plugin_Handled;
 }
 
@@ -1110,8 +1113,8 @@ public Action CuffsEm(int client, int attacker)
 		g_iCuffed++;
 		if (g_bSounds)EmitSoundToAllAny(g_sSoundCuffsPath);
 		
-		CPrintToChatAll("%t %t", "warden_tag", "warden_cuffson", attacker, client);
-		CPrintToChat(attacker, "%t %t", "warden_tag", "warden_cuffsgot", g_iPlayerHandCuffs[attacker]);
+		//CPrintToChatAll("%t %t", "warden_tag", "warden_cuffson", attacker, client);
+		//CPrintToChat(attacker, "%t %t", "warden_tag", "warden_cuffsgot", g_iPlayerHandCuffs[attacker]);
 		/*if (CheckVipFlag(client, g_sAdminFlagCuffs))
 		{
 			CreateTimer(2.5, HasPaperClip, client);
@@ -1130,7 +1133,7 @@ public Action FreeEm(int client, int attacker)
 	g_iCuffed--;
 	if (g_bSounds)StopSoundAny(client, SNDCHAN_AUTO, g_sSoundUnLockCuffsPath);
 	if ((attacker != 0) && (g_iCuffed == 0) && (g_iPlayerHandCuffs[attacker] < 1))SetPlayerWeaponAmmo(attacker, Client_GetActiveWeapon(attacker), _, 0);
-	if (attacker != 0)CPrintToChatAll("%t %t", "warden_tag", "warden_cuffsoff", attacker, client);
+	//if (attacker != 0)CPrintToChatAll("%t %t", "warden_tag", "warden_cuffsoff", attacker, client);
 }
 
 /*public Action HasPaperClip(Handle timer, int client)

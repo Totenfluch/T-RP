@@ -10,24 +10,24 @@
 
 public Plugin myinfo = 
 {
-	name = "Server Control for RP",
-	author = PLUGIN_AUTHOR,
-	description = "Handles Round start/End Maptime",
-	version = PLUGIN_VERSION,
+	name = "Server Control for RP", 
+	author = PLUGIN_AUTHOR, 
+	description = "Handles Round start/End Maptime", 
+	version = PLUGIN_VERSION, 
 	url = "http://ggc-base.de"
 };
 
-public void OnPluginStart(){
+public void OnPluginStart() {
 	SetServerConvars();
 	HookEvent("round_start", onRoundStart);
 }
 
-public void OnMapStart(){
+public void OnMapStart() {
 	ServerCommand("mp_restartgame 1");
 	CreateTimer(10.0, restart);
 }
 
-public Action restart(Handle Timer){
+public Action restart(Handle Timer) {
 	ServerCommand("mp_restartgame 1");
 }
 
@@ -36,7 +36,7 @@ public void onRoundStart(Handle event, const char[] name, bool dontBroadcast)
 	SetServerConvars();
 }
 
-public void SetServerConvars(){
+public void SetServerConvars() {
 	ConVar cvWinConditions = FindConVar("mp_ignore_round_win_conditions");
 	ConVar mp_respawn_on_death_ct = FindConVar("mp_respawn_on_death_ct");
 	ConVar mp_respawn_on_death_t = FindConVar("mp_respawn_on_death_t");
@@ -57,18 +57,18 @@ public void SetServerConvars(){
 	ConVar mp_death_drop_gun = FindConVar("mp_death_drop_gun");
 	ConVar sv_ladder_scale_speed = FindConVar("sv_ladder_scale_speed");
 	ConVar g_hMaxRounds = FindConVar("mp_maxrounds");
-
+	
 	SetConVarBool(cvWinConditions, true);
 	SetConVarInt(g_hMaxRounds, 1);
 	SetConVarFloat(mp_freezetime, 0.0);
-
+	
 	ConVar mp_respawnwavetime_ct = FindConVar("mp_respawnwavetime_ct");
 	ConVar mp_respawnwavetime_t = FindConVar("mp_respawnwavetime_t");
 	SetConVarInt(mp_respawn_on_death_ct, 1);
 	SetConVarInt(mp_respawn_on_death_t, 1);
 	SetConVarFloat(mp_respawnwavetime_ct, 3.0);
 	SetConVarFloat(mp_respawnwavetime_t, 3.0);
-
+	
 	SetConVarInt(sv_max_queries_sec, 6);
 	SetConVarBool(mp_endmatch_votenextmap, false);
 	SetConVarFloat(mp_warmuptime, 1.0);
@@ -77,7 +77,7 @@ public void SetServerConvars(){
 	SetConVarBool(mp_match_end_restart, false);
 	SetConVarInt(mp_match_restart_delay, 1);
 	SetConVarFloat(mp_endmatch_votenextleveltime, 1.0);
-
+	
 	SetConVarBool(mp_halftime, false);
 	SetConVarBool(bot_zombie, true);
 	SetConVarBool(mp_do_warmup_period, false);

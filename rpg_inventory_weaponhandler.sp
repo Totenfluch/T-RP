@@ -30,7 +30,7 @@ public void OnClientAuthorized(int client) {
 }
 
 public Action cmdStashWeapon(int client, int args) {
-	stashWeapon(client);
+	stashWeapon(client, false, "");
 	return Plugin_Handled;
 }
 
@@ -52,7 +52,7 @@ public int weaponMenuHandler(Handle menu, MenuAction action, int client, int ite
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		
 		if (StrEqual(cValue, "EquipAndStash")) {
-			stashWeapon(client);
+			stashWeapon(client, true, g_cLastItemUsed[client]);
 			takeItem(client, g_cLastItemUsed[client]);
 		} else if (StrEqual(cValue, "GiveWeapon")) {
 			takeItem(client, g_cLastItemUsed[client]);
@@ -63,9 +63,11 @@ public int weaponMenuHandler(Handle menu, MenuAction action, int client, int ite
 	}
 }
 
-public void stashWeapon(int client) {
+public void stashWeapon(int client, bool useOverride, char[] weapon) {
 	char item[128];
 	GetClientWeapon(client, item, sizeof(item));
+	if (useOverride)
+		strcopy(item, sizeof(item), weapon);
 	if (StrEqual(item, "") || StrContains(item, "knife") != -1) {
 		PrintToChat(client, "Can't stash this one");
 		return;
@@ -134,4 +136,4 @@ public bool isSniper(char[] weaponName) {
 	} else {
 		return false;
 	}
-}
+} 

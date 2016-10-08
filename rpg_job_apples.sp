@@ -99,7 +99,7 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 	char addCurrencyReason[256];
 	Format(addCurrencyReason, sizeof(addCurrencyReason), "Apple Harvesting (Level %i)", jobs_getLevel(client));
 	inventory_givePlayerItem(client, "Apple", 20, "", "Crafting Materials", "Apple Harvesting", 1, addCurrencyReason);
-	jobs_addExperience(client, 10, "Apple");
+	jobs_addExperience(client, 10, "Apple Harvester");
 }
 
 public void OnClientAuthorized(int client) {

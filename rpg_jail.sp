@@ -1,0 +1,322 @@
+#pragma semicolon 1
+
+#define PLUGIN_AUTHOR "Totenfluch"
+#define PLUGIN_VERSION "1.00"
+
+#include <sourcemod>
+#include <sdktools>
+#include <tCrime>
+#include <smlib>
+#include <map_workshop_functions>
+
+#pragma newdecls required
+
+#define MAX_JAILS 128
+
+char dbconfig[] = "gsxh_multiroot";
+Database g_DB;
+
+enum jailProperties {
+	Float:gXPos, 
+	Float:gYPos, 
+	Float:gZPos, 
+	bool:gIsActive
+}
+
+int g_eJailSpawnPoints[MAX_JAILS][jailProperties];
+int g_iLoadedJail = 0;
+//int g_iActiveJail = 0;
+
+
+enum playerProperties {
+	ppCell_number, 
+	ppTimes_in_jail, 
+	ppTime_spent_in_jail, 
+	String:ppFlags[255]
+}
+int g_ePlayerData[MAXPLAYERS + 1][playerProperties];
+
+bool g_bIsInJail[MAXPLAYERS + 1];
+
+int g_iBlueGlow;
+
+public Plugin myinfo = 
+{
+	name = "RPG Jail", 
+	author = PLUGIN_AUTHOR, 
+	description = "adds Jails to the T-RP", 
+	version = PLUGIN_VERSION, 
+	url = "http://ggc-base.de"
+};
+
+public void OnPluginStart()
+{
+	RegConsoleCmd("sm_jailcells", addJailCells, "Opens the Menu to add Jail Cells");
+	
+	char error[255];
+	g_DB = SQL_Connect(dbconfig, true, error, sizeof(error));
+	SQL_SetCharset(g_DB, "utf8");
+	
+	char createTableQuery[4096];
+	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS CREATE TABLE t_rpg_jail (`Id`BIGINT NULL AUTO_INCREMENT, `playerid`VARCHAR(20)NOT NULL, `playername`VARCHAR(64)CHARACTER SET utf8 COLLATE utf8_bin NOT NULL, `cell_number`INT NOT NULL, `times_in_jail`INT NOT NULL, `time_spent_in_jail`INT NOT NULL, `flags`VARCHAR(255)NOT NULL, PRIMARY KEY(`Id`), UNIQUE KEY `playerid` (`playerid`))ENGINE = InnoDB CHARSET = utf8 COLLATE utf8_bin; ");
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
+}
+
+public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error, any data) {
+	if (!StrEqual(error, ""))
+		LogError(error);
+}
+
+public void OnClientPostAdminCheck(int client) {
+	g_bIsInJail[client] = false;
+	
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	char playername[MAX_NAME_LENGTH + 8];
+	GetClientName(client, playername, sizeof(playername));
+	char clean_playername[MAX_NAME_LENGTH * 2 + 16];
+	SQL_EscapeString(g_DB, playername, clean_playername, sizeof(clean_playername));
+	
+	char addPlayerQuery[2048];
+	Format(addPlayerQuery, sizeof(addPlayerQuery), "INSERT IGNORE INTO `t_rpg_jail` (`Id`, `playerid`, `playername`, `cell_number`, `times_in_jail`, `time_spent_in_jail`, `flags`) VALUES (NULL, '%s', '%s', '-1', '0', '0', '');", playerid, clean_playername);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, addPlayerQuery);
+	fetchClientData(client);
+}
+
+public void OnClientDisconnect(int client) {
+	g_ePlayerData[client][ppCell_number] = -1;
+	g_ePlayerData[client][ppTimes_in_jail] = -1;
+	g_ePlayerData[client][ppTime_spent_in_jail] = -1;
+	strcopy(g_ePlayerData[client][ppFlags], 255, "");
+	g_bIsInJail[client] = false;
+}
+
+public void putInJail(int initiator, int target) {
+	if (!isValidClient(initiator) || !isValidClient(target))
+		return;
+	if (tCrime_getCrime(target) <= 0)
+		return;
+	
+	char playerid[20];
+	GetClientAuthId(target, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	g_bIsInJail[target] = true;
+	int cell = GetRandomInt(0, g_iLoadedJail);
+	
+	char putInJailQuery[512];
+	Format(putInJailQuery, sizeof(putInJailQuery), "UPDATE t_rpg_jail SET cell_number = %i WHERE playerid = %s", cell, playerid);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, putInJailQuery);
+	
+	putInCell(target, cell);
+}
+
+public void putInCell(int client, int cellnumber) {
+	float jailpos[3];
+	jailpos[0] = g_eJailSpawnPoints[cellnumber][gXPos];
+	jailpos[1] = g_eJailSpawnPoints[cellnumber][gYPos];
+	jailpos[2] = g_eJailSpawnPoints[cellnumber][gZPos];
+	TeleportEntity(client, jailpos, NULL_VECTOR, NULL_VECTOR);
+}
+
+public void free(int client) {
+	g_bIsInJail[client] = false;
+	g_ePlayerData[client][ppCell_number] = -1;
+	
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	char freeClientQuery[512];
+	Format(freeClientQuery, sizeof(freeClientQuery), "UPDATE t_rpg_jail SET cell_number = -1 WHERE playerid = %s", playerid);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, freeClientQuery);
+}
+
+public void OnMapStart() {
+	g_iLoadedJail = 0;
+	g_iBlueGlow = PrecacheModel("sprites/blueglow1.vmt");
+	loadJailSpawnPoints();
+	CreateTimer(1.0, refreshTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+}
+
+public Action refreshTimer(Handle Timer) {
+	for (int i = 1; i < MAXPLAYERS; i++) {
+		if (!isValidClient(i))
+			continue;
+		if (g_bIsInJail[i])
+			if (tCrime_getCrime(i) <= 0)
+			free(i);
+		if (getDistanceToJail(i) > 500.0)
+			putInCell(i, g_ePlayerData[i][ppCell_number]);
+	}
+}
+
+public float getDistanceToJail(int client) {
+	float clientPos[3];
+	GetClientAbsOrigin(client, clientPos);
+	
+	float jailpos[3];
+	jailpos[0] = g_eJailSpawnPoints[g_ePlayerData[client][ppCell_number]][gXPos];
+	jailpos[1] = g_eJailSpawnPoints[g_ePlayerData[client][ppCell_number]][gYPos];
+	jailpos[2] = g_eJailSpawnPoints[g_ePlayerData[client][ppCell_number]][gZPos];
+	
+	return GetVectorDistance(clientPos, jailpos);
+}
+
+public void fetchClientData(int client) {
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	char fetchClientDataQuery[1024];
+	Format(fetchClientDataQuery, sizeof(fetchClientDataQuery), "SELECT playerid,playername,cell_number,times_in_jail,time_spent_in_jail,flags FROM t_rpg_jail WHERE playerid = %s", playerid);
+	SQL_TQuery(g_DB, SQLFetchClientDataCallback, fetchClientDataQuery, client);
+}
+
+public void SQLFetchClientDataCallback(Handle owner, Handle hndl, const char[] error, any client) {
+	while (SQL_FetchRow(hndl)) {
+		g_ePlayerData[client][ppCell_number] = SQL_FetchIntByName(hndl, "cell_number");
+		g_ePlayerData[client][ppTimes_in_jail] = SQL_FetchIntByName(hndl, "times_in_jail");
+		g_ePlayerData[client][ppTime_spent_in_jail] = SQL_FetchIntByName(hndl, "time_spent_in_jail");
+		SQL_FetchStringByName(hndl, "flags", g_ePlayerData[client][ppFlags], 255);
+		if (g_ePlayerData[client][ppCell_number] != -1)
+			putInCell(client, g_ePlayerData[client][ppCell_number]);
+	}
+}
+
+public void loadJailSpawnPoints()
+{
+	char sRawMap[PLATFORM_MAX_PATH];
+	char sMap[64];
+	GetCurrentMap(sRawMap, sizeof(sRawMap));
+	RemoveMapPath(sRawMap, sMap, sizeof(sMap));
+	
+	char sPath[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, sPath, sizeof(sPath), "configs/rpg_Jail/%s.txt", sMap);
+	
+	Handle hFile = OpenFile(sPath, "r");
+	
+	char sBuffer[512];
+	char sDatas[3][32];
+	
+	if (hFile != INVALID_HANDLE)
+	{
+		while (ReadFileLine(hFile, sBuffer, sizeof(sBuffer)))
+		{
+			ExplodeString(sBuffer, ";", sDatas, 3, 32);
+			
+			g_eJailSpawnPoints[g_iLoadedJail][gXPos] = StringToFloat(sDatas[0]);
+			g_eJailSpawnPoints[g_iLoadedJail][gYPos] = StringToFloat(sDatas[1]);
+			g_eJailSpawnPoints[g_iLoadedJail][gZPos] = StringToFloat(sDatas[2]);
+			
+			g_iLoadedJail++;
+		}
+		
+		CloseHandle(hFile);
+	}
+	PrintToServer("Loaded %i Jail Spawn Points", g_iLoadedJail);
+}
+
+public void saveJailSpawnPoints()
+{
+	char sRawMap[PLATFORM_MAX_PATH];
+	char sMap[64];
+	GetCurrentMap(sRawMap, sizeof(sRawMap));
+	RemoveMapPath(sRawMap, sMap, sizeof(sMap));
+	
+	CreateDirectory("configs/rpg_Jail", 511);
+	
+	char sPath[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, sPath, sizeof(sPath), "configs/rpg_Jail/%s.txt", sMap);
+	
+	
+	
+	Handle hFile = OpenFile(sPath, "w");
+	
+	if (hFile != INVALID_HANDLE)
+	{
+		for (int i = 0; i < g_iLoadedJail; i++) {
+			WriteFileLine(hFile, "%.2f;%.2f;%.2f;", g_eJailSpawnPoints[i][gXPos], g_eJailSpawnPoints[i][gYPos], g_eJailSpawnPoints[i][gZPos]);
+		}
+		
+		CloseHandle(hFile);
+	}
+	
+	if (!FileExists(sPath))
+		LogError("Couldn't save item spawns to  file: \"%s\".", sPath);
+}
+
+public void AddLootSpawn(int client)
+{
+	float pos[3];
+	GetClientAbsOrigin(client, pos);
+	
+	TE_SetupGlowSprite(pos, g_iBlueGlow, 10.0, 1.0, 235);
+	TE_SendToAll();
+	
+	g_eJailSpawnPoints[g_iLoadedJail][gXPos] = pos[0];
+	g_eJailSpawnPoints[g_iLoadedJail][gYPos] = pos[1];
+	g_eJailSpawnPoints[g_iLoadedJail][gZPos] = pos[2];
+	g_iLoadedJail++;
+	
+	PrintToChat(client, "Added new loot spawn at %.2f:%.2f:%.2f, for type: rpg_Jail", pos[0], pos[1], pos[2]);
+	saveJailSpawnPoints();
+}
+
+
+public Action addJailCells(int client, int args) {
+	addJailCellsMenu(client, args);
+	return Plugin_Handled;
+}
+
+public Action addJailCellsMenu(int client, int args)
+{
+	char JailText[64];
+	
+	Format(JailText, sizeof(JailText), "Spawn: Jail (%i)", g_iLoadedJail);
+	
+	Handle panel = CreatePanel();
+	SetPanelTitle(panel, "Add a Spawnpoint");
+	DrawPanelText(panel, "x-x-x-x-x-x-x-x-x-x");
+	DrawPanelItem(panel, JailText);
+	DrawPanelText(panel, "-------------");
+	DrawPanelItem(panel, "Show Spawns");
+	DrawPanelItem(panel, "Close");
+	DrawPanelText(panel, "x-x-x-x-x-x-x-x-x-x");
+	
+	
+	SendPanelToClient(panel, client, addJailCellsMenuHandler, 30);
+	
+	CloseHandle(panel);
+	return Plugin_Handled;
+}
+
+public int addJailCellsMenuHandler(Handle menu, MenuAction action, int client, int item)
+{
+	if (action == MenuAction_Select)
+	{
+		if (item == 1) {
+			AddLootSpawn(client);
+			addJailCellsMenu(client, 0);
+		} else if (item == 2) {
+			ShowSpawns();
+			addJailCellsMenu(client, 0);
+		}
+	}
+}
+
+public void ShowSpawns() {
+	for (int i = 0; i < g_iLoadedJail; i++) {
+		float pos[3];
+		pos[0] = g_eJailSpawnPoints[i][gXPos];
+		pos[1] = g_eJailSpawnPoints[i][gYPos];
+		pos[2] = g_eJailSpawnPoints[i][gZPos];
+		TE_SetupGlowSprite(pos, g_iBlueGlow, 10.0, 1.0, 235);
+		TE_SendToAll();
+	}
+}
+
+stock bool isValidClient(int client) {
+	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
+		return false;
+	
+	return true;
+} 

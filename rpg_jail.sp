@@ -62,6 +62,52 @@ public void OnPluginStart()
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
 }
 
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
+	/*
+		Puts a client in jail
+		
+		@Param1 -> int initiator
+		@Param2 -> int target <- goes to jail
+		
+		@return none
+	*/
+	CreateNative("jail_putInJail", Native_putInJail);
+	
+	/*
+		frees a client from jail
+		
+		@Param1 -> int client
+		
+		@return none
+	*/
+	CreateNative("jail_freeFromJail", Native_freeFromJail);
+	
+	/*
+		checks if a client is in jail
+		
+		@Param1 -> int client
+		
+		@return true or false
+	*/
+	CreateNative("jail_isInJail", Native_isInJail);
+}
+
+public int Native_putInJail(Handle plugin, int numParams) {
+	int initiator = GetNativeCell(1);
+	int target = GetNativeCell(2);
+	putInJail(initiator, target);
+}
+
+public int Native_freeFromJail(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	free(client);
+}
+
+public int Native_isInJail(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	return g_bIsInJail[client];
+}
+
 public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error, any data) {
 	if (!StrEqual(error, ""))
 		LogError(error);
@@ -104,6 +150,8 @@ public void putInJail(int initiator, int target) {
 	g_bIsInJail[target] = true;
 	int cell = GetRandomInt(0, g_iLoadedJail);
 	
+	increaseTimesInJail(target);
+	
 	char putInJailQuery[512];
 	Format(putInJailQuery, sizeof(putInJailQuery), "UPDATE t_rpg_jail SET cell_number = %i WHERE playerid = %s", cell, playerid);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, putInJailQuery);
@@ -112,6 +160,7 @@ public void putInJail(int initiator, int target) {
 }
 
 public void putInCell(int client, int cellnumber) {
+	g_bIsInJail[client] = true;
 	float jailpos[3];
 	jailpos[0] = g_eJailSpawnPoints[cellnumber][gXPos];
 	jailpos[1] = g_eJailSpawnPoints[cellnumber][gYPos];
@@ -129,6 +178,12 @@ public void free(int client) {
 	char freeClientQuery[512];
 	Format(freeClientQuery, sizeof(freeClientQuery), "UPDATE t_rpg_jail SET cell_number = -1 WHERE playerid = %s", playerid);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, freeClientQuery);
+	
+	float pos[3];
+	pos[0] = 764.02;
+	pos[1] = 4918.61;
+	pos[2] = 2200.09;
+	TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
 }
 
 public void OnMapStart() {
@@ -147,6 +202,7 @@ public Action refreshTimer(Handle Timer) {
 			free(i);
 		if (getDistanceToJail(i) > 500.0)
 			putInCell(i, g_ePlayerData[i][ppCell_number]);
+		increaseJailTime(i);
 	}
 }
 
@@ -160,6 +216,24 @@ public float getDistanceToJail(int client) {
 	jailpos[2] = g_eJailSpawnPoints[g_ePlayerData[client][ppCell_number]][gZPos];
 	
 	return GetVectorDistance(clientPos, jailpos);
+}
+
+public void increaseJailTime(int client) {
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	char updateJailTimeQuery[512];
+	Format(updateJailTimeQuery, sizeof(updateJailTimeQuery), "UPDATE t_rpg_jail SET time_spent_in_jail = time_spent_in_jail + 1 WHERE playerid = '%s'", playerid);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateJailTimeQuery);
+}
+
+public void increaseTimesInJail(int client) {
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	char updateCrimeQuery[512];
+	Format(updateCrimeQuery, sizeof(updateCrimeQuery), "UPDATE t_rpg_jail SET times_in_jail = times_in_jail + 1 WHERE playerid = '%s'", playerid);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateCrimeQuery);
 }
 
 public void fetchClientData(int client) {
@@ -244,7 +318,7 @@ public void saveJailSpawnPoints()
 		LogError("Couldn't save item spawns to  file: \"%s\".", sPath);
 }
 
-public void AddLootSpawn(int client)
+public void AddJailPoints(int client)
 {
 	float pos[3];
 	GetClientAbsOrigin(client, pos);
@@ -294,7 +368,7 @@ public int addJailCellsMenuHandler(Handle menu, MenuAction action, int client, i
 	if (action == MenuAction_Select)
 	{
 		if (item == 1) {
-			AddLootSpawn(client);
+			AddJailPoints(client);
 			addJailCellsMenu(client, 0);
 		} else if (item == 2) {
 			ShowSpawns();

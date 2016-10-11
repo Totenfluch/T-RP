@@ -17,6 +17,7 @@
 #include <emitsoundany-ttt>
 #include <multicolors>
 #include <cstrike>
+#include <rpg_jail>
 
 #pragma newdecls required
 
@@ -1024,7 +1025,7 @@ public int searchMenuHandler(Handle menu, MenuAction action, int client, int ite
 		char cValue[32];
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		if (StrEqual(cValue, "arrest")) {
-			putInJail(g_iOfficerTarget[client]);
+			putInJail(client, g_iOfficerTarget[client]);
 		} else if (StrEqual(cValue, "search")) {
 			inventory_showInventoryOfClientToOtherClient(g_iOfficerTarget[client], client);
 		}
@@ -1032,8 +1033,8 @@ public int searchMenuHandler(Handle menu, MenuAction action, int client, int ite
 	}
 }
 
-public void putInJail(int client) {
-	/* TODO */
+public void putInJail(int initiator, int target) {
+	jail_putInJail(initiator, target);
 }
 
 public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3], int damagecustom)
@@ -1042,25 +1043,25 @@ public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &dam
 	
 	char sWeapon[32];
 	if (IsValidEntity(weapon))GetEntityClassname(weapon, sWeapon, sizeof(sWeapon));
-
+	
 	if (g_bCuffed[attacker])
 		return Plugin_Handled;
 	
 	if (!jobs_isActiveJob(attacker, "Police") || !IsValidEdict(weapon))
 		return Plugin_Continue;
-
+	
 	
 	if (!StrEqual(sWeapon, "weapon_taser"))
 		return Plugin_Continue;
-
+	
 	if ((g_iPlayerHandCuffs[attacker] == 0) && (g_iCuffed == 0))
 		return Plugin_Continue;
-
+	
 	if (g_bCuffed[victim])
 		FreeEm(victim, attacker);
 	else
 		CuffsEm(victim, attacker);
-
+	
 	return Plugin_Handled;
 }
 

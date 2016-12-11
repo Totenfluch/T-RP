@@ -52,14 +52,26 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	RegConsoleCmd("sm_jailcells", addJailCells, "Opens the Menu to add Jail Cells");
+	RegConsoleCmd("sm_jstats", getJailStats, "lists stats");
 	
 	char error[255];
 	g_DB = SQL_Connect(dbconfig, true, error, sizeof(error));
 	SQL_SetCharset(g_DB, "utf8");
 	
-	char createTableQuery[4096];
-	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS CREATE TABLE t_rpg_jail (`Id`BIGINT NULL AUTO_INCREMENT, `playerid`VARCHAR(20)NOT NULL, `playername`VARCHAR(64)CHARACTER SET utf8 COLLATE utf8_bin NOT NULL, `cell_number`INT NOT NULL, `times_in_jail`INT NOT NULL, `time_spent_in_jail`INT NOT NULL, `flags`VARCHAR(255)NOT NULL, PRIMARY KEY(`Id`), UNIQUE KEY `playerid` (`playerid`))ENGINE = InnoDB CHARSET = utf8 COLLATE utf8_bin; ");
+	char createTableQuery[8096];
+	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_jail (`Id`BIGINT NULL AUTO_INCREMENT, `playerid`VARCHAR(20)NOT NULL, `playername`VARCHAR(64)CHARACTER SET utf8 COLLATE utf8_bin NOT NULL, `cell_number`INT NOT NULL, `times_in_jail`INT NOT NULL, `time_spent_in_jail`INT NOT NULL, `flags`VARCHAR(255)NOT NULL, PRIMARY KEY(`Id`), UNIQUE KEY `playerid` (`playerid`))ENGINE = InnoDB CHARSET = utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
+}
+
+public Action getJailStats(int client, int args) {
+	char out[512];
+	Format(out, sizeof(out), "JStats: CN: %i | TIM: %i | TSIJ: %i | FL: %s | IS: %d", g_ePlayerData[client][ppCell_number], g_ePlayerData[client][ppTimes_in_jail], g_ePlayerData[client][ppTime_spent_in_jail], g_ePlayerData[client][ppFlags], g_bIsInJail[client]);
+	PrintToConsole(client, out);
+	
+	for (int i = 0; i < g_iLoadedJail; i++)
+		PrintToConsole(client, "P:%i (%.2f | %.2f | %.2f)", i, g_eJailSpawnPoints[i][gXPos], g_eJailSpawnPoints[i][gYPos], g_eJailSpawnPoints[i][gZPos]);
+
+	return Plugin_Handled;
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
@@ -148,12 +160,12 @@ public void putInJail(int initiator, int target) {
 	GetClientAuthId(target, AuthId_Steam2, playerid, sizeof(playerid));
 	
 	g_bIsInJail[target] = true;
-	int cell = GetRandomInt(0, g_iLoadedJail);
+	int cell = GetRandomInt(0, (g_iLoadedJail-1));
 	
 	increaseTimesInJail(target);
 	
 	char putInJailQuery[512];
-	Format(putInJailQuery, sizeof(putInJailQuery), "UPDATE t_rpg_jail SET cell_number = %i WHERE playerid = %s", cell, playerid);
+	Format(putInJailQuery, sizeof(putInJailQuery), "UPDATE t_rpg_jail SET cell_number = %i WHERE playerid = '%s';", cell, playerid);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, putInJailQuery);
 	
 	putInCell(target, cell);
@@ -176,13 +188,13 @@ public void free(int client) {
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
 	char freeClientQuery[512];
-	Format(freeClientQuery, sizeof(freeClientQuery), "UPDATE t_rpg_jail SET cell_number = -1 WHERE playerid = %s", playerid);
+	Format(freeClientQuery, sizeof(freeClientQuery), "UPDATE t_rpg_jail SET cell_number = -1 WHERE playerid = '%s';", playerid);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, freeClientQuery);
 	
 	float pos[3];
-	pos[0] = 764.02;
-	pos[1] = 4918.61;
-	pos[2] = 2200.09;
+	pos[0] = -2950.29;
+	pos[1] = -276.88;
+	pos[2] = -50.79;
 	TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
 }
 
@@ -197,12 +209,15 @@ public Action refreshTimer(Handle Timer) {
 	for (int i = 1; i < MAXPLAYERS; i++) {
 		if (!isValidClient(i))
 			continue;
-		if (g_bIsInJail[i])
+		if (g_bIsInJail[i] && g_ePlayerData[i][ppCell_number] != -1) {
 			if (tCrime_getCrime(i) <= 0)
+				free(i);
+			if (getDistanceToJail(i) > 300.0)
+				putInCell(i, g_ePlayerData[i][ppCell_number]);
+			increaseJailTime(i);
+		}
+		if(g_bIsInJail[i] && g_ePlayerData[i][ppCell_number] == -1)
 			free(i);
-		if (getDistanceToJail(i) > 500.0)
-			putInCell(i, g_ePlayerData[i][ppCell_number]);
-		increaseJailTime(i);
 	}
 }
 
@@ -241,7 +256,7 @@ public void fetchClientData(int client) {
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
 	char fetchClientDataQuery[1024];
-	Format(fetchClientDataQuery, sizeof(fetchClientDataQuery), "SELECT playerid,playername,cell_number,times_in_jail,time_spent_in_jail,flags FROM t_rpg_jail WHERE playerid = %s", playerid);
+	Format(fetchClientDataQuery, sizeof(fetchClientDataQuery), "SELECT playerid,playername,cell_number,times_in_jail,time_spent_in_jail,flags FROM t_rpg_jail WHERE playerid = '%s'", playerid);
 	SQL_TQuery(g_DB, SQLFetchClientDataCallback, fetchClientDataQuery, client);
 }
 
@@ -331,7 +346,7 @@ public void AddJailPoints(int client)
 	g_eJailSpawnPoints[g_iLoadedJail][gZPos] = pos[2];
 	g_iLoadedJail++;
 	
-	PrintToChat(client, "Added new loot spawn at %.2f:%.2f:%.2f, for type: rpg_Jail", pos[0], pos[1], pos[2]);
+	PrintToChat(client, "Added new jail cell at %.2f:%.2f:%.2f, for type: rpg_Jail", pos[0], pos[1], pos[2]);
 	saveJailSpawnPoints();
 }
 

@@ -43,12 +43,16 @@ public void OnPluginStart()
 {
 	jobs_registerJob("Apple Harvester", "Harvest Apples to earn Money", 10, 50, 2.0);
 	npc_registerNpcType(npctype);
-	RegConsoleCmd("sm_mstats", cmdOnMStats, "shows Apple Harvesting stats");
+	RegConsoleCmd("sm_astats", cmdOnMStats, "shows Apple Harvesting stats");
 }
 
 public Action cmdOnMStats(int client, int args) {
-	PrintToChatAll("InZone: %i Collected{0} %i Collected{1} %i ZoneID: %i Cd[1] %i Cd[1] %i", g_bPlayerInAppleZone[client], g_iCollectedLoot[client][0], g_iCollectedLoot[client][1], g_iPlayerZoneId, g_iAppleZoneCooldown[client][0], g_iAppleZoneCooldown[client][1]);
-	return Plugin_Handled;
+	PrintToChatAll("A:InZone: %i Collected{0} %i Collected{1} %i ZoneID: %i Cd[1] %i Cd[1] %i", g_bPlayerInAppleZone[client], g_iCollectedLoot[client][0], g_iCollectedLoot[client][1], g_iPlayerZoneId, g_iAppleZoneCooldown[client][0], g_iAppleZoneCooldown[client][1]);
+	
+	PrintToConsole(client, "In Zone: |%d| (ID: %i)", g_bPlayerInAppleZone[client], g_iPlayerZoneId[client]);
+	for (int zones = 0; zones < MAX_ZONES; zones++)
+	PrintToConsole(client, "ZoneCheck: %i : CD: %i COLL: %i", zones, g_iAppleZoneCooldown[client][zones], g_iCollectedLoot[client][zones]);
+	
 }
 
 public void OnMapStart() {
@@ -129,6 +133,9 @@ public int Zone_OnClientEntry(int client, char[] zone) {
 		g_bPlayerInAppleZone[client] = false;
 		g_iPlayerZoneId[client] = -1;
 	}
+	char out[512];
+	Format(out, sizeof(out), "Entry: %s", zone);
+	PrintToChat(client, out);
 }
 
 public int Zone_OnClientLeave(int client, char[] zone) {
@@ -136,6 +143,9 @@ public int Zone_OnClientLeave(int client, char[] zone) {
 		g_bPlayerInAppleZone[client] = false;
 		g_iPlayerZoneId[client] = -1;
 	}
+	char out[512];
+	Format(out, sizeof(out), "Exiting: %s", zone);
+	PrintToChat(client, out);
 }
 
 public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex) {
@@ -157,6 +167,13 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		else
 			AddMenuItem(panel, "x", "Sell Apple", ITEMDRAW_DISABLED);
 		
+		if (inventory_hasPlayerItem(client, "Apple")) {
+			char sellAll[256];
+			int itemamount = inventory_getPlayerItemAmount(client, "Apple");
+			Format(sellAll, sizeof(sellAll), "Sell %i Apples", itemamount);
+			AddMenuItem(panel, "sellAllApples", sellAll);
+		}
+		
 	}
 	DisplayMenu(panel, client, 60);
 }
@@ -173,6 +190,10 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 				tConomy_addCurrency(client, 5, "Sold Apple to Vendor");
 				inventory_removePlayerItems(client, "Apple", 1, "Sold to Vendor");
 			}
+		} else if (StrEqual(cValue, "sellAllApples")) {
+			int itemamount = inventory_getPlayerItemAmount(client, "Apple");
+			if (inventory_removePlayerItems(client, "Apple", itemamount, "Sold to Vendor (Mass Sell)"))
+				tConomy_addCurrency(client, 5 * itemamount, "Sold Apple to Vendor");
 		}
 	}
 }

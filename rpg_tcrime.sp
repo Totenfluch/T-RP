@@ -214,7 +214,7 @@ public Action loadCrime(Handle Timer, int client) {
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
 	char LoadCrimeQuery[512];
-	Format(LoadCrimeQuery, sizeof(LoadCrimeQuery), "SELECT crime,flags FROM t_rpg_tcrime WHERE playerid = '%s'", playerid);
+	Format(LoadCrimeQuery, sizeof(LoadCrimeQuery), "SELECT crime,flags FROM t_rpg_tcrime WHERE playerid = '%s';", playerid);
 	SQL_TQuery(g_DB, SQLLoadCrimeCallback, LoadCrimeQuery, client);
 }
 

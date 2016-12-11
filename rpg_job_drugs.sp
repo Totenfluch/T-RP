@@ -18,7 +18,7 @@
 
 #define MAX_PLANTS 1024
 
-char dbconfig[] = "missions";
+char dbconfig[] = "gsxh_multiroot";
 Database g_DB;
 
 int g_iPlayerPrevButtons[MAXPLAYERS + 1];
@@ -68,7 +68,7 @@ public void OnPluginStart() {
 	SQL_SetCharset(g_DB, "utf8");
 	
 	char CreateTableQuery[4096];
-	Format(CreateTableQuery, sizeof(CreateTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_drugs` ( `playerid` VARCHAR(20) NOT NULL , `state` INT NOT NULL , `time` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , `pos_x` FLOAT NOT NULL , `pos_y` FLOAT NOT NULL , `pos_z` FLOAT NOT NULL ) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
+	Format(CreateTableQuery, sizeof(CreateTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_drugs ( `playerid` VARCHAR(20) NOT NULL , `state` INT NOT NULL , `time` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , `pos_x` FLOAT NOT NULL , `pos_y` FLOAT NOT NULL , `pos_z` FLOAT NOT NULL ) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, CreateTableQuery);
 }
 
@@ -93,6 +93,13 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		AddMenuItem(menu, "sellDrugs", "Sell Fresh Marijuana");
 	else
 		AddMenuItem(menu, "x", "Sell Fresh Marijuana", ITEMDRAW_DISABLED);
+	
+	if (inventory_hasPlayerItem(client, "Fresh Marijuana")) {
+		char sellAll[256];
+		int itemamount = inventory_getPlayerItemAmount(client, "Fresh Marijuana");
+		Format(sellAll, sizeof(sellAll), "Sell %i Fresh Marijuana", itemamount);
+		AddMenuItem(menu, "sellAllMarijuana", sellAll);
+	}
 	
 	DisplayMenu(menu, client, 60);
 }
@@ -120,6 +127,10 @@ public int drugMenuHandler(Handle menu, MenuAction action, int client, int item)
 		} else if (StrEqual(cValue, "sellDrugs") && inventory_hasPlayerItem(client, "Fresh Marijuana")) {
 			tConomy_addCurrency(client, 50, "Sold Fresh Marijuana");
 			inventory_removePlayerItems(client, "Fresh Marijuana", 1, "Sold to Drug Dealer");
+		} else if (StrEqual(cValue, "sellAllMarijuana")) {
+			int itemamount = inventory_getPlayerItemAmount(client, "Fresh Marijuana");
+			if (inventory_removePlayerItems(client, "Fresh Marijuana", itemamount, "Sold to Vendor (Mass Sell)"))
+				tConomy_addCurrency(client, 50 * itemamount, "Sold Fresh Marijuana to Vendor");
 		}
 	}
 }

@@ -35,14 +35,28 @@ public Action cmdStashWeapon(int client, int args) {
 }
 
 public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]) {
-	if (StrContains(itemname, "weapon_") == -1)
-		return;
-	strcopy(g_cLastItemUsed[client], 128, itemname);
 	Menu wMenu = CreateMenu(weaponMenuHandler);
+	strcopy(g_cLastItemUsed[client], 128, itemname);
+	char out[512];
+	Format(out, sizeof(out), "Used: %s (Weight: %i|Category: %s|Category2: %s|rarity: %i)", itemname, weight, category, category2, rarity);
+	PrintToConsole(client, out);
 	SetMenuTitle(wMenu, "What do you want to do?");
-	AddMenuItem(wMenu, "EquipAndStash", "Stash Weapon and equip new one");
-	AddMenuItem(wMenu, "GiveWeapon", "Give me the Weapon");
-	AddMenuItem(wMenu, "Delete", "Delete Weapon");
+	if (StrContains(itemname, "weapon_") != -1) {
+		AddMenuItem(wMenu, "EquipAndStash", "Stash Weapon and equip new one");
+		AddMenuItem(wMenu, "GiveWeapon", "Give me the Weapon");
+		AddMenuItem(wMenu, "Delete", "Delete Weapon");
+	} else if (StrContains(itemname, "assaultsuit") != -1) {
+		SetMenuTitle(wMenu, "What do you want to do?");
+		AddMenuItem(wMenu, "eqSuit", "Equip Assaultsuit");
+		AddMenuItem(wMenu, "Delete", "Delete Assaultsuit");
+	} else if (StrEqual(itemname, "item_kevlar")) {
+		SetMenuTitle(wMenu, "What do you want to do?");
+		AddMenuItem(wMenu, "eqKevlar", "Equip Kevlar");
+		AddMenuItem(wMenu, "Delete", "Delete Kevlar");
+	} else {
+		delete wMenu;
+		return;
+	}
 	DisplayMenu(wMenu, client, 30);
 }
 
@@ -58,6 +72,10 @@ public int weaponMenuHandler(Handle menu, MenuAction action, int client, int ite
 			takeItem(client, g_cLastItemUsed[client]);
 		} else if (StrEqual(cValue, "Delete")) {
 			inventory_removePlayerItems(client, g_cLastItemUsed[client], 1, "Deleted from Inventory");
+		} else if (StrEqual(cValue, "eqSuit")) {
+			takeItem(client, g_cLastItemUsed[client]);
+		} else if (StrEqual(cValue, "eqKevlar")) {
+			takeItem(client, g_cLastItemUsed[client]);
 		}
 		strcopy(g_cLastItemUsed[client], 128, "");
 	}

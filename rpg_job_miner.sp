@@ -162,6 +162,12 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		else
 			AddMenuItem(panel, "x", "Sell Iron Bar", ITEMDRAW_DISABLED);
 		
+		if (inventory_hasPlayerItem(client, "Iron Bar")) {
+			char sellAll[256];
+			int itemamount = inventory_getPlayerItemAmount(client, "Iron Bar");
+			Format(sellAll, sizeof(sellAll), "Sell %i Iron Bar%s", itemamount, itemamount > 2 ? "s":"");
+			AddMenuItem(panel, "SellBars", sellAll);
+		}
 	}
 	DisplayMenu(panel, client, 60);
 }
@@ -184,6 +190,10 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 				tConomy_addCurrency(client, 50, "Sold Iron Bar to Vendor");
 				inventory_removePlayerItems(client, "Iron Bar", 1, "Sold to Vendor");
 			}
+		} else if (StrEqual(cValue, "SellBars")) {
+			int itemamount = inventory_getPlayerItemAmount(client, "Iron Bar");
+			if (inventory_removePlayerItems(client, "Iron Bar", itemamount, "Sold to Vendor (Mass Sell)"))
+				tConomy_addCurrency(client, 50 * itemamount, "Sold Iron Bar to Vendor");
 		}
 	}
 }

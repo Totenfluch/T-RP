@@ -393,7 +393,7 @@ public Action cmdSpawnNpc(int client, int args) {
 	GetClientAbsOrigin(client, pos);
 	float angles[3];
 	GetClientAbsAngles(client, angles);
-	PrecacheModel("models/characters/hostage_01.mdl", true);
+	/*PrecacheModel("models/characters/hostage_01.mdl", true);
 	SetEntityModel(npc, "models/characters/hostage_01.mdl");
 	DispatchKeyValue(npc, "Solid", "6");
 	SetEntProp(npc, Prop_Send, "m_nSolidType", 6);
@@ -402,9 +402,9 @@ public Action cmdSpawnNpc(int client, int args) {
 	Entity_SetGlobalName(npc, "npc_%i", g_iNpcId++);
 	
 	SetVariantString("idle_subtle");
-	AcceptEntityInput(npc, "SetAnimation");
+	AcceptEntityInput(npc, "SetAnimation");*/
 	
-	char uniqueId[64];
+	char uniqueId[128];
 	int uniqueIdTime = GetTime();
 	IntToString(uniqueIdTime, uniqueId, sizeof(uniqueId));
 	strcopy(g_iNpcList[g_iNpcId][gUniqueId], 128, uniqueId);
@@ -422,7 +422,10 @@ public Action cmdSpawnNpc(int client, int args) {
 	Format(insertNpcQuery, sizeof(insertNpcQuery), "INSERT INTO `t_rpg_npcs` (`id`, `uniqueId`, `name`, `map`, `model`, `idle_animation`, `second_animation`, `third_animation`, `pos_x`, `pos_y`, `pos_z`, `angle_x`, `angle_y`, `angle_z`, `type`, `flags`, `special_flags`, `enabled`, `created_by`, `timestamp`) VALUES (NULL, '%s', '', '%s', 'models/characters/hostage_01.mdl', 'idle_subtle', '', '', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', 'normal', '', '', '1', '%s', CURRENT_TIMESTAMP);", uniqueId, mapName, pos[0], pos[1], pos[2], angles[0], angles[1], angles[2], createdBy);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, insertNpcQuery);
 	
-	g_iNpcId++;
+	
+	CreateNpc(uniqueId, "", "models/characters/hostage_01.mdl", "idle_subtle", "", "", pos, angles, "normal", "", "", true);
+	
+	//g_iNpcId++;
 	return Plugin_Handled;
 }
 

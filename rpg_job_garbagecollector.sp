@@ -11,6 +11,7 @@
 #include <rpg_npc_core>
 #include <rpg_inventory_core>
 #include <smlib>
+#include <tConomy>
 
 #pragma newdecls required
 
@@ -130,33 +131,47 @@ public Action refreshTimer(Handle Timer) {
 	if (active >= g_iMaxGarbageSpawns)
 		return;
 	if (active < g_iBaseGarbageSpawns) {
-		int spawnId = GetArrayCell(randomNumbers, 0);
-		RemoveFromArray(randomNumbers, 0);
-		spawnGarbage(spawnId);
-		return;
-	}
-	if (active >= g_iBaseGarbageSpawns && active < g_iMaxGarbageSpawns) {
-		if (GetRandomInt(0, 10) == 7) {
+		if (GetArraySize(randomNumbers) > 0) {
 			int spawnId = GetArrayCell(randomNumbers, 0);
 			RemoveFromArray(randomNumbers, 0);
 			spawnGarbage(spawnId);
+			return;
+		}
+	}
+	if (active >= g_iBaseGarbageSpawns && active < g_iMaxGarbageSpawns) {
+		if (GetArraySize(randomNumbers) > 0) {
+			if (GetRandomInt(0, 10) == 7) {
+				int spawnId = GetArrayCell(randomNumbers, 0);
+				RemoveFromArray(randomNumbers, 0);
+				spawnGarbage(spawnId);
+			}
 		}
 	}
 }
 
 public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
 	if (IsClientInGame(client) && IsPlayerAlive(client)) {
-		if (jobs_isActiveJob(client, "Garbage Collector")) {
-			int ent = GetClientAimTarget(client, false);
-			if (IsValidEntity(ent)) {
-				if (HasEntProp(ent, Prop_Data, "m_iName") && HasEntProp(ent, Prop_Data, "m_iGlobalname")) {
-					char entName[256];
-					Entity_GetGlobalName(ent, entName, sizeof(entName));
-					if (StrEqual(entName, "Garbage")) {
-						char cGarbageId[128];
-						GetEntPropString(ent, Prop_Data, "m_iName", cGarbageId, sizeof(cGarbageId));
-						int garbageId = StringToInt(cGarbageId);
-						pickupGarbage(client, ent, garbageId);
+		if (!(g_iPlayerPrevButtons[client] & IN_USE) && iButtons & IN_USE) {
+			if (jobs_isActiveJob(client, "Garbage Collector")) {
+				int ent = GetClientAimTarget(client, false);
+				if (IsValidEntity(ent)) {
+					if (HasEntProp(ent, Prop_Data, "m_iName") && HasEntProp(ent, Prop_Data, "m_iGlobalname")) {
+						char entName[256];
+						Entity_GetGlobalName(ent, entName, sizeof(entName));
+						if (StrEqual(entName, "Garbage")) {
+							float garbagePos[3];
+							float clientPos[3];
+							GetClientAbsOrigin(client, clientPos);
+							GetEntPropVector(ent, Prop_Data, "m_vecOrigin", garbagePos);
+							if (GetVectorDistance(clientPos, garbagePos) > 45.0) {
+								g_iPlayerPrevButtons[client] = iButtons;
+								return;
+							}
+							char cGarbageId[128];
+							GetEntPropString(ent, Prop_Data, "m_iName", cGarbageId, sizeof(cGarbageId));
+							int garbageId = StringToInt(cGarbageId);
+							pickupGarbage(client, ent, garbageId);
+						}
 					}
 				}
 			}
@@ -315,4 +330,57 @@ public int getActiveGarbage() {
 	}
 	return count;
 }
+
+public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex) {
+	if (!StrEqual(npcType, "Garbagerman Recruiter"))
+		return;
+	char activeJob[128];
+	jobs_getActiveJob(client, activeJob);
+	Menu panel = CreateMenu(JobPanelHandler);
+	if (StrEqual(activeJob, "") || !jobs_isActiveJob(client, "Garbage Collector")) {
+		SetMenuTitle(panel, "You already have a job! Want to quit it and becoma a Garbage Collector?");
+		AddMenuItem(panel, "x", "No");
+		AddMenuItem(panel, "x", "Not now.");
+		AddMenuItem(panel, "givejob", "Yes");
+	} else if (jobs_isActiveJob(client, "Garbage Collector")) {
+		SetMenuTitle(panel, "Welcome Garbageman!");
+		if (inventory_hasPlayerItem(client, "Garbage"))
+			AddMenuItem(panel, "recycle", "Hand in Garbage");
+		else
+			AddMenuItem(panel, "x", "Hand in Garbage", ITEMDRAW_DISABLED);
+		
+		if (inventory_hasPlayerItem(client, "Garbage")) {
+			char sellAll[256];
+			int itemamount = inventory_getPlayerItemAmount(client, "Garbage");
+			Format(sellAll, sizeof(sellAll), "Recycle %i Garbage", itemamount);
+			AddMenuItem(panel, "recycleAll", sellAll);
+		}
+	}
+	DisplayMenu(panel, client, 60);
+}
+
+public int JobPanelHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "givejob")) {
+			jobs_quitJob(client);
+			jobs_giveJob(client, "Garbage Collector");
+		} else if (StrEqual(cValue, "recycle")) {
+			if (inventory_hasPlayerItem(client, "Garbage")) {
+				tConomy_addCurrency(client, 25, "Recycled Garbage");
+				inventory_removePlayerItems(client, "Garbage", 1, "Recycled");
+				jobs_addExperience(client, 10, "Garbage Collector");
+			}
+		} else if (StrEqual(cValue, "recycleAll")) {
+			int itemamount = inventory_getPlayerItemAmount(client, "Garbage");
+			if (inventory_removePlayerItems(client, "Garbage", itemamount, "Recycled Garbage (Mass)")) {
+				tConomy_addCurrency(client, 25 * itemamount, "Recycled Garbage");
+				jobs_addExperience(client, 10 * itemamount, "Garbage Collector");
+			}
+		}
+	}
+}
+
+// Garbage Collector
 

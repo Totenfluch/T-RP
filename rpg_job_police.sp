@@ -14,7 +14,7 @@
 #include <autoexecconfig>
 #include <smlib>
 #include <sdkhooks>
-#include <emitsoundany-ttt>
+#include <emitsoundany>
 #include <multicolors>
 #include <cstrike>
 #include <rpg_jail>
@@ -318,7 +318,7 @@ public void OnNpcInteract(int client, char npcType[64], char uniqueId[128], int 
 	if (StrEqual(npcType, "Police Recruiter")) {
 		Menu m = CreateMenu(policeRecruiterHandler);
 		SetMenuTitle(m, "Become a Police Officer TODAY!");
-		if (PT_GetPlayTime(client) > g_iPlayTimeNeededForPolice)
+		if (PT_GetPlayTime(client) > g_iPlayTimeNeededForPolice || CheckCommandAccess(client, "sm_pedo", ADMFLAG_CUSTOM6, true))
 			AddMenuItem(m, "join", "Join the Police (Leaves old job)");
 		else
 			AddMenuItem(m, "x", "You need more Playtime to join", ITEMDRAW_DISABLED);
@@ -1034,6 +1034,7 @@ public int searchMenuHandler(Handle menu, MenuAction action, int client, int ite
 }
 
 public void putInJail(int initiator, int target) {
+	FreeEm(target, initiator);
 	jail_putInJail(initiator, target);
 }
 

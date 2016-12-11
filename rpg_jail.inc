@@ -3,7 +3,7 @@
 #endif
 #define _rpg_jail_included_
 
-	/*
+/*
 		Puts a client in jail
 		
 		@Param1 -> int initiator
@@ -12,8 +12,8 @@
 		@return none
 	*/
 native void jail_putInJail(int initiator, int target);
-	
-	/*
+
+/*
 		frees a client from jail
 		
 		@Param1 -> int client
@@ -21,12 +21,12 @@ native void jail_putInJail(int initiator, int target);
 		@return none
 	*/
 native int jail_freeFromJail(int client);
-	
-	/*
+
+/*
 		checks if a client is in jail
 		
 		@Param1 -> int client
 		
 		@return true or false
 	*/
-native bool jail_isInJail(int client);
+native bool jail_isInJail(int client); 

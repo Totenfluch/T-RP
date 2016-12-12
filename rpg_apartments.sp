@@ -91,7 +91,7 @@ public void OnPluginStart()
 	Format(createBoughtApartmentsTable, sizeof(createBoughtApartmentsTable), "CREATE TABLE IF NOT EXISTS `t_rpg_boughtApartments` ( `Id` BIGINT NULL DEFAULT NULL AUTO_INCREMENT , `time_of_purchase` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `price_of_purchase` INT NOT NULL , `apartment_id` VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `playerid` VARCHAR(20) NOT NULL , `playername` VARCHAR(48) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `apartment_name` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `allowed_players` VARCHAR(550) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `door_locked` BOOLEAN NOT NULL , `map` varchar(128) COLLATE utf8_bin NOT NULL , UNIQUE KEY `apartment_id` (`apartment_id`), PRIMARY KEY (`Id`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createBoughtApartmentsTable);
 	
-	RegAdminCmd("sm_createApartment", createApartmentCallback, ADMFLAG_ROOT);
+	RegAdminCmd("sm_apartmentadmin", createApartmentCallback, ADMFLAG_ROOT, "Opens the Apartment Admin Menu");
 	RegConsoleCmd("say", chatHook);
 	
 	loadApartments();
@@ -147,6 +147,7 @@ public void apartmentAction(int client) {
 	if ((apartmentId = getLoadedIdFromApartmentId(activeZone[client])) != -1) {
 		if (existingApartments[apartmentId][eaBuyable] && !existingApartments[apartmentId][eaBought]) {
 			Menu buyApartmentMenu = CreateMenu(buyApartmentHandler);
+			SetMenuTitle(buyApartmentMenu, "Apartment Menu");
 			char buyApartmentText[512];
 			Format(buyApartmentText, sizeof(buyApartmentText), "Buy Apartment for %i", existingApartments[apartmentId][eaApartment_Price]);
 			char val[8];
@@ -158,9 +159,10 @@ public void apartmentAction(int client) {
 		} else if(existingApartments[apartmentId][eaBought]){
 			int owned;
 			if((owned = ApartmentIdToOwnedId(apartmentId)) != -1)
-				PrintToChat(client, "This Apartment '%s' is owned by %s", ownedApartments[owned][oaApartmentName], ownedApartments[owned][oaPlayername]);
+				PrintToChat(client, "This Apartment (%i | %i) '%s' is owned by %s", apartmentId, owned, ownedApartments[owned][oaApartmentName], ownedApartments[owned][oaPlayername]);
 		}
 	}
+	PrintToChat(client, "Selected: %i", apartmentId);
 }
 
 public int buyApartmentHandler(Handle menu, MenuAction action, int client, int item) {
@@ -216,6 +218,7 @@ public void buyApartment(int client, int id) {
 public Action createApartmentCallback(int client, int args) {
 	Menu createApartmentMenu = CreateMenu(createApartmentHandler);
 	char addApartment[128];
+	SetMenuTitle(createApartmentMenu, "Apartment Admin");
 	Format(addApartment, sizeof(addApartment), "Create Apartment( %s )", activeZone[client]);
 	AddMenuItem(createApartmentMenu, "addThis", addApartment);
 	char deleteApartmentText[128];
@@ -259,6 +262,7 @@ public Action chatHook(int client, int args) {
 	if (playerProperties[client][ppInEdit] == 1 && StrContains(text, "abort") == -1) {
 		createApartment(playerProperties[client][ppZone], StringToInt(text));
 		PrintToChat(client, "Created: %s - Price: %i", playerProperties[client][ppZone], StringToInt(text));
+		playerProperties[client][ppInEdit] = -1;
 		return Plugin_Handled;
 	}
 	
@@ -272,6 +276,12 @@ public void createApartment(char[] apartmentId, int price) {
 	char createApartmentQuery[4096];
 	Format(createApartmentQuery, sizeof(createApartmentQuery), "INSERT IGNORE INTO `t_rpg_apartments` (`Id`, `apartment_id`, `apartment_price`, `buyable`, `flag`, `bought`, `map`) VALUES (NULL, '%s', '%i', '1', '', '0', '%s');", apartmentId, price, mapName);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createApartmentQuery);
+	
+	strcopy(existingApartments[g_iLoadedApartments][eaApartment_Id], 128, apartmentId);
+	existingApartments[g_iLoadedApartments][eaApartment_Price] = price;
+	existingApartments[g_iLoadedApartments][eaBuyable] = true;
+	strcopy(existingApartments[g_iLoadedApartments][eaFlag], 8, "");
+	existingApartments[g_iLoadedApartments++][eaBought] = false;
 }
 
 public void deleteApartment(char[] apartmentId) {
@@ -288,11 +298,11 @@ public void loadApartments() {
 	GetCurrentMap(mapName, sizeof(mapName));
 	
 	char loadApartmentsQuery[1024];
-	Format(loadApartmentsQuery, sizeof(loadApartmentsQuery), "SELECT apartment_id,apartment_price,buyable,flag,bought FROM t_rpg_apartments WHERE map = '%s';");
+	Format(loadApartmentsQuery, sizeof(loadApartmentsQuery), "SELECT apartment_id,apartment_price,buyable,flag,bought FROM t_rpg_apartments WHERE map = '%s';", mapName);
 	SQL_TQuery(g_DB, SQLLoadApartmentsQueryCallback, loadApartmentsQuery);
 	
 	char loadOwnedApartments[1024];
-	Format(loadOwnedApartments, sizeof(loadOwnedApartments), "SELECT time_of_purchase,price_of_purchase,apartment_id,playerid,playername,apartment_name,allowed_players,door_locked FROM t_rpg_boughtApartments WHERE map = '%s';");
+	Format(loadOwnedApartments, sizeof(loadOwnedApartments), "SELECT time_of_purchase,price_of_purchase,apartment_id,playerid,playername,apartment_name,allowed_players,door_locked FROM t_rpg_boughtApartments WHERE map = '%s';", mapName);
 	SQL_TQuery(g_DB, SQLLoadOwnedApartmentsQueryCallback, loadOwnedApartments);
 }
 
@@ -330,11 +340,9 @@ public int getLoadedIdFromApartmentId(char apartmentId[128]) {
 } 
 
 public int ApartmentIdToOwnedId(int apartmentKey){
-	for (int i = 0; i < g_iLoadedApartments; i++){
-		for (int x = 0; x < g_iOwnedApartmentsCount; x++){
-			if(StrEqual(existingApartments[i][eaApartment_Id], ownedApartments[x][oaApartment_Id]))
-				return x;
-		}
-	} 
+	for (int x = 0; x < g_iOwnedApartmentsCount; x++){
+		if(StrEqual(existingApartments[apartmentKey][eaApartment_Id], ownedApartments[x][oaApartment_Id]))
+			return x;
+	}
 	return -1;
 }

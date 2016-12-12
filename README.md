@@ -30,3 +30,6 @@ Usage:
   - Money
       - sm_givemoney
       - sm_givebankedmoney
+  - Apartments
+      - Zone name: apartment_*_*
+      - sm_apartmentadmin

@@ -33,3 +33,4 @@ Usage:
   - Apartments
       - Zone name: apartment_*_*
       - sm_apartmentadmin
+      - sm_apartment (In Zone & Owned)

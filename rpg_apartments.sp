@@ -150,8 +150,14 @@ public int Zone_OnClientEntry(int client, char[] zone) {
 							Zone_GetZonePosition(zone, false, zone_pos[client]);
 							g_hClientTimers[client] = CreateTimer(0.1, Timer_Repeat, client, TIMER_REPEAT);
 							PrintToChat(client, "You can't enter %s", ownedApartments[ownedId][oaApartmentName]);
+						}else{
+							PrintToConsole(client, "door unlocked");
 						}
+					}else{
+						PrintToConsole(client, "Owner");
 					}
+				}else{
+					PrintToConsole(client, "in allowed");
 				}
 			}
 		}
@@ -181,11 +187,12 @@ public Action apartmentCommand(int client, int args) {
 			if (StrEqual(ownedApartments[ownedId][oaPlayerid], playerid)) {
 				Menu apartmentMenu = CreateMenu(apartmentMenuHandler);
 				char menuTitle[256];
-				Format(menuTitle, sizeof(menuTitle), "%s", ownedApartments[ownedId][oaApartmentName]);
+				Format(menuTitle, sizeof(menuTitle), "Apartment: %s", ownedApartments[ownedId][oaApartmentName]);
+				SetMenuTitle(apartmentMenu, menuTitle);
 				AddMenuItem(apartmentMenu, "rename", "Rename Apartment");
 				AddMenuItem(apartmentMenu, "revoke", "Revoke all Access");
 				AddMenuItem(apartmentMenu, "lock", "Lock Doors");
-				AddMenuItem(apartmentMenu, "unlock", "Lock Doors");
+				AddMenuItem(apartmentMenu, "unlock", "Unlock Doors");
 				char sellPriceDisplay[128];
 				Format(sellPriceDisplay, sizeof(sellPriceDisplay), "Sell Apartment for %.1f", ownedApartments[ownedId][oaPrice_of_purchase] * 0.80);
 				AddMenuItem(apartmentMenu, "sell", sellPriceDisplay);
@@ -212,7 +219,7 @@ public int apartmentMenuHandler(Handle menu, MenuAction action, int client, int 
 			changeDoorLock(client, 1);
 			PrintToChat(client, "Locked Doors");
 		} else if (StrEqual(cValue, "unlock")) {
-			changeDoorLock(client, 1);
+			changeDoorLock(client, 0);
 			PrintToChat(client, "Unlocked Doors");
 		} else if (StrEqual(cValue, "sell")) {
 			sellApartment(client);
@@ -232,7 +239,7 @@ public void apartmentAction(int client) {
 			Menu buyApartmentMenu = CreateMenu(buyApartmentHandler);
 			SetMenuTitle(buyApartmentMenu, "Apartment Menu");
 			char buyApartmentText[512];
-			if (!(tConomy_getCurrency(client) >= existingApartments[apartmentId][eaApartment_Price])) {
+			if (tConomy_getCurrency(client) >= existingApartments[apartmentId][eaApartment_Price]) {
 				Format(buyApartmentText, sizeof(buyApartmentText), "Buy Apartment for %i", existingApartments[apartmentId][eaApartment_Price]);
 				AddMenuItem(buyApartmentMenu, val, buyApartmentText);
 			} else {
@@ -263,7 +270,7 @@ public int buyApartmentHandler(Handle menu, MenuAction action, int client, int i
 
 public void buyApartment(int client, int id) {
 	if (existingApartments[id][eaBuyable] && !existingApartments[id][eaBought]) {
-		if (!(tConomy_getCurrency(client) < existingApartments[id][eaApartment_Price])) {
+		if (tConomy_getCurrency(client) < existingApartments[id][eaApartment_Price]) {
 			PrintToChat(client, "You can not afford this Apartment");
 			return;
 		}
@@ -546,8 +553,10 @@ public void changeDoorLock(int client, int state/* 1 = Locked | 0 = Unlocked */)
 	char updateDoorLockQuery[1024];
 	Format(updateDoorLockQuery, sizeof(updateDoorLockQuery), "UPDATE t_rpg_boughtApartments SET door_locked = %i WHERE apartment_id = '%s' AND map = '%s';", state, playerProperties[client][ppZone], mapName);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateDoorLockQuery);
-	ownedApartments[getOwnedApartmentFromKey(playerProperties[client][ppZone])][oaDoor_locked] = state == 1;
+	int aptId = getOwnedApartmentFromKey(playerProperties[client][ppZone]);
+	ownedApartments[aptId][oaDoor_locked] = state == 1;
 	strcopy(playerProperties[client][ppZone], 128, "");
+	PrintToConsole(client, "%i %s %s %i", state, playerProperties[client][ppZone], mapName, aptId);
 }
 
 public void sellApartment(int client) {
@@ -559,7 +568,7 @@ public void sellApartment(int client) {
 	GetCurrentMap(mapName, sizeof(mapName));
 	
 	char sellApartmentQuery[4096];
-	Format(sellApartmentQuery, sizeof(sellApartmentQuery), "DELETE FROM `t_rpg_boughtApartments` WHERE apartment_id = '%s' AND map = '%s';", ownedApartments[aptId][oaApartment_Id]);
+	Format(sellApartmentQuery, sizeof(sellApartmentQuery), "DELETE FROM `t_rpg_boughtApartments` WHERE apartment_id = '%s' AND map = '%s';", ownedApartments[aptId][oaApartment_Id], mapName);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, sellApartmentQuery);
 	
 	ownedApartments[aptId][oaId] = -1;

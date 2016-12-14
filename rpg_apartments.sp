@@ -150,13 +150,13 @@ public int Zone_OnClientEntry(int client, char[] zone) {
 							Zone_GetZonePosition(zone, false, zone_pos[client]);
 							g_hClientTimers[client] = CreateTimer(0.1, Timer_Repeat, client, TIMER_REPEAT);
 							PrintToChat(client, "You can't enter %s", ownedApartments[ownedId][oaApartmentName]);
-						}else{
+						} else {
 							PrintToConsole(client, "door unlocked");
 						}
-					}else{
+					} else {
 						PrintToConsole(client, "Owner");
 					}
-				}else{
+				} else {
 					PrintToConsole(client, "in allowed");
 				}
 			}
@@ -318,7 +318,7 @@ public Action createApartmentCallback(int client, int args) {
 	char addApartment[128];
 	SetMenuTitle(createApartmentMenu, "Apartment Admin");
 	Format(addApartment, sizeof(addApartment), "Create Apartment( %s )", activeZone[client]);
-	if (apartmentExists(activeZone[client]))
+	if (apartmentExists(activeZone[client]) || StrContains(activeZone[client], "apartment_") == -1)
 		AddMenuItem(createApartmentMenu, "addThis", addApartment, ITEMDRAW_DISABLED);
 	else
 		AddMenuItem(createApartmentMenu, "addThis", addApartment);
@@ -330,14 +330,14 @@ public Action createApartmentCallback(int client, int args) {
 		AddMenuItem(createApartmentMenu, "deleteThis", deleteApartmentText, ITEMDRAW_DISABLED);
 	char editApartment[128];
 	if (apartmentExists(activeZone[client]))
-		Format(editApartment, sizeof(editApartment), "Edit Apartment( %s ) - TODO", activeZone[client]);
+		Format(editApartment, sizeof(editApartment), "Edit Apartment( %s )", activeZone[client]);
 	else
-		Format(editApartment, sizeof(editApartment), "Edit Apartment( %s ) - TODO", activeZone[client], ITEMDRAW_DISABLED);
+		Format(editApartment, sizeof(editApartment), "Edit Apartment( %s )", activeZone[client], ITEMDRAW_DISABLED);
 	AddMenuItem(createApartmentMenu, "editThis", editApartment);
 	AddMenuItem(createApartmentMenu, "delete", "Delete another Apartment");
 	AddMenuItem(createApartmentMenu, "edit", "Edit another Apartment - TODO");
 	DisplayMenu(createApartmentMenu, client, 30);
-	
+	strcopy(playerProperties[client][ppZone], 128, activeZone[client]);
 	return Plugin_Handled;
 }
 
@@ -347,18 +347,60 @@ public int createApartmentHandler(Handle menu, MenuAction action, int client, in
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		if (StrEqual(cValue, "addThis")) {
 			playerProperties[client][ppInEdit] = 1;
-			strcopy(playerProperties[client][ppZone], 128, activeZone[client]);
 			PrintToChat(client, "Enter the Apartment Price OR 'abort' to cancel");
 		} else if (StrEqual(cValue, "deleteThis")) {
 			deleteApartment(playerProperties[client][ppZone]);
+			strcopy(playerProperties[client][ppZone], 128, "");
 		} else if (StrEqual(cValue, "editThis")) {
-			// TODO
+			openEditApartment(client, playerProperties[client][ppZone]);
 		} else if (StrEqual(cValue, "delete")) {
 			loadMenuForDeletion(client);
 		} else if (StrEqual(cValue, "edit")) {
-			
+			// TODO
 		}
 	}
+}
+
+public void openEditApartment(int client, char[] apartmentid) {
+	Menu editApartment = CreateMenu(editApartmentMenuHandler);
+	char editApartmentTitle[128];
+	Format(editApartmentTitle, sizeof(editApartmentTitle), "Edit: %s", apartmentid);
+	SetMenuTitle(editApartment, editApartmentTitle);
+	AddMenuItem(editApartment, "editPrice", "Change Price");
+	AddMenuItem(editApartment, "toggleBuyable", "Toggle Buyable");
+	AddMenuItem(editApartment, "setFlags", "Set Flags");
+	DisplayMenu(editApartment, client, 60);
+}
+
+public int editApartmentMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "editPrice")) {
+			playerProperties[client][ppInEdit] = 3;
+			PrintToChat(client, "Enter the new Apartment Price OR 'abort' to cancel");
+		} else if (StrEqual(cValue, "toggleBuyable")) {
+			toggleBuyable(client, playerProperties[client][ppZone]);
+		} else if (StrEqual(cValue, "setFlags")) {
+			playerProperties[client][ppInEdit] = 4;
+			PrintToChat(client, "Enter the new Apartment Flags OR 'abort' to cancel");
+		}
+	}
+}
+
+public void toggleBuyable(int client, char[] apartmentid) {
+	int apartmentId;
+	if ((apartmentId = getLoadedIdFromApartmentId(apartmentid)) == -1)
+		return;
+	int buyable = !existingApartments[apartmentId][eaBuyable];
+	
+	char mapName[128];
+	GetCurrentMap(mapName, sizeof(mapName));
+	
+	char updateBuyableQuery[1024];
+	Format(updateBuyableQuery, sizeof(updateBuyableQuery), "UPDATE t_rpg_apartments SET buyable = %i WHERE apartment_id = '%s' AND map = '%s';", buyable, apartmentid, mapName);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateBuyableQuery);
+	PrintToChat(client, "Changed buyable of %s to %d", apartmentid, buyable);
 }
 
 public void loadMenuForDeletion(int client) {
@@ -420,10 +462,10 @@ public Action chatHook(int client, int args) {
 		createApartment(playerProperties[client][ppZone], StringToInt(text));
 		PrintToChat(client, "Created: %s - Price: %i", playerProperties[client][ppZone], StringToInt(text));
 		playerProperties[client][ppInEdit] = -1;
+		strcopy(playerProperties[client][ppZone], 128, "");
 		return Plugin_Handled;
 	} else if (playerProperties[client][ppInEdit] == 2 && StrContains(text, "abort") == -1) {
 		PrintToChat(client, "Renamed: %s to: %s", playerProperties[client][ppZone], text);
-		playerProperties[client][ppInEdit] = -1;
 		
 		char clean_apartment_name[128];
 		SQL_EscapeString(g_DB, text, clean_apartment_name, sizeof(clean_apartment_name));
@@ -436,11 +478,55 @@ public Action chatHook(int client, int args) {
 		SQL_TQuery(g_DB, SQLErrorCheckCallback, updateNameQuery);
 		
 		strcopy(ownedApartments[getOwnedApartmentFromKey(playerProperties[client][ppZone])][oaApartmentName], 128, clean_apartment_name);
+		playerProperties[client][ppInEdit] = -1;
+		strcopy(playerProperties[client][ppZone], 128, "");
 		
+		return Plugin_Handled;
+	} else if (playerProperties[client][ppInEdit] == 4 && StrContains(text, "abort") == -1) {
+		changeApartmentPrice(playerProperties[client][ppZone], StringToInt(text));
+		PrintToChat(client, "Changed Price of: %s to %i", playerProperties[client][ppZone], StringToInt(text));
+		playerProperties[client][ppInEdit] = -1;
+		strcopy(playerProperties[client][ppZone], 128, "");
+		return Plugin_Handled;
+	} else if (playerProperties[client][ppInEdit] == 5 && StrContains(text, "abort") == -1) {
+		char rFlags[8];
+		strcopy(rFlags, sizeof(rFlags), text);
+		changeApartmentFlags(playerProperties[client][ppZone], rFlags);
+		PrintToChat(client, "Changed Flags of: %s to %s (max 8 length)", playerProperties[client][ppZone], rFlags);
+		playerProperties[client][ppInEdit] = -1;
+		strcopy(playerProperties[client][ppZone], 128, "");
 		return Plugin_Handled;
 	}
 	
 	return Plugin_Continue;
+}
+
+public void changeApartmentFlags(char[] apartmentid, char flags[8]){
+	char mapName[128];
+	GetCurrentMap(mapName, sizeof(mapName));
+	
+	char createApartmentQuery[4096];
+	Format(createApartmentQuery, sizeof(createApartmentQuery), "UPDATE t_rpg_apartments SET flags = '%s' WHERE apartment_id = '%s' AND map = '%s';", flags, apartmentid, mapName);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, createApartmentQuery);
+	
+	int apartmentId;
+	if ((apartmentId = getLoadedIdFromApartmentId(apartmentid)) == -1)
+		return;
+	strcopy(existingApartments[apartmentId][eaFlag], 8, flags);
+}
+
+public void changeApartmentPrice(char[] apartmentid, int price){
+	char mapName[128];
+	GetCurrentMap(mapName, sizeof(mapName));
+	
+	char createApartmentQuery[4096];
+	Format(createApartmentQuery, sizeof(createApartmentQuery), "UPDATE t_rpg_apartments SET apartment_price = %i WHERE apartment_id = '%s' AND map = '%s';", price, apartmentid, mapName);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, createApartmentQuery);
+	
+	int apartmentId;
+	if ((apartmentId = getLoadedIdFromApartmentId(apartmentid)) == -1)
+		return;
+	existingApartments[apartmentId][eaApartment_Price] = price;
 }
 
 public void createApartment(char[] apartmentId, int price) {

@@ -501,7 +501,7 @@ public Action chatHook(int client, int args) {
 	return Plugin_Continue;
 }
 
-public void changeApartmentFlags(char[] apartmentid, char flags[8]){
+public void changeApartmentFlags(char[] apartmentid, char flags[8]) {
 	char mapName[128];
 	GetCurrentMap(mapName, sizeof(mapName));
 	
@@ -515,7 +515,7 @@ public void changeApartmentFlags(char[] apartmentid, char flags[8]){
 	strcopy(existingApartments[apartmentId][eaFlag], 8, flags);
 }
 
-public void changeApartmentPrice(char[] apartmentid, int price){
+public void changeApartmentPrice(char[] apartmentid, int price) {
 	char mapName[128];
 	GetCurrentMap(mapName, sizeof(mapName));
 	

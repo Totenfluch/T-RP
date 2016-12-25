@@ -20,6 +20,12 @@ enum Item {
 	String:iItemid[64], 
 	iWeight, 
 	String:iFlags[64], 
+	/*
+	* i -> Invisible (doesn't show in inventory)
+	* n -> Doesn't use a Player inventory slot
+	* u -> Unique
+	* l -> locked (can't use)
+	*/
 	bool:iIsActive, 
 	String:iCategory[64], 
 	String:iCategory2[64], 
@@ -336,10 +342,14 @@ public void SQLLoadClientInventoryQuery(Handle owner, Handle hndl, const char[] 
 	}
 }
 
-public void givePlayerItem(int client, char itemname[128], int weight, char flags[64], char category[64], char category2[64], int rarity, char reason[256]) {
-	if (getPlayerItems(client) >= MAX_ITEMS) {
-		CPrintToChat(client, "[-T-]{red} Your Inventory is full. {green}%s {red}has been deleted.", itemname);
-		return;
+public bool givePlayerItem(int client, char itemname[128], int weight, char flags[64], char category[64], char category2[64], int rarity, char reason[256]) {
+	if (getPlayerItems(client) >= maxPlayerItems(client)) {
+		CPrintToChat(client, "[-T-]{red} Your Inventory is full. (%s)", itemname);
+		return false;
+	}
+	if(hasPlayerItem(client, itemname) && StrContains(flags, "u") != -1){
+		CPrintToChat(client, "[-T-]{red} You can not carry more than one unique Item. (%s)", itemname);
+		return false;
 	}
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
@@ -361,8 +371,26 @@ public void givePlayerItem(int client, char itemname[128], int weight, char flag
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, addItemQuery);
 	char strict_playername[64];
 	strcopy(strict_playername, sizeof(strict_playername), playername);
-	addItemToLocalInventory(client, timeKey, playerid, strict_playername, itemname, itemid, weight, flags, category, category2, rarity);
 	CPrintToChat(client, "{lightgreen}You have recieved: {grey2}%s {blue}({grey2}%s{blue})", itemname, reason);
+	return addItemToLocalInventory(client, timeKey, playerid, strict_playername, itemname, itemid, weight, flags, category, category2, rarity);
+}
+
+public int maxPlayerItems(int client){
+	if(hasPlayerItem(client, "Gigantic Backpack"))
+		return 500;
+	else if(hasPlayerItem(client, "Enormous Backpack"))
+		return 375;
+	else if(hasPlayerItem(client, "Big Backpack"))
+		return 250;
+	else if(hasPlayerItem(client, "Large Backpack"))
+		return 150;
+	else if(hasPlayerItem(client, "Medium Backpack"))
+		return 100;
+	else if(hasPlayerItem(client, "Small Backpack"))
+		return 75;
+	else if(hasPlayerItem(client, "Tiny Backpack"))
+		return 50;
+	return 30;
 }
 
 public int getItemOwnedAmount(int client, char[] itemname) {
@@ -414,10 +442,10 @@ public bool takeFromLocalInventory(int client, char itemname[128], int amount) {
 	return false;
 }
 
-public void addItemToLocalInventory(int client, char timestamp[64], char playerid[20], char playername[64], char itemname[128], char itemid[64], int weight, char flags[64], char category[64], char category2[64], int rarity) {
+public bool addItemToLocalInventory(int client, char timestamp[64], char playerid[20], char playername[64], char itemname[128], char itemid[64], int weight, char flags[64], char category[64], char category2[64], int rarity) {
 	int slot;
 	if ((slot = findFirstEmptySlotInInventory(client)) == -1)
-		return;
+		return false;
 	strcopy(g_ePlayerInventory[client][slot][iTimestamp], 64, timestamp);
 	strcopy(g_ePlayerInventory[client][slot][iPlayerid], 20, playerid);
 	strcopy(g_ePlayerInventory[client][slot][iPlayername], 64, playername);
@@ -429,6 +457,7 @@ public void addItemToLocalInventory(int client, char timestamp[64], char playeri
 	g_ePlayerInventory[client][slot][iRarity] = rarity;
 	g_ePlayerInventory[client][slot][iWeight] = weight;
 	g_ePlayerInventory[client][slot][iIsActive] = true;
+	return true;
 }
 
 public int findFirstEmptySlotInInventory(int client) {
@@ -442,7 +471,7 @@ public int findFirstEmptySlotInInventory(int client) {
 public int getPlayerItems(int client) {
 	int items = 0;
 	for (int i = 0; i < MAX_ITEMS; i++) {
-		if (g_ePlayerInventory[client][i][iIsActive])
+		if (g_ePlayerInventory[client][i][iIsActive] && StrContains(g_ePlayerInventory[client][i][iFlags], "n") == -1)
 			items++;
 	}
 	return items;
@@ -489,22 +518,29 @@ public int showInventoryHandler(Handle menu, MenuAction action, int client, int 
 public Action cmdOpenInventory(int client, const char[] command, int argc) {
 	Handle menu = CreateMenu(inventoryMenuHandler);
 	char menuTitle[128];
-	Format(menuTitle, sizeof(menuTitle), "Your Inventory (%i/500)", getPlayerItems(client));
+	Format(menuTitle, sizeof(menuTitle), "Your Inventory (%i/%i)", getPlayerItems(client), maxPlayerItems(client));
 	SetMenuTitle(menu, menuTitle);
 	ArrayList containedItems = CreateArray(800, 800);
 	for (int i = 0; i < MAX_ITEMS; i++) {
 		if (g_ePlayerInventory[client][i][iIsActive]) {
 			if (FindStringInArray(containedItems, g_ePlayerInventory[client][i][iItemname]) == -1) {
+				if(StrContains(g_ePlayerInventory[client][i][iFlags], "i") != -1)
+					continue;
 				PushArrayString(containedItems, g_ePlayerInventory[client][i][iItemname]);
 				char id[8];
 				IntToString(i, id, sizeof(id));
 				char display[512];
 				int amount = getItemOwnedAmount(client, g_ePlayerInventory[client][i][iItemname]);
+					
 				if (amount > 1)
 					Format(display, sizeof(display), "%s (%i)", g_ePlayerInventory[client][i][iItemname], amount);
 				else
 					Format(display, sizeof(display), "%s", g_ePlayerInventory[client][i][iItemname]);
-				AddMenuItem(menu, id, display);
+					
+				if(StrContains(g_ePlayerInventory[client][i][iFlags], "l"))
+					AddMenuItem(menu, id, display, ITEMDRAW_DISABLED);
+				else
+					AddMenuItem(menu, id, display);
 			}
 		}
 	}

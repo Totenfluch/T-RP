@@ -98,7 +98,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		@Param7 -> int rarity
 		@Param8 -> char reason[256]
 		
-		@return none
+		@return success
 	*/
 	CreateNative("inventory_givePlayerItem", Native_givePlayerItem);
 	
@@ -217,7 +217,7 @@ public int Native_givePlayerItem(Handle plugin, int numParams) {
 	char reason[256];
 	GetNativeString(8, reason, sizeof(reason));
 	
-	givePlayerItem(client, itemname, weight, flags, category, category2, rarity, reason);
+	return givePlayerItem(client, itemname, weight, flags, category, category2, rarity, reason);
 }
 
 public int Native_hasPlayerItem(Handle plugin, int numParams) {
@@ -347,7 +347,7 @@ public bool givePlayerItem(int client, char itemname[128], int weight, char flag
 		CPrintToChat(client, "[-T-]{red} Your Inventory is full. (%s)", itemname);
 		return false;
 	}
-	if(hasPlayerItem(client, itemname) && StrContains(flags, "u") != -1){
+	if (hasPlayerItem(client, itemname) && StrContains(flags, "u") != -1) {
 		CPrintToChat(client, "[-T-]{red} You can not carry more than one unique Item. (%s)", itemname);
 		return false;
 	}
@@ -375,20 +375,20 @@ public bool givePlayerItem(int client, char itemname[128], int weight, char flag
 	return addItemToLocalInventory(client, timeKey, playerid, strict_playername, itemname, itemid, weight, flags, category, category2, rarity);
 }
 
-public int maxPlayerItems(int client){
-	if(hasPlayerItem(client, "Gigantic Backpack"))
+public int maxPlayerItems(int client) {
+	if (hasPlayerItem(client, "Gigantic Backpack"))
 		return 500;
-	else if(hasPlayerItem(client, "Enormous Backpack"))
+	else if (hasPlayerItem(client, "Enormous Backpack"))
 		return 375;
-	else if(hasPlayerItem(client, "Big Backpack"))
+	else if (hasPlayerItem(client, "Big Backpack"))
 		return 250;
-	else if(hasPlayerItem(client, "Large Backpack"))
+	else if (hasPlayerItem(client, "Large Backpack"))
 		return 150;
-	else if(hasPlayerItem(client, "Medium Backpack"))
+	else if (hasPlayerItem(client, "Medium Backpack"))
 		return 100;
-	else if(hasPlayerItem(client, "Small Backpack"))
+	else if (hasPlayerItem(client, "Small Backpack"))
 		return 75;
-	else if(hasPlayerItem(client, "Tiny Backpack"))
+	else if (hasPlayerItem(client, "Tiny Backpack"))
 		return 50;
 	return 30;
 }
@@ -524,20 +524,20 @@ public Action cmdOpenInventory(int client, const char[] command, int argc) {
 	for (int i = 0; i < MAX_ITEMS; i++) {
 		if (g_ePlayerInventory[client][i][iIsActive]) {
 			if (FindStringInArray(containedItems, g_ePlayerInventory[client][i][iItemname]) == -1) {
-				if(StrContains(g_ePlayerInventory[client][i][iFlags], "i") != -1)
+				if (StrContains(g_ePlayerInventory[client][i][iFlags], "i") != -1)
 					continue;
 				PushArrayString(containedItems, g_ePlayerInventory[client][i][iItemname]);
 				char id[8];
 				IntToString(i, id, sizeof(id));
 				char display[512];
 				int amount = getItemOwnedAmount(client, g_ePlayerInventory[client][i][iItemname]);
-					
+				
 				if (amount > 1)
 					Format(display, sizeof(display), "%s (%i)", g_ePlayerInventory[client][i][iItemname], amount);
 				else
 					Format(display, sizeof(display), "%s", g_ePlayerInventory[client][i][iItemname]);
-					
-				if(StrContains(g_ePlayerInventory[client][i][iFlags], "l"))
+				
+				if (StrContains(g_ePlayerInventory[client][i][iFlags], "l") != -1)
 					AddMenuItem(menu, id, display, ITEMDRAW_DISABLED);
 				else
 					AddMenuItem(menu, id, display);

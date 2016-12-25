@@ -39,10 +39,10 @@ int g_iGiganticBackpackCost;
 
 public Plugin myinfo = 
 {
-	name = "T-RP Backpack Vendor",
-	author = PLUGIN_AUTHOR,
-	description = "Adds the backpack vendor to T-RP",
-	version = PLUGIN_VERSION,
+	name = "T-RP Backpack Vendor", 
+	author = PLUGIN_AUTHOR, 
+	description = "Adds the backpack vendor to T-RP", 
+	version = PLUGIN_VERSION, 
 	url = "http://ggc-base.de"
 };
 
@@ -53,12 +53,12 @@ public void OnPluginStart() {
 	AutoExecConfig_SetCreateFile(true);
 	
 	g_hTinyBackpackCost = AutoExecConfig_CreateConVar("rpg_tinyBackpack", "15000", "Price of the tiny backpack");
-	g_hSmallBackpackCost = AutoExecConfig_CreateConVar("rpg_tinyBackpack", "20000", "Price of the small backpack");
-	g_hSMediumBackpackCost = AutoExecConfig_CreateConVar("rpg_tinyBackpack", "25000", "Price of the medium backpack");
-	g_hLargeBackpackCost = AutoExecConfig_CreateConVar("rpg_tinyBackpack", "30000", "Price of the large backpack");
-	g_hBigBackpackCost = AutoExecConfig_CreateConVar("rpg_tinyBackpack", "35000", "Price of the big backpack");
-	g_hEnormousBackpackCost = AutoExecConfig_CreateConVar("rpg_tinyBackpack", "40000", "Price of the enormous backpack");
-	g_hGiganticBackpackCost = AutoExecConfig_CreateConVar("rpg_tinyBackpack", "50000", "Price of the gigantic backpack");
+	g_hSmallBackpackCost = AutoExecConfig_CreateConVar("rpg_smallBackpack", "20000", "Price of the small backpack");
+	g_hSMediumBackpackCost = AutoExecConfig_CreateConVar("rpg_mediumBackpack", "25000", "Price of the medium backpack");
+	g_hLargeBackpackCost = AutoExecConfig_CreateConVar("rpg_largeBackpack", "30000", "Price of the large backpack");
+	g_hBigBackpackCost = AutoExecConfig_CreateConVar("rpg_bigBackpack", "35000", "Price of the big backpack");
+	g_hEnormousBackpackCost = AutoExecConfig_CreateConVar("rpg_enormousBackpack", "40000", "Price of the enormous backpack");
+	g_hGiganticBackpackCost = AutoExecConfig_CreateConVar("rpg_giganticBackpack", "50000", "Price of the gigantic backpack");
 	
 	AutoExecConfig_CleanFile();
 	AutoExecConfig_ExecuteFile();
@@ -86,51 +86,51 @@ public void showTopPanelToClient(int client) {
 	SetMenuTitle(BackpackMenu, "Backpack Vendor");
 	char displayText[64];
 	Format(displayText, sizeof(displayText), "Tiny Backpack (%i)", g_iTinyBackpackCost);
-	if (tConomy_getCurrency(client) >= g_iTinyBackpackCost && !inventory_hasPlayerItem(client, "Tiny Backpack")){
+	if (tConomy_getCurrency(client) >= g_iTinyBackpackCost && !inventory_hasPlayerItem(client, "Tiny Backpack")) {
 		AddMenuItem(BackpackMenu, "tiny", displayText);
-	}else{
+	} else {
 		AddMenuItem(BackpackMenu, "x", displayText, ITEMDRAW_DISABLED);
 	}
 	
 	Format(displayText, sizeof(displayText), "Small Backpack (%i)", g_iSmallBackpackCost);
-	if (tConomy_getCurrency(client) >= g_iSmallBackpackCost && !inventory_hasPlayerItem(client, "Small Backpack") && inventory_hasPlayerItem(client, "Tiny Backpack")){
+	if (tConomy_getCurrency(client) >= g_iSmallBackpackCost && !inventory_hasPlayerItem(client, "Small Backpack")) {
 		AddMenuItem(BackpackMenu, "small", displayText);
-	}else{
+	} else {
 		AddMenuItem(BackpackMenu, "x", displayText, ITEMDRAW_DISABLED);
 	}
 	
 	Format(displayText, sizeof(displayText), "Medium Backpack (%i)", g_iMediumBackpackCost);
-	if (tConomy_getCurrency(client) >= g_iMediumBackpackCost && !inventory_hasPlayerItem(client, "Medium Backpack") && inventory_hasPlayerItem(client, "Small Backpack")){
+	if (tConomy_getCurrency(client) >= g_iMediumBackpackCost && !inventory_hasPlayerItem(client, "Medium Backpack") && inventory_hasPlayerItem(client, "Small Backpack")) {
 		AddMenuItem(BackpackMenu, "medium", displayText);
-	}else{
+	} else {
 		AddMenuItem(BackpackMenu, "x", displayText, ITEMDRAW_DISABLED);
 	}
 	
 	Format(displayText, sizeof(displayText), "Large Backpack (%i)", g_iLargeBackpackCost);
-	if (tConomy_getCurrency(client) >= g_iLargeBackpackCost && !inventory_hasPlayerItem(client, "Large Backpack") && inventory_hasPlayerItem(client, "Medium Backpack")){
+	if (tConomy_getCurrency(client) >= g_iLargeBackpackCost && !inventory_hasPlayerItem(client, "Large Backpack") && inventory_hasPlayerItem(client, "Medium Backpack")) {
 		AddMenuItem(BackpackMenu, "large", displayText);
-	}else{
+	} else {
 		AddMenuItem(BackpackMenu, "x", displayText, ITEMDRAW_DISABLED);
 	}
 	
 	Format(displayText, sizeof(displayText), "Big Backpack (%i)", g_iBigBackpackCost);
-	if (tConomy_getCurrency(client) >= g_iBigBackpackCost && !inventory_hasPlayerItem(client, "Big Backpack") && inventory_hasPlayerItem(client, "Large Backpack")){
+	if (tConomy_getCurrency(client) >= g_iBigBackpackCost && !inventory_hasPlayerItem(client, "Big Backpack") && inventory_hasPlayerItem(client, "Large Backpack")) {
 		AddMenuItem(BackpackMenu, "big", displayText);
-	}else{
+	} else {
 		AddMenuItem(BackpackMenu, "x", displayText, ITEMDRAW_DISABLED);
 	}
 	
 	Format(displayText, sizeof(displayText), "Enormous Backpack (%i)", g_iEnormousBackpackCost);
-	if (tConomy_getCurrency(client) >= g_iEnormousBackpackCost && !inventory_hasPlayerItem(client, "Enormous Backpack") && inventory_hasPlayerItem(client, "Big Backpack")){
+	if (tConomy_getCurrency(client) >= g_iEnormousBackpackCost && !inventory_hasPlayerItem(client, "Enormous Backpack") && inventory_hasPlayerItem(client, "Big Backpack")) {
 		AddMenuItem(BackpackMenu, "enormous", displayText);
-	}else{
+	} else {
 		AddMenuItem(BackpackMenu, "x", displayText, ITEMDRAW_DISABLED);
 	}
 	
 	Format(displayText, sizeof(displayText), "Gigantic Backpack (%i)", g_iGiganticBackpackCost);
-	if (tConomy_getCurrency(client) >= g_iGiganticBackpackCost && !inventory_hasPlayerItem(client, "Gigantic Backpack") && inventory_hasPlayerItem(client, "Enormous Backpack")){
+	if (tConomy_getCurrency(client) >= g_iGiganticBackpackCost && !inventory_hasPlayerItem(client, "Gigantic Backpack") && inventory_hasPlayerItem(client, "Enormous Backpack")) {
 		AddMenuItem(BackpackMenu, "gigantic", displayText);
-	}else{
+	} else {
 		AddMenuItem(BackpackMenu, "x", displayText, ITEMDRAW_DISABLED);
 	}
 	
@@ -153,37 +153,37 @@ public int BackpackMenuHandler(Handle menu, MenuAction action, int client, int i
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		if (StrEqual(cValue, "tiny")) {
 			if (tConomy_getCurrency(client) >= g_iTinyBackpackCost) {
-				if(inventory_givePlayerItem(client, "Tiny Backpack", 1, "uin", "Backpack", "Upgrade", 1, "Bought from Backpack Vendor"))
+				if (inventory_givePlayerItem(client, "Tiny Backpack", 1, "uin", "Backpack", "Upgrade", 1, "Bought from Backpack Vendor"))
 					tConomy_removeCurrency(client, g_iTinyBackpackCost, "Bought Tiny Backpack");
 			}
 		} else if (StrEqual(cValue, "small")) {
 			if (tConomy_getCurrency(client) >= g_iSmallBackpackCost) {
-				if(inventory_givePlayerItem(client, "Small Backpack", 1, "uin", "Backpack", "Upgrade", 1, "Bought from Backpack Vendor"))
+				if (inventory_givePlayerItem(client, "Small Backpack", 1, "uin", "Backpack", "Upgrade", 1, "Bought from Backpack Vendor"))
 					tConomy_removeCurrency(client, g_iSmallBackpackCost, "Bought Tiny Backpack");
 			}
 		} else if (StrEqual(cValue, "medium")) {
 			if (tConomy_getCurrency(client) >= g_iMediumBackpackCost) {
-				if(inventory_givePlayerItem(client, "Medium Backpack", 1, "uin", "Backpack", "Upgrade", 1, "Bought from Backpack Vendor"))
+				if (inventory_givePlayerItem(client, "Medium Backpack", 1, "uin", "Backpack", "Upgrade", 1, "Bought from Backpack Vendor"))
 					tConomy_removeCurrency(client, g_iMediumBackpackCost, "Bought Medium Backpack");
 			}
 		} else if (StrEqual(cValue, "large")) {
 			if (tConomy_getCurrency(client) >= g_iLargeBackpackCost) {
-				if(inventory_givePlayerItem(client, "Large Backpack", 1, "uin", "Backpack", "Upgrade", 1, "Bought from Backpack Vendor"))
+				if (inventory_givePlayerItem(client, "Large Backpack", 1, "uin", "Backpack", "Upgrade", 1, "Bought from Backpack Vendor"))
 					tConomy_removeCurrency(client, g_iLargeBackpackCost, "Bought Large Backpack");
 			}
 		} else if (StrEqual(cValue, "big")) {
 			if (tConomy_getCurrency(client) >= g_iBigBackpackCost) {
-				if(inventory_givePlayerItem(client, "Big Backpack", 1, "uin", "Backpack", "Upgrade", 1, "Bought from Backpack Vendor"))
+				if (inventory_givePlayerItem(client, "Big Backpack", 1, "uin", "Backpack", "Upgrade", 1, "Bought from Backpack Vendor"))
 					tConomy_removeCurrency(client, g_iBigBackpackCost, "Bought Big Backpack");
 			}
 		} else if (StrEqual(cValue, "enormous")) {
 			if (tConomy_getCurrency(client) >= g_iEnormousBackpackCost) {
-				if(inventory_givePlayerItem(client, "Enormous Backpack", 1, "uin", "Backpack", "Upgrade", 1, "Bought from Backpack Vendor"))
+				if (inventory_givePlayerItem(client, "Enormous Backpack", 1, "uin", "Backpack", "Upgrade", 1, "Bought from Backpack Vendor"))
 					tConomy_removeCurrency(client, g_iEnormousBackpackCost, "Bought Enormous Backpack");
 			}
 		} else if (StrEqual(cValue, "gigantic")) {
 			if (tConomy_getCurrency(client) >= g_iGiganticBackpackCost) {
-				if(inventory_givePlayerItem(client, "Gigantic Backpack", 1, "uin", "Backpack", "Upgrade", 1, "Bought from Backpack Vendor"))
+				if (inventory_givePlayerItem(client, "Gigantic Backpack", 1, "uin", "Backpack", "Upgrade", 1, "Bought from Backpack Vendor"))
 					tConomy_removeCurrency(client, g_iGiganticBackpackCost, "Bought Gigantic Backpack");
 			}
 		}

@@ -54,8 +54,8 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	RegConsoleCmd("sm_npc", cmdSpawnNpc, "Spawn a NPC");
-	RegConsoleCmd("sm_editnpc", cmdEditNpc, "Edits an NPC");
+	RegAdminCmd("sm_npc", cmdSpawnNpc, ADMFLAG_ROOT, "Spawn a NPC");
+	RegAdminCmd("sm_editnpc", cmdEditNpc, ADMFLAG_ROOT, "Edits an NPC");
 	
 	RegConsoleCmd("say", chatHook);
 	

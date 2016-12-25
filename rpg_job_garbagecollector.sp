@@ -47,7 +47,7 @@ public Plugin myinfo =
 };
 
 public void OnPluginStart() {
-	RegConsoleCmd("sm_garbagespawns", addSpawnPoints, "Opens the Menu to add Garbage spawnpoints");
+	RegAdminCmd("sm_garbagespawns", addSpawnPoints, ADMFLAG_ROOT, "Opens the Menu to add Garbage spawnpoints");
 	HookEvent("round_start", onRoundStart);
 	
 	jobs_registerJob("Garbage Collector", "Collect Garbage and put it in the Trash Cans", 10, 300, 2.0);

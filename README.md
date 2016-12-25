@@ -21,7 +21,7 @@ Usage:
   - Job (Police)
       - sm_purge (depricated)
       - sm_helpme (depricated)
-      - sm_criminals (depricated)
+      - sm_criminals
       - sm_jailcells
       - sm_jstats
   - Npc Creation

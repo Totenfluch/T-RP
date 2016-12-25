@@ -751,7 +751,7 @@ public int ArmorAndHPPanelHandler(Handle menu, MenuAction action, int client, in
 				t_GiveClientItem(client, "item_kevlar");
 		} else if (id == 3) {
 			if (tConomy_removeCurrency(client, g_iHelmetKevlarPrice, "Bought Item from Police Weapon Vendor") >= 0)
-				t_GiveClientItem(client, "item_assaultsuit ");
+				t_GiveClientItem(client, "item_assaultsuit");
 		} else if (id == 4) {
 			if (tConomy_removeCurrency(client, g_iFlashbangPrice, "Bought Item from Police Weapon Vendor") >= 0)
 				t_GiveClientItem(client, "weapon_flashbang");
@@ -1013,6 +1013,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					SetMenuTitle(m, "What do you want to do?");
 					AddMenuItem(m, "arrest", "Arrest Player");
 					AddMenuItem(m, "search", "Search Inventory");
+					AddMenuItem(m, "licenses", "Lookup Licenses");
 					DisplayMenu(m, client, 60);
 				}
 			}
@@ -1028,6 +1029,8 @@ public int searchMenuHandler(Handle menu, MenuAction action, int client, int ite
 			putInJail(client, g_iOfficerTarget[client]);
 		} else if (StrEqual(cValue, "search")) {
 			inventory_showInventoryOfClientToOtherClient(g_iOfficerTarget[client], client);
+		} else if (StrEqual(cValue, "licenses")) {
+			inventory_showInventoryOfClientToOtherClientByCategory(g_iOfficerTarget[client], client, "License");
 		}
 		g_iOfficerTarget[client] = -1;
 	}

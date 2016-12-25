@@ -73,3 +73,23 @@ forward void inventory_onItemUsed(int client, char itemname[128], int weight, ch
 		@return -
 	*/
 native void inventory_showInventoryOfClientToOtherClient(int client1, int client2); 
+
+
+	/*
+		Shows the inventory of client1 to client2
+		
+		@Param1 -> int client1
+		@Param2 -> int client2
+		@Param3 -> char category[64]
+		
+		@return -
+	*/
+native void inventory_showInventoryOfClientToOtherClientByCategory(int client1, int client2, char category[64]); 
+
+
+	/*
+		Blocks the default Item handle
+		@Param1-> char Itemname[128];
+		@Param2-> int type = 1: Single Item, 2: Category, 3: Category2, 4:Category+Category2
+	*/
+native void inventory_addItemHandle(char itemname[128], int type);

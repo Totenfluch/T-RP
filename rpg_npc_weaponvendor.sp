@@ -261,23 +261,23 @@ public void showTopPanelToClient(int client) {
 		DrawPanelItem(wPanel, "SMGs");
 	else
 		DrawPanelItem(wPanel, "SMGs (requires License)", ITEMDRAW_DISABLED);
-		
+	
 	if (inventory_hasPlayerItem(client, "Shotgun License"))
 		DrawPanelItem(wPanel, "Shotguns");
 	else
 		DrawPanelItem(wPanel, "Shotguns (requires License)", ITEMDRAW_DISABLED);
-		
-	if (inventory_hasPlayerItem(client, "Rfile License"))
+	
+	if (inventory_hasPlayerItem(client, "Rifle License"))
 		DrawPanelItem(wPanel, "Rifles");
 	else
 		DrawPanelItem(wPanel, "Rifles (requires License)", ITEMDRAW_DISABLED);
-		
+	
 	if (inventory_hasPlayerItem(client, "Special Weapon License"))
 		DrawPanelItem(wPanel, "Special Weapons");
 	else
 		DrawPanelItem(wPanel, "Special Weapons (requires License)", ITEMDRAW_DISABLED);
-		
-	if (inventory_hasPlayerItem(client, "Bought Nade License"))
+	
+	if (inventory_hasPlayerItem(client, "Nade License"))
 		DrawPanelItem(wPanel, "Nades & Armour");
 	else
 		DrawPanelItem(wPanel, "Nades & Armour (requires License)", ITEMDRAW_DISABLED);
@@ -725,7 +725,7 @@ public int ArmorAndHPPanelHandler(Handle menu, MenuAction action, int client, in
 				t_GiveClientItem(client, "item_kevlar");
 		} else if (id == 3) {
 			if (tConomy_removeCurrency(client, g_iHelmetKevlarPrice, "Bought Item from License Weapon Vendor") >= 0)
-				t_GiveClientItem(client, "item_assaultsuit ");
+				t_GiveClientItem(client, "item_assaultsuit");
 		} else if (id == 4) {
 			if (tConomy_removeCurrency(client, g_iFlashbangPrice, "Bought Item from License Weapon Vendor") >= 0)
 				t_GiveClientItem(client, "weapon_flashbang");

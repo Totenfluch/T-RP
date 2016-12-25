@@ -96,7 +96,10 @@ public void OnPluginStart()
 	RegAdminCmd("sm_apartmentadmin", createApartmentCallback, ADMFLAG_ROOT, "Opens the Apartment Admin Menu");
 	RegConsoleCmd("sm_apartment", apartmentCommand, "Opens the Apartment Menu");
 	RegConsoleCmd("say", chatHook);
-	
+	for (int i = 0; i < MAX_APARTMENTS; i++) {
+		ownedApartments[i][oaId] = -1;
+		existingApartments[i][eaId] = -1;
+	}
 	loadApartments();
 }
 
@@ -203,6 +206,7 @@ public Action apartmentCommand(int client, int args) {
 			}
 		}
 	}
+	return Plugin_Handled;
 }
 
 public int apartmentMenuHandler(Handle menu, MenuAction action, int client, int item) {
@@ -299,17 +303,23 @@ public void buyApartment(int client, int id) {
 		Format(buyApartmentQuery, sizeof(buyApartmentQuery), "INSERT INTO `t_rpg_boughtApartments` (`Id`, `time_of_purchase`, `price_of_purchase`, `apartment_id`, `playerid`, `playername`, `apartment_name`, `allowed_players`, `door_locked`, `map`) VALUES (NULL, CURRENT_TIMESTAMP, '%i', '%s', '%s', '%s', '%s', '', '0', '%s');", existingApartments[id][eaApartment_Price], activeZone[client], playerid, clean_playername, apartment_name, mapName);
 		SQL_TQuery(g_DB, SQLErrorCheckCallback, buyApartmentQuery);
 		
+		int firstFree = getFirstFreeOwnedApartmentSlot();
 		char time[32];
 		IntToString(GetTime(), time, sizeof(time));
-		ownedApartments[g_iOwnedApartmentsCount][oaId] = g_iOwnedApartmentsCount;
-		strcopy(ownedApartments[g_iOwnedApartmentsCount][oaTime_of_purchase], 64, time);
-		ownedApartments[g_iOwnedApartmentsCount][oaPrice_of_purchase] = existingApartments[id][eaApartment_Price];
-		strcopy(ownedApartments[g_iOwnedApartmentsCount][oaApartment_Id], 128, activeZone[client]);
-		strcopy(ownedApartments[g_iOwnedApartmentsCount][oaPlayerid], 20, playerid);
-		strcopy(ownedApartments[g_iOwnedApartmentsCount][oaPlayername], 48, playername);
-		strcopy(ownedApartments[g_iOwnedApartmentsCount][oaApartmentName], 255, apartment_name);
-		strcopy(ownedApartments[g_iOwnedApartmentsCount][oaAllowed_players], 550, "");
-		ownedApartments[g_iOwnedApartmentsCount++][oaDoor_locked] = false;
+		ownedApartments[firstFree][oaId] = firstFree;
+		strcopy(ownedApartments[firstFree][oaTime_of_purchase], 64, time);
+		ownedApartments[firstFree][oaPrice_of_purchase] = existingApartments[id][eaApartment_Price];
+		strcopy(ownedApartments[firstFree][oaApartment_Id], 128, activeZone[client]);
+		strcopy(ownedApartments[firstFree][oaPlayerid], 20, playerid);
+		strcopy(ownedApartments[firstFree][oaPlayername], 48, playername);
+		strcopy(ownedApartments[firstFree][oaApartmentName], 255, apartment_name);
+		strcopy(ownedApartments[firstFree][oaAllowed_players], 550, "");
+		ownedApartments[firstFree][oaDoor_locked] = false;
+		
+		if(firstFree > g_iOwnedApartmentsCount)
+			g_iOwnedApartmentsCount = firstFree;
+		
+		PrintToConsole(client, "Assigned %i of %i", firstFree, id);
 	}
 }
 
@@ -392,15 +402,15 @@ public void toggleBuyable(int client, char[] apartmentid) {
 	int apartmentId;
 	if ((apartmentId = getLoadedIdFromApartmentId(apartmentid)) == -1)
 		return;
-	int buyable = !existingApartments[apartmentId][eaBuyable];
+	existingApartments[apartmentId][eaBuyable] = !existingApartments[apartmentId][eaBuyable];
 	
 	char mapName[128];
 	GetCurrentMap(mapName, sizeof(mapName));
 	
 	char updateBuyableQuery[1024];
-	Format(updateBuyableQuery, sizeof(updateBuyableQuery), "UPDATE t_rpg_apartments SET buyable = %i WHERE apartment_id = '%s' AND map = '%s';", buyable, apartmentid, mapName);
+	Format(updateBuyableQuery, sizeof(updateBuyableQuery), "UPDATE t_rpg_apartments SET buyable = %i WHERE apartment_id = '%s' AND map = '%s';", existingApartments[apartmentId][eaBuyable], apartmentid, mapName);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateBuyableQuery);
-	PrintToChat(client, "Changed buyable of %s to %d", apartmentid, buyable);
+	PrintToChat(client, "Changed buyable of %s to %d", apartmentid, existingApartments[apartmentId][eaBuyable]);
 }
 
 public void loadMenuForDeletion(int client) {
@@ -440,14 +450,9 @@ public int deleteApartmentMenuHandler(Handle menu, MenuAction action, int client
 		char mapName[128];
 		GetCurrentMap(mapName, sizeof(mapName));
 		
-		char cValue[32];
+		char cValue[128];
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
-		char deleteApartmentQuery[1024];
-		Format(deleteApartmentQuery, sizeof(deleteApartmentQuery), "DELETE FROM t_rpg_apartments WHERE apartment_id = '%s' AND map = '%s';", cValue, mapName);
-		SQL_TQuery(g_DB, SQLErrorCheckCallback, deleteApartmentQuery);
-		
-		Format(deleteApartmentQuery, sizeof(deleteApartmentQuery), "DELETE FROM t_rpg_boughtApartments WHERE apartment_id = '%s' AND map = '%s';", cValue, mapName);
-		SQL_TQuery(g_DB, SQLErrorCheckCallback, deleteApartmentQuery);
+		deleteApartment(cValue);
 		
 		loadMenuForDeletion(client);
 	}
@@ -482,13 +487,13 @@ public Action chatHook(int client, int args) {
 		strcopy(playerProperties[client][ppZone], 128, "");
 		
 		return Plugin_Handled;
-	} else if (playerProperties[client][ppInEdit] == 4 && StrContains(text, "abort") == -1) {
+	} else if (playerProperties[client][ppInEdit] == 3 && StrContains(text, "abort") == -1) {
 		changeApartmentPrice(playerProperties[client][ppZone], StringToInt(text));
 		PrintToChat(client, "Changed Price of: %s to %i", playerProperties[client][ppZone], StringToInt(text));
 		playerProperties[client][ppInEdit] = -1;
 		strcopy(playerProperties[client][ppZone], 128, "");
 		return Plugin_Handled;
-	} else if (playerProperties[client][ppInEdit] == 5 && StrContains(text, "abort") == -1) {
+	} else if (playerProperties[client][ppInEdit] == 4 && StrContains(text, "abort") == -1) {
 		char rFlags[8];
 		strcopy(rFlags, sizeof(rFlags), text);
 		changeApartmentFlags(playerProperties[client][ppZone], rFlags);
@@ -506,7 +511,7 @@ public void changeApartmentFlags(char[] apartmentid, char flags[8]) {
 	GetCurrentMap(mapName, sizeof(mapName));
 	
 	char createApartmentQuery[4096];
-	Format(createApartmentQuery, sizeof(createApartmentQuery), "UPDATE t_rpg_apartments SET flags = '%s' WHERE apartment_id = '%s' AND map = '%s';", flags, apartmentid, mapName);
+	Format(createApartmentQuery, sizeof(createApartmentQuery), "UPDATE t_rpg_apartments SET flag = '%s' WHERE apartment_id = '%s' AND map = '%s';", flags, apartmentid, mapName);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createApartmentQuery);
 	
 	int apartmentId;
@@ -554,6 +559,30 @@ public void deleteApartment(char[] apartmentId) {
 	
 	Format(deleteApartmentQuery, sizeof(deleteApartmentQuery), "DELETE FROM `t_rpg_boughtApartments` WHERE apartment_id = '%s' AND map = '%s';", apartmentId, mapName);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, deleteApartmentQuery);
+	
+	int aptId;
+	if ((aptId = getOwnedApartmentFromKey(apartmentId)) != -1) {
+		ownedApartments[aptId][oaId] = -1;
+		strcopy(ownedApartments[aptId][oaTime_of_purchase], 64, "");
+		ownedApartments[aptId][oaPrice_of_purchase] = -1;
+		strcopy(ownedApartments[aptId][oaApartment_Id], 128, "");
+		strcopy(ownedApartments[aptId][oaPlayerid], 20, "");
+		strcopy(ownedApartments[aptId][oaPlayername], 48, "");
+		strcopy(ownedApartments[aptId][oaApartmentName], 255, "");
+		strcopy(ownedApartments[aptId][oaAllowed_players], 550, "");
+		ownedApartments[aptId][oaDoor_locked] = false;
+	}
+	
+	int eId;
+	if((eId = getLoadedIdFromApartmentId(apartmentId)) != -1){
+		existingApartments[eId][eaId] = -1;
+		strcopy(existingApartments[eId][eaApartment_Id], 128, "");
+		existingApartments[eId][eaApartment_Price] = -1;
+		existingApartments[eId][eaBuyable] = false;
+		strcopy(existingApartments[eId][eaFlag], 8, "");
+		existingApartments[eId][eaBought] = false;
+	}
+
 }
 
 public void loadApartments() {
@@ -595,7 +624,7 @@ public void SQLLoadOwnedApartmentsQueryCallback(Handle owner, Handle hndl, const
 }
 
 public int getLoadedIdFromApartmentId(char[] apartmentId) {
-	for (int i = 0; i < g_iLoadedApartments; i++) {
+	for (int i = 0; i < MAX_APARTMENTS; i++) {
 		if (StrEqual(existingApartments[i][eaApartment_Id], apartmentId))
 			return i;
 	}
@@ -603,10 +632,24 @@ public int getLoadedIdFromApartmentId(char[] apartmentId) {
 }
 
 public int ApartmentIdToOwnedId(int apartmentKey) {
-	for (int x = 0; x < g_iOwnedApartmentsCount; x++) {
+	for (int x = 0; x < MAX_APARTMENTS; x++) {
 		if (StrEqual(existingApartments[apartmentKey][eaApartment_Id], ownedApartments[x][oaApartment_Id]))
 			return x;
 	}
+	return -1;
+}
+
+public int getFirstFreeOwnedApartmentSlot() {
+	for (int i = 0; i < MAX_APARTMENTS; i++)
+	if (ownedApartments[i][oaId] == -1)
+		return i;
+	return -1;
+}
+
+public int getFirstFreeApartmentSlot() {
+	for (int i = 0; i < MAX_APARTMENTS; i++)
+	if (existingApartments[i][eaId] == -1)
+		return i;
 	return -1;
 }
 
@@ -656,6 +699,12 @@ public void sellApartment(int client) {
 	char sellApartmentQuery[4096];
 	Format(sellApartmentQuery, sizeof(sellApartmentQuery), "DELETE FROM `t_rpg_boughtApartments` WHERE apartment_id = '%s' AND map = '%s';", ownedApartments[aptId][oaApartment_Id], mapName);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, sellApartmentQuery);
+	
+	Format(sellApartmentQuery, sizeof(sellApartmentQuery), "UPDATE `t_rpg_apartments` SET bought = 0 WHERE apartment_id = '%s' AND map = '%s';", ownedApartments[aptId][oaApartment_Id], mapName);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, sellApartmentQuery);
+	
+	existingApartments[getLoadedIdFromApartmentId(ownedApartments[aptId][oaApartment_Id])][eaBuyable] = true;
+	existingApartments[getLoadedIdFromApartmentId(ownedApartments[aptId][oaApartment_Id])][eaBought] = false;
 	
 	ownedApartments[aptId][oaId] = -1;
 	strcopy(ownedApartments[aptId][oaTime_of_purchase], 64, "");

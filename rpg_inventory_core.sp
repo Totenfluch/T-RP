@@ -10,7 +10,7 @@
 
 #pragma newdecls required
 
-#define MAX_ITEMS 756
+#define MAX_ITEMS 500
 
 enum Item {
 	String:iTimestamp[64], 
@@ -32,6 +32,9 @@ Database g_DB;
 char dbconfig[] = "gsxh_multiroot";
 
 Handle g_hOnItemUsed;
+ArrayList g_aHandledItems;
+ArrayList g_aHandledCategories;
+ArrayList g_aHandledCategories2;
 
 public Plugin myinfo = 
 {
@@ -65,6 +68,15 @@ public void OnPluginStart() {
   PRIMARY KEY (`Id`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
+	
+	RegConsoleCmd("sm_sinv", cmdSInvCallback, "Inventory by category");
+	
+	g_aHandledItems = CreateArray(400, 200);
+	g_aHandledCategories = CreateArray(300, 100);
+	g_aHandledCategories2 = CreateArray(300, 100);
+	ClearArray(g_aHandledItems);
+	ClearArray(g_aHandledCategories);
+	ClearArray(g_aHandledCategories2);
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
@@ -127,6 +139,17 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("inventory_showInventoryOfClientToOtherClient", Native_showInventoryOfClientToOtherClient);
 	
 	/*
+		Shows the inventory of client1 to client2
+		
+		@Param1 -> int client1
+		@Param2 -> int client2
+		@Param3 -> char category[64]
+		
+		@return -
+	*/
+	CreateNative("inventory_showInventoryOfClientToOtherClientByCategory", Native_showInventoryOfClientToOtherClientByCategory);
+	
+	/*
 		On Item used
 		@Param1 -> int client
 		@Param2 -> char Itemname[128]
@@ -139,6 +162,37 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	*/
 	
 	g_hOnItemUsed = CreateGlobalForward("inventory_onItemUsed", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_String, Param_String, Param_Cell, Param_String);
+	
+	
+	
+	/*
+		Blocks the default Item handle
+		@Param1-> char Itemname[128];
+		@Param2-> int type = 1: Single Item, 2: Category, 3: Category2, 4:Category+Category2
+	*/
+	CreateNative("inventory_addItemHandle", Native_addItemHandle);
+}
+
+public Action cmdSInvCallback(int client, int args) {
+	PrintToConsole(client, "Handled Items: ");
+	for (int i = 0; i < GetArraySize(g_aHandledItems); i++) {
+		char buff[128];
+		GetArrayString(g_aHandledItems, i, buff, sizeof(buff));
+		PrintToConsole(client, "Item: %s", buff);
+	}
+	PrintToConsole(client, "Handled Categories: ");
+	for (int i = 0; i < GetArraySize(g_aHandledCategories); i++) {
+		char buff[128];
+		GetArrayString(g_aHandledCategories, i, buff, sizeof(buff));
+		PrintToConsole(client, "Category: %s", buff);
+	}
+	PrintToConsole(client, "Handled Categories2: ");
+	for (int i = 0; i < GetArraySize(g_aHandledCategories2); i++) {
+		char buff[128];
+		GetArrayString(g_aHandledCategories2, i, buff, sizeof(buff));
+		PrintToConsole(client, "Category: %s", buff);
+	}
+	return Plugin_Handled;
 }
 
 public int Native_givePlayerItem(Handle plugin, int numParams) {
@@ -190,6 +244,35 @@ public int Native_showInventoryOfClientToOtherClient(Handle plugin, int numParam
 	showInventoryOfClientToOtherClient(client1, client2);
 }
 
+public int Native_showInventoryOfClientToOtherClientByCategory(Handle plugin, int numParams) {
+	int client1 = GetNativeCell(1);
+	int client2 = GetNativeCell(2);
+	char category[64];
+	GetNativeString(3, category, sizeof(category));
+	showInventoryOfClientToOtherClientByCategory(client1, client2, category);
+}
+
+public int Native_addItemHandle(Handle plugin, int numParams) {
+	char itemName[128];
+	GetNativeString(1, itemName, sizeof(itemName));
+	int type = GetNativeCell(2);
+	if (type == 1) {
+		if (FindStringInArray(g_aHandledItems, itemName) == -1)
+			PushArrayString(g_aHandledItems, itemName);
+	} else if (type == 2) {
+		if (FindStringInArray(g_aHandledCategories, itemName) == -1)
+			PushArrayString(g_aHandledCategories, itemName);
+	} else if (type == 3) {
+		if (FindStringInArray(g_aHandledCategories2, itemName) == -1)
+			PushArrayString(g_aHandledCategories2, itemName);
+	} else if (type == 4) {
+		if (FindStringInArray(g_aHandledCategories, itemName) == -1)
+			PushArrayString(g_aHandledCategories, itemName);
+		if (FindStringInArray(g_aHandledCategories2, itemName) == -1)
+			PushArrayString(g_aHandledCategories2, itemName);
+	}
+}
+
 public void OnClientAuthorized(int client) {
 	loadClientInventory(client);
 }
@@ -204,6 +287,7 @@ public void resetLocalInventory(int client) {
 }
 
 public void resetLocalInventorySlot(int client, int slot) {
+	PrintToConsole(client, "cleared: %i", slot);
 	strcopy(g_ePlayerInventory[client][slot][iTimestamp], 64, "");
 	strcopy(g_ePlayerInventory[client][slot][iPlayerid], 20, "");
 	strcopy(g_ePlayerInventory[client][slot][iPlayername], 64, "");
@@ -253,6 +337,10 @@ public void SQLLoadClientInventoryQuery(Handle owner, Handle hndl, const char[] 
 }
 
 public void givePlayerItem(int client, char itemname[128], int weight, char flags[64], char category[64], char category2[64], int rarity, char reason[256]) {
+	if (getPlayerItems(client) >= MAX_ITEMS) {
+		CPrintToChat(client, "[-T-]{red} Your Inventory is full. {green}%s {red}has been deleted.", itemname);
+		return;
+	}
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
@@ -277,7 +365,7 @@ public void givePlayerItem(int client, char itemname[128], int weight, char flag
 	CPrintToChat(client, "{lightgreen}You have recieved: {grey2}%s {blue}({grey2}%s{blue})", itemname, reason);
 }
 
-public int getItemOwnedAmount(int client, char itemname[128]) {
+public int getItemOwnedAmount(int client, char[] itemname) {
 	int count = 0;
 	for (int i = 0; i < MAX_ITEMS; i++) {
 		if (g_ePlayerInventory[client][i][iIsActive])
@@ -351,20 +439,13 @@ public int findFirstEmptySlotInInventory(int client) {
 	return -1;
 }
 
-public Action cmdOpenInventory(int client, const char[] command, int argc)
-{
-	Handle menu = CreateMenu(inventoryMenuHandler);
-	SetMenuTitle(menu, "Your Inventory");
+public int getPlayerItems(int client) {
+	int items = 0;
 	for (int i = 0; i < MAX_ITEMS; i++) {
-		if (g_ePlayerInventory[client][i][iIsActive]) {
-			char id[8];
-			IntToString(i, id, sizeof(id));
-			AddMenuItem(menu, id, g_ePlayerInventory[client][i][iItemname]);
-		}
+		if (g_ePlayerInventory[client][i][iIsActive])
+			items++;
 	}
-	DisplayMenu(menu, client, 60);
-	
-	return Plugin_Continue;
+	return items;
 }
 
 public void showInventoryOfClientToOtherClient(int client1, int client2) {
@@ -382,11 +463,71 @@ public void showInventoryOfClientToOtherClient(int client1, int client2) {
 	DisplayMenu(menu, client2, 60);
 }
 
+public void showInventoryOfClientToOtherClientByCategory(int client1, int client2, char category[64]) {
+	Handle menu = CreateMenu(showInventoryHandler);
+	char menuTitle[512];
+	Format(menuTitle, sizeof(menuTitle), "%Ns Licenses", client1);
+	SetMenuTitle(menu, menuTitle);
+	for (int i = 0; i < MAX_ITEMS; i++) {
+		if (g_ePlayerInventory[client1][i][iIsActive]) {
+			if (StrContains(g_ePlayerInventory[client1][i][iCategory], category) != 1 || StrContains(g_ePlayerInventory[client1][i][iCategory2], category) != -1) {
+				char id[8];
+				IntToString(i, id, sizeof(id));
+				AddMenuItem(menu, id, g_ePlayerInventory[client1][i][iItemname], ITEMDRAW_DISABLED);
+			}
+		}
+	}
+	DisplayMenu(menu, client2, 60);
+}
+
 public int showInventoryHandler(Handle menu, MenuAction action, int client, int item) {
 	if (action == MenuAction_Select) {
 		
 	}
 }
+
+public Action cmdOpenInventory(int client, const char[] command, int argc) {
+	Handle menu = CreateMenu(inventoryMenuHandler);
+	char menuTitle[128];
+	Format(menuTitle, sizeof(menuTitle), "Your Inventory (%i/500)", getPlayerItems(client));
+	SetMenuTitle(menu, menuTitle);
+	ArrayList containedItems = CreateArray(800, 800);
+	for (int i = 0; i < MAX_ITEMS; i++) {
+		if (g_ePlayerInventory[client][i][iIsActive]) {
+			if (FindStringInArray(containedItems, g_ePlayerInventory[client][i][iItemname]) == -1) {
+				PushArrayString(containedItems, g_ePlayerInventory[client][i][iItemname]);
+				char id[8];
+				IntToString(i, id, sizeof(id));
+				char display[512];
+				int amount = getItemOwnedAmount(client, g_ePlayerInventory[client][i][iItemname]);
+				if (amount > 1)
+					Format(display, sizeof(display), "%s (%i)", g_ePlayerInventory[client][i][iItemname], amount);
+				else
+					Format(display, sizeof(display), "%s", g_ePlayerInventory[client][i][iItemname]);
+				AddMenuItem(menu, id, display);
+			}
+		}
+	}
+	DisplayMenu(menu, client, 60);
+	
+	return Plugin_Continue;
+}
+
+/*public Action cmdOpenInventory(int client, const char[] command, int argc)
+{
+	Handle menu = CreateMenu(inventoryMenuHandler);
+	SetMenuTitle(menu, "Your Inventory");
+	for (int i = 0; i < MAX_ITEMS; i++) {
+		if (g_ePlayerInventory[client][i][iIsActive]) {
+			char id[8];
+			IntToString(i, id, sizeof(id));
+			AddMenuItem(menu, id, g_ePlayerInventory[client][i][iItemname]);
+		}
+	}
+	DisplayMenu(menu, client, 60);
+	
+	return Plugin_Continue;
+}*/
 
 public int inventoryMenuHandler(Handle menu, MenuAction action, int client, int item) {
 	if (action == MenuAction_Select) {
@@ -405,6 +546,42 @@ public int inventoryMenuHandler(Handle menu, MenuAction action, int client, int 
 		Call_PushCell(g_ePlayerInventory[client][id][iRarity]);
 		Call_PushString(g_ePlayerInventory[client][id][iTimestamp]);
 		Call_Finish();
+		
+		if (FindStringInArray(g_aHandledItems, g_ePlayerInventory[client][id][iItemname]) == -1 && FindStringInArray(g_aHandledCategories, g_ePlayerInventory[client][id][iCategory]) == -1 && FindStringInArray(g_aHandledCategories2, g_ePlayerInventory[client][id][iCategory2]) == -1) {
+			Menu m = CreateMenu(defaultItemHandleHandler);
+			char display[128];
+			Format(display, sizeof(display), "What to do with '%s' ?", g_ePlayerInventory[client][id][iItemname]);
+			SetMenuTitle(m, display);
+			char cId[8];
+			IntToString(id, cId, sizeof(cId));
+			AddMenuItem(m, cId, "Throw Away");
+			int amount = getItemOwnedAmount(client, g_ePlayerInventory[client][id][iItemname]);
+			if (amount > 1) {
+				char displ[128];
+				Format(displ, sizeof(displ), "Throw all Away (%i)", amount);
+				AddMenuItem(m, cId, displ);
+			}
+			DisplayMenu(m, client, 60);
+		}
+	}
+}
+
+public int defaultItemHandleHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char info[64];
+		char displayBuffer[64];
+		int flags;
+		GetMenuItem(menu, item, info, sizeof(info), flags, displayBuffer, sizeof(displayBuffer));
+		int id = StringToInt(info);
+		char tempItem[128];
+		Format(tempItem, sizeof(tempItem), "%s", g_ePlayerInventory[client][id][iItemname]);
+		if (StrContains(displayBuffer, "Throw all Away") == -1)
+			takePlayerItem(client, tempItem, 1, "Throwed away");
+		else {
+			int amount = getItemOwnedAmount(client, g_ePlayerInventory[client][id][iItemname]);
+			if (takePlayerItem(client, tempItem, amount, "Throwed all away"))
+				PrintToConsole(client, "Successfully removed items");
+		}
 	}
 }
 

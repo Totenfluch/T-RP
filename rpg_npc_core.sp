@@ -614,6 +614,7 @@ public void CreateNpc(char uniqueId[128], char name[64], char model[256], char i
 	DispatchKeyValue(npc, "Solid", "6");
 	SetEntProp(npc, Prop_Send, "m_nSolidType", 6);
 	SetEntPropString(npc, Prop_Data, "m_iName", uniqueId);
+	SetEntProp(npc, Prop_Data, "m_CollisionGroup", COLLISION_GROUP_PUSHAWAY);
 	DispatchSpawn(npc);
 	TeleportEntity(npc, pos, angles, NULL_VECTOR);
 	

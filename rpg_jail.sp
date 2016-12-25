@@ -69,8 +69,8 @@ public Action getJailStats(int client, int args) {
 	PrintToConsole(client, out);
 	
 	for (int i = 0; i < g_iLoadedJail; i++)
-		PrintToConsole(client, "P:%i (%.2f | %.2f | %.2f)", i, g_eJailSpawnPoints[i][gXPos], g_eJailSpawnPoints[i][gYPos], g_eJailSpawnPoints[i][gZPos]);
-
+	PrintToConsole(client, "P:%i (%.2f | %.2f | %.2f)", i, g_eJailSpawnPoints[i][gXPos], g_eJailSpawnPoints[i][gYPos], g_eJailSpawnPoints[i][gZPos]);
+	
 	return Plugin_Handled;
 }
 
@@ -160,7 +160,7 @@ public void putInJail(int initiator, int target) {
 	GetClientAuthId(target, AuthId_Steam2, playerid, sizeof(playerid));
 	
 	g_bIsInJail[target] = true;
-	int cell = GetRandomInt(0, (g_iLoadedJail-1));
+	int cell = GetRandomInt(0, (g_iLoadedJail - 1));
 	
 	increaseTimesInJail(target);
 	
@@ -216,7 +216,7 @@ public Action refreshTimer(Handle Timer) {
 				putInCell(i, g_ePlayerData[i][ppCell_number]);
 			increaseJailTime(i);
 		}
-		if(g_bIsInJail[i] && g_ePlayerData[i][ppCell_number] == -1)
+		if (g_bIsInJail[i] && g_ePlayerData[i][ppCell_number] == -1)
 			free(i);
 	}
 }

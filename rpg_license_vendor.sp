@@ -12,6 +12,7 @@
 #pragma newdecls required
 
 char my_npcType[128] = "License Vendor";
+int g_iLastInteractedWith[MAXPLAYERS + 1];
 
 public Plugin myinfo = 
 {
@@ -22,11 +23,14 @@ public Plugin myinfo =
 	url = "http://ggc-base.de"
 };
 
-public void OnPluginStart(){
+public void OnPluginStart() {
 	npc_registerNpcType(my_npcType);
 }
 
 public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex) {
+	if (!StrEqual(my_npcType, npcType))
+		return;
+	g_iLastInteractedWith[client] = entIndex;
 	showTopPanelToClient(client);
 }
 
@@ -71,6 +75,16 @@ public void showTopPanelToClient(int client) {
 
 public int licenseMenuHandler(Handle menu, MenuAction action, int client, int item) {
 	if (action == MenuAction_Select) {
+		float playerPos[3];
+		float entPos[3];
+		if (!isValidClient(client))
+			return;
+		if (!IsValidEntity(g_iLastInteractedWith[client]))
+			return;
+		GetClientAbsOrigin(client, playerPos);
+		GetEntPropVector(g_iLastInteractedWith[client], Prop_Data, "m_vecOrigin", entPos);
+		if (GetVectorDistance(playerPos, entPos) > 100.0)
+			return;
 		char cValue[32];
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		if (StrEqual(cValue, "pistol")) {
@@ -96,7 +110,7 @@ public int licenseMenuHandler(Handle menu, MenuAction action, int client, int it
 		} else if (StrEqual(cValue, "rifle")) {
 			if (tConomy_getCurrency(client) >= 55000) {
 				tConomy_removeCurrency(client, 55000, "Bought Rifle License");
-				inventory_givePlayerItem(client, "Rfile License", 1, "", "License", "Weapon License", 1, "Bought from License Vendor");
+				inventory_givePlayerItem(client, "Rifle License", 1, "", "License", "Weapon License", 1, "Bought from License Vendor");
 			}
 		} else if (StrEqual(cValue, "nades")) {
 			if (tConomy_getCurrency(client) >= 25000) {
@@ -115,4 +129,11 @@ public int licenseMenuHandler(Handle menu, MenuAction action, int client, int it
 			}
 		}
 	}
+}
+
+stock bool isValidClient(int client) {
+	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
+		return false;
+	
+	return true;
 }

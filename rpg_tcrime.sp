@@ -199,7 +199,7 @@ public void OnClientAuthorized(int client) {
 	
 	char insertPlayerQuery[512];
 	Format(insertPlayerQuery, sizeof(insertPlayerQuery), "INSERT IGNORE INTO `t_rpg_tcrime` (`Id`, `timestamp`, `playername`, `playerid`, `crime`, `flags`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '0', '');", clean_playername, playerid);
-	SQL_TQuery(g_DB, SQLLoadCrimeCallback, insertPlayerQuery, client);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, insertPlayerQuery, client);
 	
 	CreateTimer(1.0, loadCrime, client);
 }

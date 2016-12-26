@@ -113,6 +113,12 @@ public void loadPlayer(int client) {
 }
 
 public Action delayedLoad(Handle Timer, int client) {
+	if (!g_bIsStarted)
+		return;
+	if (!IsPlayerAlive(client) || (GetClientTeam(client) != 3 && GetClientTeam(client) != 2))
+		return;
+	if (g_bIsPlayerLoaded[client])
+		return;
 	PrintToChat(client, "Loading...");
 	char mapName[128];
 	GetCurrentMap(mapName, sizeof(mapName));

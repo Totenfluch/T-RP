@@ -150,6 +150,9 @@ public void OnClientDisconnect(int client) {
 public void OnPluginStart() {
 	npc_registerNpcType(my_npcType);
 	
+	AutoExecConfig_SetFile("rpg_npc_weaponvendor");
+	AutoExecConfig_SetCreateFile(true);
+	
 	g_hKevlarPrice = AutoExecConfig_CreateConVar("rpg_weaponhandler_kevlar", "35", "Price of the kevlar in menu");
 	g_hHelmetKevlarPrice = AutoExecConfig_CreateConVar("rpg_weaponhandler_helmetkevlar", "35", "Price of the helmetkevlar in menu");
 	g_hFlashbangPrice = AutoExecConfig_CreateConVar("rpg_weaponhandler_flashbang", "35", "Price of the flashbang in menu");
@@ -193,6 +196,9 @@ public void OnPluginStart() {
 	g_hScar20Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_scar", "250", "Price of the scar in menu");
 	g_hM249Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_m249", "200", "Price of the m249 in menu");
 	g_hNegevValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_negev", "225", "Price of the negev in menu");
+	
+	AutoExecConfig_CleanFile();
+	AutoExecConfig_ExecuteFile();
 }
 
 public void OnConfigsExecuted() {

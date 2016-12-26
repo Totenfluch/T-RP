@@ -25,6 +25,12 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_stash", cmdStashWeapon, "Stashes Weapon to inventory");
 }
 
+public void OnMapStart() {
+	inventory_addItemHandle("Weapon", 2);
+	inventory_addItemHandle("item_kevlar", 1);
+	inventory_addItemHandle("item_assaultsuit", 1);
+}
+
 public void OnClientAuthorized(int client) {
 	strcopy(g_cLastItemUsed[client], 128, "");
 }
@@ -45,7 +51,7 @@ public void inventory_onItemUsed(int client, char itemname[128], int weight, cha
 		AddMenuItem(wMenu, "EquipAndStash", "Stash Weapon and equip new one");
 		AddMenuItem(wMenu, "GiveWeapon", "Give me the Weapon");
 		AddMenuItem(wMenu, "Delete", "Delete Weapon");
-	} else if (StrContains(itemname, "assaultsuit") != -1) {
+	} else if (StrEqual(itemname, "item_assaultsuit")) {
 		SetMenuTitle(wMenu, "What do you want to do?");
 		AddMenuItem(wMenu, "eqSuit", "Equip Assaultsuit");
 		AddMenuItem(wMenu, "Delete", "Delete Assaultsuit");
@@ -66,7 +72,7 @@ public int weaponMenuHandler(Handle menu, MenuAction action, int client, int ite
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		
 		if (StrEqual(cValue, "EquipAndStash")) {
-			stashWeapon(client, true, g_cLastItemUsed[client]);
+			stashWeapon(client, false, g_cLastItemUsed[client]);
 			takeItem(client, g_cLastItemUsed[client]);
 		} else if (StrEqual(cValue, "GiveWeapon")) {
 			takeItem(client, g_cLastItemUsed[client]);
@@ -94,7 +100,7 @@ public void stashWeapon(int client, bool useOverride, char[] weapon) {
 	int slot = -1;
 	if (isPistol(item))
 		slot = 1;
-	else if (isSMG(item) || isRifle(item) || isShotgun(item) || isSniper(item))
+	else if (isSMG(item) || isRifle(item) || isShotgun(item) || isSniper(item) || isMg(item))
 		slot = 0;
 	
 	if (slot != -1) {
@@ -105,6 +111,9 @@ public void stashWeapon(int client, bool useOverride, char[] weapon) {
 			inventory_givePlayerItem(client, item, 40, "", "Weapon", "Weapon", 2, "Stashed Weapon");
 		}
 	}
+	
+	if(GetPlayerWeaponSlot(client, 2) != -1)
+		EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, 2));
 }
 
 public void takeItem(int client, char[] item) {
@@ -155,3 +164,11 @@ public bool isSniper(char[] weaponName) {
 		return false;
 	}
 } 
+
+public bool isMg(char[] weaponName){
+	if (StrContains(weaponName, "negev", false) != -1 || StrContains(weaponName, "m249", false) != -1){
+		return true;
+	} else {
+		return false;
+	}
+}

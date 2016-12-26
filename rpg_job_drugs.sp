@@ -70,10 +70,46 @@ public void OnPluginStart() {
 	char CreateTableQuery[4096];
 	Format(CreateTableQuery, sizeof(CreateTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_drugs ( `playerid` VARCHAR(20) NOT NULL , `state` INT NOT NULL , `time` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , `pos_x` FLOAT NOT NULL , `pos_y` FLOAT NOT NULL , `pos_z` FLOAT NOT NULL ) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, CreateTableQuery);
+	
+	inventory_addItemHandle("Marijuana Seeds", 1);
+}
+
+public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]) {
+	if(!StrEqual(itemname, "Marijuana Seeds"))
+		return;
+	Menu m = CreateMenu(defaultItemHandleHandler);
+	char display[128];
+	Format(display, sizeof(display), "What to do with '%s' ?", itemname);
+	SetMenuTitle(m, display);
+	AddMenuItem(m, "plant", "Plant Seeds");
+	AddMenuItem(m, "throw", "Throw Away");
+	int amount = inventory_getPlayerItemAmount(client, itemname);
+	if (amount > 1) {
+		char displ[128];
+		Format(displ, sizeof(displ), "Throw all Away (%i)", amount);
+		AddMenuItem(m, "throwall", displ);
+	}
+	DisplayMenu(m, client, 60);
+}
+
+public int defaultItemHandleHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char info[64];
+		GetMenuItem(menu, item, info, sizeof(info));
+		
+		if (StrEqual(info, "throw"))
+			inventory_removePlayerItems(client, "Marijuana Seeds", 1, "Thrown away");
+		else if (StrEqual(info, "throwall")) {
+			int amount = inventory_getPlayerItemAmount(client, "Marijuana Seeds");
+			inventory_removePlayerItems(client, "Marijuana Seeds", amount, "Throwed all away");
+		} else if (StrEqual(info, "plant")) {
+			cmdPlantCommand(client, 0);
+		}
+	}
 }
 
 public void OnClientAuthorized(int client) {
-	g_iPlayerPlanted[client] = 0;
+	g_iPlayerPlanted[client] = getActivePlantsOfPlayerAmount(client);
 	g_iHarvestIndex[client] = 0;
 }
 
@@ -205,15 +241,21 @@ public void SQLLoadPlantsQuery(Handle owner, Handle hndl, const char[] error, an
 		pos[2] = SQL_FetchFloatByName(hndl, "pos_z");
 		spawnPlant(plantowner, state, time, pos, flags);
 	}
+	for (int i = 1; i < MAXPLAYERS; i++) {
+		if (isValidClient(i))
+			g_iPlayerPlanted[i] = getActivePlantsOfPlayerAmount(i);
+	}
 }
 
 public Action cmdPlantCommand(int client, int args) {
+	if (g_iPlayerPlanted[client] > 3) {
+		CPrintToChat(client, "[-T-]{red} You can not have more than 4 active plants (%i Active)", g_iPlayerPlanted[client]);
+		return Plugin_Handled;
+	}
+	
 	if (inventory_hasPlayerItem(client, "Marijuana Seeds"))
 		inventory_removePlayerItems(client, "Marijuana Seeds", 1, "Planted Marijuana");
 	else
-		return Plugin_Handled;
-	
-	if (g_iPlayerPlanted[client] > 3)
 		return Plugin_Handled;
 	
 	float pos[3];
@@ -334,6 +376,12 @@ public void harvestPlant(int client, int ent, int plantId, int state) {
 	else
 		tCrime_addCrime(client, 100);
 	
+	int owner;
+	char playerid[20];
+	strcopy(playerid, sizeof(playerid), g_ePlayerPlants[plantId][pOwner]);
+	if ((owner = getClientFromAuth2(playerid)) != -1)
+		g_iPlayerPlanted[owner]--;
+
 	g_ePlayerPlants[plantId][pEntRef] = -1;
 	strcopy(g_ePlayerPlants[plantId][pOwner], 20, "");
 	g_ePlayerPlants[plantId][pState] = -1;
@@ -342,6 +390,13 @@ public void harvestPlant(int client, int ent, int plantId, int state) {
 	g_ePlayerPlants[plantId][pPos_y] = 0.0;
 	g_ePlayerPlants[plantId][pPos_z] = 0.0;
 	g_ePlayerPlants[plantId][pActive] = false;
+	
+	int jobLevel = jobs_getLevel(client);
+	if(GetRandomInt(0,100-jobLevel*5 == 1)){
+		char reason[256];
+		Format(reason, sizeof(reason), "Harvested with %i%s chance", jobLevel * 5, "%s");
+		inventory_givePlayerItem(client, "Marijuana Seeds", 1, "", "Plant seeds", "Drug Item", 1, reason);
+	}
 }
 
 public int findPlantLoadedIdByIndex(int index) {
@@ -370,7 +425,18 @@ stock bool isValidClient(int client) {
 	return true;
 }
 
-public int getClientFromAuth2(char[] auth2) {
+public int getActivePlantsOfPlayerAmount(int client) {
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	int amount = 0;
+	for (int i = 0; i < MAX_PLANTS; i++) {
+		if (StrEqual(g_ePlayerPlants[i][pOwner], playerid))
+			amount++;
+	}
+	return amount;
+}
+
+public int getClientFromAuth2(char auth2[20]) {
 	for (int i = 1; i < MAXPLAYERS; i++) {
 		if (isValidClient(i)) {
 			char playerid[20];

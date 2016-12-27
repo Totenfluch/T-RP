@@ -9,14 +9,12 @@
 
 #pragma newdecls required
 
-//m_iAmmo array index
-int HEGRENADE_AMMO = 11;
-int FLASH_AMMO = 12;
-int SMOKE_AMMO = 13;
+#define CSGO_HEGRENADE_AMMO 14
+#define CSGO_FLASH_AMMO 15
+#define CSGO_SMOKE_AMMO 16
+#define INCENDERY_AND_MOLOTOV_AMMO 17
+#define	DECOY_AMMO 18
 
-//CS:GO ONLY
-int INC_AMMO = 16;
-int DECOY_AMMO = 17;
 
 public Plugin myinfo = 
 {
@@ -62,6 +60,42 @@ public void OnPluginStart() {
 
 public Action amILoaded(int client, int args) {
 	PrintToChat(client, "Loaded: %d | Started: %d", g_bIsPlayerLoaded[client], g_bIsStarted);
+	
+	int weaponIndex;
+	
+	char primaryWeapon[64];
+	int primaryWeaponAmmo;
+	int primaryWeaponClip;
+	if ((weaponIndex = GetPlayerWeaponSlot(client, 0)) != -1) {
+		Entity_GetClassName(weaponIndex, primaryWeapon, sizeof(primaryWeapon));
+		primaryWeaponClip = Weapon_GetPrimaryClip(weaponIndex);
+		primaryWeaponAmmo = GetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount");
+	}
+	
+	char secondaryWeapon[64];
+	int secondaryWeaponAmmo;
+	int secondaryWeaponClip;
+	if ((weaponIndex = GetPlayerWeaponSlot(client, 1)) != -1) {
+		Entity_GetClassName(weaponIndex, secondaryWeapon, sizeof(secondaryWeapon));
+		secondaryWeaponClip = Weapon_GetPrimaryClip(weaponIndex);
+		secondaryWeaponAmmo = GetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount");
+	}
+	
+	char nades[64][64];
+	int i = 0;
+	for (int b = getClientHEGrenades(client); b > 0; b--)
+	strcopy(nades[i++], 64, "weapon_hegrenade");
+	for (int b = getClientSmokeGrenades(client); b > 0; b--)
+	strcopy(nades[i++], 64, "weapon_smokegrenade");
+	for (int b = getClientFlashbangs(client); b > 0; b--)
+	strcopy(nades[i++], 64, "weapon_flashbang");
+	for (int b = getClientDecoyGrenades(client); b > 0; b--)
+	strcopy(nades[i++], 64, "weapon_decoy");
+	for (int b = getClientIncendaryGrenades(client); b > 0; b--)
+	strcopy(nades[i++], 64, "weapon_molotov");
+	
+	PrintToChat(client, "%s %s %s %s %s %i %i %i %i %i", nades[0], nades[1], nades[2], nades[3], nades[4], getClientHEGrenades(client), getClientSmokeGrenades(client), getClientFlashbangs(client), getClientDecoyGrenades(client), getClientIncendaryGrenades(client));
+	PrintToChat(client, "pp:%i ps:%i  | sp:%i ss:%i", primaryWeaponClip, primaryWeaponAmmo, secondaryWeaponClip, secondaryWeaponAmmo);
 	return Plugin_Handled;
 }
 
@@ -83,14 +117,14 @@ public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 	SetServerConvars();
 	if (!g_bIsStarted)
 		return;
-	for (int i = 1; i < MAXPLAYERS; i++) {
+	/*for (int i = 1; i < MAXPLAYERS; i++) {
 		if (!isValidClient(i))
 			continue;
 		if (g_bIsPlayerLoaded[i])
 			continue;
 		
 		loadPlayer(i);
-	}
+	}*/
 }
 
 public void onRoundEnd(Handle event, const char[] name, bool dontBroadcast) {
@@ -172,13 +206,18 @@ public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error,
 		SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", Speed);
 		SetEntityGravity(client, Gravity);
 		TeleportEntity(client, Position, Angles, NULL_VECTOR);
+		int weaponIndex;
 		if (!StrEqual(primaryWeapon, "")) {
 			GivePlayerItem(client, primaryWeapon);
-			Client_SetWeaponAmmo(client, secondaryWeapon, primaryWeaponAmmo, _, primaryWeaponClip, _);
+			Client_SetWeaponAmmo(client, primaryWeapon, _, _, primaryWeaponClip, primaryWeaponAmmo);
+			if ((weaponIndex = GetPlayerWeaponSlot(client, 0)) != -1)
+				SetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount", secondaryWeaponAmmo);
 		}
 		if (!StrEqual(secondaryWeapon, "")) {
 			GivePlayerItem(client, secondaryWeapon);
-			Client_SetWeaponAmmo(client, secondaryWeapon, secondaryWeaponAmmo, _, secondaryWeaponClip, _);
+			Client_SetWeaponAmmo(client, secondaryWeapon, _, _, secondaryWeaponClip, secondaryWeaponAmmo);
+			if ((weaponIndex = GetPlayerWeaponSlot(client, 1)) != -1)
+				SetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount", secondaryWeaponAmmo);
 		}
 		if (!StrEqual(nade1, ""))
 			GivePlayerItem(client, nade1);
@@ -250,7 +289,7 @@ public void savePlayer(int client) {
 	if ((weaponIndex = GetPlayerWeaponSlot(client, 0)) != -1) {
 		Entity_GetClassName(weaponIndex, primaryWeapon, sizeof(primaryWeapon));
 		primaryWeaponClip = Weapon_GetPrimaryClip(weaponIndex);
-		primaryWeaponAmmo = Weapon_GetSecondaryClip(weaponIndex);
+		primaryWeaponAmmo = GetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount");
 		RemovePlayerItem(client, weaponIndex);
 		RemoveEdict(weaponIndex);
 	}
@@ -261,23 +300,26 @@ public void savePlayer(int client) {
 	if ((weaponIndex = GetPlayerWeaponSlot(client, 1)) != -1) {
 		Entity_GetClassName(weaponIndex, secondaryWeapon, sizeof(secondaryWeapon));
 		secondaryWeaponClip = Weapon_GetPrimaryClip(weaponIndex);
-		secondaryWeaponAmmo = Weapon_GetSecondaryClip(weaponIndex);
+		secondaryWeaponAmmo = GetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount");
 		RemovePlayerItem(client, weaponIndex);
 		RemoveEdict(weaponIndex);
 	}
 	
-	char nades[5][64];
+	
+	char nades[64][64];
 	int i = 0;
-	for (; i < getClientHEGrenades(client); i++)
-	strcopy(nades[i], 64, "weapon_hegrenade");
-	for (; i < getClientSmokeGrenades(client); i++)
-	strcopy(nades[i], 64, "weapon_smokegrenade");
-	for (; i < getClientFlashbangs(client); i++)
-	strcopy(nades[i], 64, "weapon_flashbang");
-	for (; i < getClientDecoyGrenades(client); i++)
-	strcopy(nades[i], 64, "weapon_decoy");
-	for (; i < getClientIncendaryGrenades(client); i++)
-	strcopy(nades[i], 64, "weapon_molotov");
+	for (int b = getClientHEGrenades(client); b > 0; b--)
+	strcopy(nades[i++], 64, "weapon_hegrenade");
+	for (int b = getClientSmokeGrenades(client); b > 0; b--)
+	strcopy(nades[i++], 64, "weapon_smokegrenade");
+	for (int b = getClientFlashbangs(client); b > 0; b--)
+	strcopy(nades[i++], 64, "weapon_flashbang");
+	for (int b = getClientDecoyGrenades(client); b > 0; b--)
+	strcopy(nades[i++], 64, "weapon_decoy");
+	for (int b = getClientIncendaryGrenades(client); b > 0; b--)
+	strcopy(nades[i++], 64, "weapon_molotov");
+	
+	removeNades(client);
 	
 	char mapName[128];
 	GetCurrentMap(mapName, sizeof(mapName));
@@ -304,24 +346,25 @@ public void savePlayer(int client) {
 	PrintToServer("Saved!");
 }
 
+
 public int getClientHEGrenades(int client) {
-	return GetEntProp(client, Prop_Data, "m_iAmmo", _, HEGRENADE_AMMO);
+	return GetEntProp(client, Prop_Send, "m_iAmmo", _, CSGO_HEGRENADE_AMMO);
 }
 
 public int getClientSmokeGrenades(int client) {
-	return GetEntProp(client, Prop_Data, "m_iAmmo", _, SMOKE_AMMO);
+	return GetEntProp(client, Prop_Send, "m_iAmmo", _, CSGO_SMOKE_AMMO);
 }
 
 public int getClientFlashbangs(int client) {
-	return GetEntProp(client, Prop_Data, "m_iAmmo", _, FLASH_AMMO);
+	return GetEntProp(client, Prop_Send, "m_iAmmo", _, CSGO_FLASH_AMMO);
 }
 
 public int getClientDecoyGrenades(int client) {
-	return GetEntProp(client, Prop_Data, "m_iAmmo", _, DECOY_AMMO);
+	return GetEntProp(client, Prop_Send, "m_iAmmo", _, DECOY_AMMO);
 }
 
 public int getClientIncendaryGrenades(int client) {
-	return GetEntProp(client, Prop_Data, "m_iAmmo", _, INC_AMMO);
+	return GetEntProp(client, Prop_Send, "m_iAmmo", _, INCENDERY_AND_MOLOTOV_AMMO);
 }
 
 public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error, any data) {
@@ -420,4 +463,22 @@ public void SetServerConvars() {
 	SetConVarBounds(FindConVar("mp_roundtime"), ConVarBound_Upper, true, 1501102101.0);
 	
 	ServerCommand("mp_roundtime 1501102101");
+}
+
+int g_iaGrenadeOffsets[] =  { 15, 17, 16, 14, 18, 17 };
+
+stock void removeNades(int client) {
+	while (removeWeaponBySlot(client, 3)) {  }
+	for (int i = 0; i < 6; i++)
+	SetEntProp(client, Prop_Send, "m_iAmmo", 0, _, g_iaGrenadeOffsets[i]);
+}
+
+stock bool removeWeaponBySlot(int client, int slot) {
+	int entity = GetPlayerWeaponSlot(client, slot);
+	if (IsValidEdict(entity)) {
+		RemovePlayerItem(client, entity);
+		AcceptEntityInput(entity, "Kill");
+		return true;
+	}
+	return false;
 }

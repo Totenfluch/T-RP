@@ -310,9 +310,9 @@ public void logtConomyAction(int client, int amount, char reason[256], bool isBa
 		return;
 	char playerLog[256];
 	if (isBank)
-		Format(playerLog, sizeof(playerLog), "{green}[{purple}tConomy{green}] {orange}Your Banked {purple}%s{orange} have changed from {purple}%i{orange} to {purple}%i {orange} (%s)", currencyName, g_iBankedMoney[client], g_iBankedMoney[client] + amount, reason);
+		Format(playerLog, sizeof(playerLog), "{green}[{purple}tConomy{green}] {orange}Your Banked {purple}%s{orange} have been changed by {purple}%i{orange}{orange} (%s)", currencyName, amount, reason);
 	else
-		Format(playerLog, sizeof(playerLog), "{green}[{purple}tConomy{green}] {orange}Your {purple}%s{orange} have changed from {purple}%i{orange} to {purple}%i {orange} (%s)", currencyName, g_iMoney[client], g_iMoney[client] + amount, reason);
+		Format(playerLog, sizeof(playerLog), "{green}[{purple}tConomy{green}] {orange}Your {purple}%s{orange} have been changed by {purple}%i {orange} (%s)", currencyName, amount, reason);
 	
 	CPrintToChat(client, playerLog);
 	

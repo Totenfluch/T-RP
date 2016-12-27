@@ -93,7 +93,7 @@ public void showTopPanelToClient(int client) {
 	}
 	
 	Format(displayText, sizeof(displayText), "Small Backpack (%i)", g_iSmallBackpackCost);
-	if (tConomy_getCurrency(client) >= g_iSmallBackpackCost && !inventory_hasPlayerItem(client, "Small Backpack")) {
+	if (tConomy_getCurrency(client) >= g_iSmallBackpackCost && !inventory_hasPlayerItem(client, "Small Backpack") && inventory_hasPlayerItem(client, "Tiny Backpack")) {
 		AddMenuItem(BackpackMenu, "small", displayText);
 	} else {
 		AddMenuItem(BackpackMenu, "x", displayText, ITEMDRAW_DISABLED);

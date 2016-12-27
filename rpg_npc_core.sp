@@ -121,20 +121,20 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public int Native_RegisterNpcType(Handle plugin, int numParams) {
 	if (g_iLoadedTypes > MAX_TYPES)
 		return -1;
-		
+	
 	char temptype[128];
 	GetNativeString(1, temptype, 128);
-	if(typeExists(temptype))
+	if (typeExists(temptype))
 		return -1;
 	strcopy(g_cNpcTypes[g_iLoadedTypes], 128, temptype);
 	g_iLoadedTypes++;
 	return (g_iLoadedTypes - 1);
 }
 
-public bool typeExists(char type[128]){
+public bool typeExists(char type[128]) {
 	for (int i = 0; i < g_iLoadedTypes; i++)
-		if(StrEqual(g_cNpcTypes[i], type))
-			return true;
+	if (StrEqual(g_cNpcTypes[i], type))
+		return true;
 	return false;
 }
 
@@ -521,7 +521,7 @@ public Action chatHook(int client, int args) {
 		SQL_TQuery(g_DB, SQLErrorCheckCallback, updateNameQuery);
 		strcopy(g_iNpcList[nNpcId][gName], 128, text);
 		return Plugin_Handled;
-	} else if((g_eNpcEdit[client][nWaitingForModelName] || g_eNpcEdit[client][nWaitingForIdleAnimationName] || g_eNpcEdit[client][nWaitingForName]) && StrContains(text, "abort") != -1){
+	} else if ((g_eNpcEdit[client][nWaitingForModelName] || g_eNpcEdit[client][nWaitingForIdleAnimationName] || g_eNpcEdit[client][nWaitingForName]) && StrContains(text, "abort") != -1) {
 		g_eNpcEdit[client][nWaitingForModelName] = false;
 		g_eNpcEdit[client][nWaitingForIdleAnimationName] = false;
 		g_eNpcEdit[client][nWaitingForName] = false;

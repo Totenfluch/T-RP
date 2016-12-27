@@ -836,7 +836,7 @@ public int SpecialWeaponsPanelHandler(Handle menu, MenuAction action, int client
 public void t_GiveClientItem(int client, char[] weaponItem) {
 	char item[128];
 	strcopy(item, sizeof(item), weaponItem);
-	inventory_givePlayerItem(client, item, 40, "", "Weapon", "Weapon", 1, "Bought from License Weapon Vendor");
+	inventory_givePlayerItem(client, item, 0, "", "Weapon", "Weapon", 1, "Bought from License Weapon Vendor");
 }
 
 stock bool isValidClient(int client) {

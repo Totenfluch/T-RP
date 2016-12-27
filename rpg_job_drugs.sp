@@ -75,7 +75,7 @@ public void OnPluginStart() {
 }
 
 public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]) {
-	if(!StrEqual(itemname, "Marijuana Seeds"))
+	if (!StrEqual(itemname, "Marijuana Seeds"))
 		return;
 	Menu m = CreateMenu(defaultItemHandleHandler);
 	char display[128];
@@ -248,8 +248,8 @@ public void SQLLoadPlantsQuery(Handle owner, Handle hndl, const char[] error, an
 }
 
 public Action cmdPlantCommand(int client, int args) {
-	if (g_iPlayerPlanted[client] > 3) {
-		CPrintToChat(client, "[-T-]{red} You can not have more than 4 active plants (%i Active)", g_iPlayerPlanted[client]);
+	if (g_iPlayerPlanted[client] > (3 + jobs_getLevel(client) / 5)) {
+		CPrintToChat(client, "[-T-]{red} You can not have more than %i active plants (%i Active)", (4 + jobs_getLevel(client) / 5), g_iPlayerPlanted[client]);
 		return Plugin_Handled;
 	}
 	
@@ -381,7 +381,7 @@ public void harvestPlant(int client, int ent, int plantId, int state) {
 	strcopy(playerid, sizeof(playerid), g_ePlayerPlants[plantId][pOwner]);
 	if ((owner = getClientFromAuth2(playerid)) != -1)
 		g_iPlayerPlanted[owner]--;
-
+	
 	g_ePlayerPlants[plantId][pEntRef] = -1;
 	strcopy(g_ePlayerPlants[plantId][pOwner], 20, "");
 	g_ePlayerPlants[plantId][pState] = -1;
@@ -392,9 +392,14 @@ public void harvestPlant(int client, int ent, int plantId, int state) {
 	g_ePlayerPlants[plantId][pActive] = false;
 	
 	int jobLevel = jobs_getLevel(client);
-	if(GetRandomInt(0,100-jobLevel*5 == 1)){
+	int diff;
+	if ((100 - jobLevel * 5) >= 10)
+		diff = 100 - jobLevel * 5;
+	else
+		diff = 10;
+	if (GetRandomInt(0, diff) <= 5) {
 		char reason[256];
-		Format(reason, sizeof(reason), "Harvested with %i%s chance", jobLevel * 5, "%s");
+		Format(reason, sizeof(reason), "Harvested with %i%s chance", jobLevel * 5, "%");
 		inventory_givePlayerItem(client, "Marijuana Seeds", 1, "", "Plant seeds", "Drug Item", 1, reason);
 	}
 }

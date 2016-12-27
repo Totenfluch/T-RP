@@ -6,8 +6,11 @@
 #include <sourcemod>
 #include <sdktools>
 #include <rpg_inventory_core>
+#include <smlib>
 
 #pragma newdecls required
+
+int g_iLatestWeight[MAXPLAYERS + 1];
 
 char g_cLastItemUsed[MAXPLAYERS + 1][128];
 
@@ -32,6 +35,7 @@ public void OnMapStart() {
 }
 
 public void OnClientAuthorized(int client) {
+	g_iLatestWeight[client] = 0;
 	strcopy(g_cLastItemUsed[client], 128, "");
 }
 
@@ -43,6 +47,7 @@ public Action cmdStashWeapon(int client, int args) {
 public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]) {
 	Menu wMenu = CreateMenu(weaponMenuHandler);
 	strcopy(g_cLastItemUsed[client], 128, itemname);
+	g_iLatestWeight[client] = weight;
 	char out[512];
 	Format(out, sizeof(out), "Used: %s (Weight: %i|Category: %s|Category2: %s|rarity: %i)", itemname, weight, category, category2, rarity);
 	PrintToConsole(client, out);
@@ -73,15 +78,15 @@ public int weaponMenuHandler(Handle menu, MenuAction action, int client, int ite
 		
 		if (StrEqual(cValue, "EquipAndStash")) {
 			stashWeapon(client, false, g_cLastItemUsed[client]);
-			takeItem(client, g_cLastItemUsed[client]);
+			takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);
 		} else if (StrEqual(cValue, "GiveWeapon")) {
-			takeItem(client, g_cLastItemUsed[client]);
+			takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);
 		} else if (StrEqual(cValue, "Delete")) {
 			inventory_removePlayerItems(client, g_cLastItemUsed[client], 1, "Deleted from Inventory");
 		} else if (StrEqual(cValue, "eqSuit")) {
-			takeItem(client, g_cLastItemUsed[client]);
+			takeItemSuit(client, g_cLastItemUsed[client]);
 		} else if (StrEqual(cValue, "eqKevlar")) {
-			takeItem(client, g_cLastItemUsed[client]);
+			takeItemSuit(client, g_cLastItemUsed[client]);
 		}
 		strcopy(g_cLastItemUsed[client], 128, "");
 	}
@@ -97,30 +102,54 @@ public void stashWeapon(int client, bool useOverride, char[] weapon) {
 		return;
 	}
 	
-	int slot = -1;
-	if (isPistol(item))
-		slot = 1;
-	else if (isSMG(item) || isRifle(item) || isShotgun(item) || isSniper(item) || isMg(item))
-		slot = 0;
+	int slot = getSlot(item);
 	
 	if (slot != -1) {
 		int weaponIndex = GetPlayerWeaponSlot(client, slot);
 		if (weaponIndex != -1) {
+			int primaryWeaponClip = Weapon_GetPrimaryClip(weaponIndex);
+			int primaryWeaponAmmo = GetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount");
 			RemovePlayerItem(client, weaponIndex);
 			RemoveEdict(weaponIndex);
-			inventory_givePlayerItem(client, item, 40, "", "Weapon", "Weapon", 2, "Stashed Weapon");
+			inventory_givePlayerItem(client, item, primaryWeaponClip * 100 + primaryWeaponAmmo, "", "Weapon", "Weapon", 2, "Stashed Weapon");
 		}
 	}
 	
-	if(GetPlayerWeaponSlot(client, 2) != -1)
+	if (GetPlayerWeaponSlot(client, 2) != -1)
 		EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, 2));
 }
 
-public void takeItem(int client, char[] item) {
+public void takeItemSuit(int client, char[] item) {
 	char item2[128];
 	strcopy(item2, sizeof(item2), item);
 	if (inventory_removePlayerItems(client, item2, 1, "Taken from Inventory"))
 		GivePlayerItem(client, item);
+	
+}
+
+public void takeItem(int client, char[] item, int weight) {
+	char item2[128];
+	strcopy(item2, sizeof(item2), item);
+	if (inventory_removePlayerItems(client, item2, 1, "Taken from Inventory"))
+		GivePlayerItem(client, item);
+	
+	int slot = getSlot(item2);
+	if (GetPlayerWeaponSlot(client, slot) != -1) {
+		EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, slot));
+		int weaponIndex;
+		if ((weaponIndex = GetPlayerWeaponSlot(client, slot)) != -1) {
+			Weapon_SetClips(weaponIndex, weight / 100, weight % 100);
+			SetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount", weight % 100);
+		}
+	}
+}
+
+public int getSlot(char item[128]) {
+	if (isPistol(item))
+		return 1;
+	else if (isSMG(item) || isRifle(item) || isShotgun(item) || isSniper(item) || isMg(item))
+		return 0;
+	return -1;
 }
 
 
@@ -163,12 +192,12 @@ public bool isSniper(char[] weaponName) {
 	} else {
 		return false;
 	}
-} 
+}
 
-public bool isMg(char[] weaponName){
-	if (StrContains(weaponName, "negev", false) != -1 || StrContains(weaponName, "m249", false) != -1){
+public bool isMg(char[] weaponName) {
+	if (StrContains(weaponName, "negev", false) != -1 || StrContains(weaponName, "m249", false) != -1) {
 		return true;
 	} else {
 		return false;
 	}
-}
+} 

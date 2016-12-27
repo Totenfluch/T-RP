@@ -255,8 +255,22 @@ public void OnPluginStart() {
 	
 	gc_bSounds = AutoExecConfig_CreateConVar("rpg_sounds_enable", "1", "0 - disabled, 1 - enable sounds ", _, true, 0.1, true, 1.0);
 	
+	/*
+		Return is the Player is cuffed or not
+		@Param1-> int client
+		
+		@return true if cuffed false if not
+	
+	*/
+	CreateNative("police_isPlayerCuffed", Native_isPlayerCuffed);
+	
 	AutoExecConfig_CleanFile();
 	AutoExecConfig_ExecuteFile();
+}
+
+public int Native_isPlayerCuffed(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	return g_bCuffed[client];
 }
 
 public void OnConfigsExecuted() {

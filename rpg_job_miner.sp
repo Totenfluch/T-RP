@@ -28,7 +28,7 @@ int g_iLoadedZones = 0;
 int g_iZoneCooldown = 200;
 int MAX_COLLECT = 5;
 
-char npctype[128] = "mining_recruiter";
+char npctype[128] = "Mining Recruiter";
 
 public Plugin myinfo = 
 {

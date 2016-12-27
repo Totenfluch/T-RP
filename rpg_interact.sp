@@ -5,6 +5,7 @@
 
 #include <sourcemod>
 #include <sdktools>
+#include <rpg_job_police>
 
 #pragma newdecls required
 
@@ -26,6 +27,7 @@ public Plugin myinfo =
 
 public void OnPluginStart() {
 	g_aInteractions = CreateArray(128, 16);
+	ClearArray(g_aInteractions);
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
@@ -63,7 +65,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public int Native_RegisterInteract(Handle plugin, int numParams) {
 	char tempinteraction[64];
 	GetNativeString(1, tempinteraction, 64);
-	if(FindStringInArray(g_aInteractions, tempinteraction) == -1)
+	if (FindStringInArray(g_aInteractions, tempinteraction) == -1)
 		PushArrayString(g_aInteractions, tempinteraction);
 }
 
@@ -76,12 +78,16 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 		if (!(g_iPlayerPrevButtons[client] & IN_USE) && iButtons & IN_USE) {
 			int target;
 			if ((target = GetClientAimTarget(client, false)) > -1) {
-				float clientPos[3];
-				float targetPos[3];
-				GetClientAbsOrigin(client, clientPos);
-				GetClientAbsOrigin(target, targetPos);
-				if (GetVectorDistance(clientPos, targetPos) <= 75.0)
-					onInteract(client, target);
+				if (isValidClient(target)) {
+					if (!police_isPlayerCuffed(target)) {
+						float clientPos[3];
+						float targetPos[3];
+						GetClientAbsOrigin(client, clientPos);
+						GetClientAbsOrigin(target, targetPos);
+						if (GetVectorDistance(clientPos, targetPos) <= 75.0)
+							onInteract(client, target);
+					}
+				}
 			}
 		}
 		g_iPlayerPrevButtons[client] = iButtons;
@@ -103,7 +109,7 @@ public void onInteract(int client, int target) {
 	char id[64];
 	IntToString(EntIndexToEntRef(target), id, sizeof(id));
 	AddMenuItem(interactMenu, id, "Poke Player");
-	for (int i = 0; i < GetArraySize(g_aInteractions); i++){
+	for (int i = 0; i < GetArraySize(g_aInteractions); i++) {
 		char tempI[64];
 		GetArrayString(g_aInteractions, i, tempI, sizeof(tempI));
 		AddMenuItem(interactMenu, id, tempI);
@@ -128,6 +134,13 @@ public int interactMenuHandler(Handle menu, MenuAction action, int client, int i
 		Call_PushString(display);
 		Call_Finish();
 	}
+}
+
+public bool isValidClient(int client) {
+	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
+		return false;
+	
+	return true;
 }
 
 

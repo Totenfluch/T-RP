@@ -8,6 +8,7 @@
 #include <devzones>
 #include <tConomy>
 #include <smlib>
+#include <rpg_jobs_core>
 
 #pragma newdecls required
 
@@ -71,6 +72,16 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	/*
+		Allows a Player to an Apartment
+		@Param1-> int owner
+		@Param2-> int target
+		
+		@return true if successfull false if not
+	
+	*/
+	CreateNative("aparments_allowPlayer", Native_allowPlayer);
+	
+	/*
 		Table Struct (1) (existing apartments)
 		Id		apartment_id	apartment_price	buyable	flag	bought	map
 		int		vchar			int				bool	vchar	boolean	vchar
@@ -101,6 +112,12 @@ public void OnPluginStart()
 		existingApartments[i][eaId] = -1;
 	}
 	loadApartments();
+}
+
+public int Native_allowPlayer(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	int target = GetNativeCell(2);
+	allowPlayerToApartmentChooser(client, target);
 }
 
 public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
@@ -149,18 +166,22 @@ public int Zone_OnClientEntry(int client, char[] zone) {
 				GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 				if (StrContains(ownedApartments[ownedId][oaAllowed_players], playerid) == -1) {
 					if (!StrEqual(ownedApartments[ownedId][oaPlayerid], playerid)) {
-						if (ownedApartments[ownedId][oaDoor_locked]) {
-							Zone_GetZonePosition(zone, false, zone_pos[client]);
-							g_hClientTimers[client] = CreateTimer(0.1, Timer_Repeat, client, TIMER_REPEAT);
-							PrintToChat(client, "You can't enter %s", ownedApartments[ownedId][oaApartmentName]);
-						} else {
-							PrintToConsole(client, "door unlocked");
+						if (!jobs_isActiveJob(client, "Police")) {
+							if (ownedApartments[ownedId][oaDoor_locked]) {
+								Zone_GetZonePosition(zone, false, zone_pos[client]);
+								g_hClientTimers[client] = CreateTimer(0.1, Timer_Repeat, client, TIMER_REPEAT);
+								PrintToChat(client, "You can't enter %s", ownedApartments[ownedId][oaApartmentName]);
+							} else {
+								PrintToConsole(client, "door unlocked");
+							}
+						}else{
+							PrintToConsole(client, "Police");
 						}
 					} else {
 						PrintToConsole(client, "Owner");
 					}
 				} else {
-					PrintToConsole(client, "in allowed");
+					PrintToConsole(client, "has Key");
 				}
 			}
 		}
@@ -316,7 +337,7 @@ public void buyApartment(int client, int id) {
 		strcopy(ownedApartments[firstFree][oaAllowed_players], 550, "");
 		ownedApartments[firstFree][oaDoor_locked] = false;
 		
-		if(firstFree > g_iOwnedApartmentsCount)
+		if (firstFree > g_iOwnedApartmentsCount)
 			g_iOwnedApartmentsCount = firstFree;
 		
 		PrintToConsole(client, "Assigned %i of %i", firstFree, id);
@@ -574,7 +595,7 @@ public void deleteApartment(char[] apartmentId) {
 	}
 	
 	int eId;
-	if((eId = getLoadedIdFromApartmentId(apartmentId)) != -1){
+	if ((eId = getLoadedIdFromApartmentId(apartmentId)) != -1) {
 		existingApartments[eId][eaId] = -1;
 		strcopy(existingApartments[eId][eaApartment_Id], 128, "");
 		existingApartments[eId][eaApartment_Price] = -1;
@@ -582,7 +603,7 @@ public void deleteApartment(char[] apartmentId) {
 		strcopy(existingApartments[eId][eaFlag], 8, "");
 		existingApartments[eId][eaBought] = false;
 	}
-
+	
 }
 
 public void loadApartments() {
@@ -745,6 +766,65 @@ public Action Timer_Repeat(Handle timer, any client) {
 	
 	KnockbackSetVelocity(client, zone_pos[client], clientloc, 300.0);
 	return Plugin_Continue;
+}
+
+int g_iPlayerTargetKey[MAXPLAYERS + 1];
+public void allowPlayerToApartmentChooser(int owner, int target) {
+	g_iPlayerTargetKey[owner] = target;
+	Menu chooserMenu = CreateMenu(chooserMenuHandler);
+	SetMenuTitle(chooserMenu, "Choose the Apartment");
+	char playerid[20];
+	GetClientAuthId(owner, AuthId_Steam2, playerid, sizeof(playerid));
+	for (int i = 0; i < MAX_APARTMENTS; i++) {
+		if (StrEqual(playerid, ownedApartments[i][oaPlayerid]))
+			AddMenuItem(chooserMenu, ownedApartments[i][oaApartment_Id], ownedApartments[i][oaApartmentName]);
+	}
+	
+	DisplayMenu(chooserMenu, owner, 60);
+}
+
+public int chooserMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[128];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		allowPlayerToApartment(client, g_iPlayerTargetKey[client], cValue);
+	}
+}
+
+public bool allowPlayerToApartment(int owner, int target, char apartmentId[128]) {
+	int aptId;
+	if ((aptId = getLoadedIdFromApartmentId(apartmentId)) != -1) {
+		int ownedId;
+		if ((ownedId = ApartmentIdToOwnedId(aptId)) != -1) {
+			char ownerId[20];
+			GetClientAuthId(owner, AuthId_Steam2, ownerId, sizeof(ownerId));
+			
+			if (StrEqual(ownedApartments[ownedId][oaPlayerid], ownerId)) {
+				char playerid[20];
+				GetClientAuthId(target, AuthId_Steam2, playerid, sizeof(playerid));
+				
+				if (StrEqual(ownedApartments[ownedId][oaAllowed_players], ""))
+					Format(ownedApartments[ownedId][oaAllowed_players], 550, "%s", playerid);
+				else
+					Format(ownedApartments[ownedId][oaAllowed_players], 550, "%s %s", ownedApartments[ownedId][oaAllowed_players], playerid);
+				
+				PrintToChat(target, "You've been granted access to %s by %N", apartmentId, owner);
+				PrintToChat(owner, "You gave %N access to %s", target, apartmentId);
+				updateAccess(apartmentId, ownedId);
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+public void updateAccess(char apartmentId[128], int id) {
+	char mapName[128];
+	GetCurrentMap(mapName, sizeof(mapName));
+	
+	char updateAllowedQuery[1024];
+	Format(updateAllowedQuery, sizeof(updateAllowedQuery), "UPDATE t_rpg_boughtApartments SET allowed_players = '%s' WHERE apartment_id = '%s' AND map = '%s';", ownedApartments[id][oaAllowed_players], apartmentId, mapName);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateAllowedQuery);
 }
 
 public void KnockbackSetVelocity(int client, const float startpoint[3], const float endpoint[3], float magnitude) {

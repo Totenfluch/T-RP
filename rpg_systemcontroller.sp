@@ -211,7 +211,7 @@ public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error,
 			GivePlayerItem(client, primaryWeapon);
 			Client_SetWeaponAmmo(client, primaryWeapon, _, _, primaryWeaponClip, primaryWeaponAmmo);
 			if ((weaponIndex = GetPlayerWeaponSlot(client, 0)) != -1)
-				SetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount", secondaryWeaponAmmo);
+				SetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount", primaryWeaponAmmo);
 		}
 		if (!StrEqual(secondaryWeapon, "")) {
 			GivePlayerItem(client, secondaryWeapon);

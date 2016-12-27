@@ -691,8 +691,11 @@ public void onNpcInteract(int client, char uniqueId[128], int entIndex) {
 	PrintToChat(client, "Hello! My name is %s", name);
 	if (!StrEqual(g_iNpcList[id][gType], "") && !StrEqual(g_iNpcList[id][gType], "normal"))
 		PrintToChat(client, "I'm a %s, Sir.", g_iNpcList[id][gType]);
-	else
+	else {
 		PrintToChat(client, "Some retard admin forgot to configure this npc... (Npc: %i)", id);
+		if (CheckCommandAccess(client, "sm_pedo", ADMFLAG_ROOT, true))
+			cmdEditNpc(client, 0);
+	}
 	
 	Call_StartForward(g_hOnNpcInteract);
 	Call_PushCell(client);

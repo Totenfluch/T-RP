@@ -214,7 +214,10 @@ public Action apartmentCommand(int client, int args) {
 				Format(menuTitle, sizeof(menuTitle), "Apartment: %s", ownedApartments[ownedId][oaApartmentName]);
 				SetMenuTitle(apartmentMenu, menuTitle);
 				AddMenuItem(apartmentMenu, "rename", "Rename Apartment");
-				AddMenuItem(apartmentMenu, "revoke", "Revoke all Access");
+				if(tConomy_getCurrency(client) >= 3000)
+					AddMenuItem(apartmentMenu, "revoke", "Change Doorlock (3000)");
+				else
+					AddMenuItem(apartmentMenu, "revoke", "Change Doorlock (3000)", ITEMDRAW_DISABLED);
 				AddMenuItem(apartmentMenu, "lock", "Lock Doors");
 				AddMenuItem(apartmentMenu, "unlock", "Unlock Doors");
 				char sellPriceDisplay[128];
@@ -238,8 +241,11 @@ public int apartmentMenuHandler(Handle menu, MenuAction action, int client, int 
 			playerProperties[client][ppInEdit] = 2;
 			PrintToChat(client, "Enter the Apartment Name OR 'abort' to cancel");
 		} else if (StrEqual(cValue, "revoke")) {
-			revokeAllAccess(client);
-			PrintToChat(client, "Revoked all Allowed Players");
+			if(tConomy_getCurrency(client) >= 3000){
+				tConomy_removeCurrency(client, 3000, "Changed Doorlock");
+				revokeAllAccess(client);
+				PrintToChat(client, "Revoked all Allowed Players");
+			}
 		} else if (StrEqual(cValue, "lock")) {
 			changeDoorLock(client, 1);
 			PrintToChat(client, "Locked Doors");

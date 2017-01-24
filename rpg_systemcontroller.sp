@@ -6,6 +6,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <smlib>
+#include <multicolors>
 
 #pragma newdecls required
 
@@ -52,10 +53,40 @@ public void OnPluginStart() {
 	HookEvent("player_spawn", onPlayerSpawn, EventHookMode_Post);
 	HookEvent("round_start", onRoundStart, EventHookMode_Post);
 	HookEvent("round_end", onRoundEnd, EventHookMode_Post);
+	HookEvent("cs_match_end_restart", onGameRestart);
+	HookEvent("round_prestart", onGamePreRestart);
 	
 	RegConsoleCmd("sm_loaded", amILoaded, "shows if loaded");
 	
 	SetServerConvars();
+}
+
+public Action onGameRestart(Handle event, const char[] name, bool dontBroadcast) {
+	if (!g_bIsStarted)
+		return;
+	for (int i = 1; i < MAXPLAYERS; i++) {
+		if (!g_bIsPlayerLoaded[i])
+			continue;
+		if (!isValidClient(i))
+			continue;
+		g_bIsPlayerLoaded[i] = false;
+		
+		savePlayer(i);
+	}
+}
+
+public Action onGamePreRestart(Handle event, const char[] name, bool dontBroadcast) {
+	if (!g_bIsStarted)
+		return;
+	for (int i = 1; i < MAXPLAYERS; i++) {
+		if (!g_bIsPlayerLoaded[i])
+			continue;
+		if (!isValidClient(i))
+			continue;
+		g_bIsPlayerLoaded[i] = false;
+		
+		savePlayer(i);
+	}
 }
 
 public Action amILoaded(int client, int args) {
@@ -117,14 +148,6 @@ public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 	SetServerConvars();
 	if (!g_bIsStarted)
 		return;
-	/*for (int i = 1; i < MAXPLAYERS; i++) {
-		if (!isValidClient(i))
-			continue;
-		if (g_bIsPlayerLoaded[i])
-			continue;
-		
-		loadPlayer(i);
-	}*/
 }
 
 public void onRoundEnd(Handle event, const char[] name, bool dontBroadcast) {
@@ -153,7 +176,7 @@ public Action delayedLoad(Handle Timer, int client) {
 		return;
 	if (g_bIsPlayerLoaded[client])
 		return;
-	PrintToChat(client, "Loading...");
+	CPrintToChat(client, "{orange}[{purple}-T-{orange}] {red}Trying to load you ({orange}%N{red})...", client);
 	char mapName[128];
 	GetCurrentMap(mapName, sizeof(mapName));
 	
@@ -229,7 +252,7 @@ public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error,
 			GivePlayerItem(client, nade4);
 		if (!StrEqual(nade5, ""))
 			GivePlayerItem(client, nade5);
-		PrintToChat(client, "Loaded!");
+		CPrintToChat(client, "{orange}[{purple}-T-{orange}] {green}Sucessfully load you ({orange}%N{green})!", client);
 		g_bIsPlayerLoaded[client] = true;
 	}
 }

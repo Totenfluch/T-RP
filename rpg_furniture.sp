@@ -35,7 +35,7 @@ Database g_DB;
 
 enum EditItem {
 	eiRef, 
-	String:eiUniqueId, 
+	String:eiUniqueId[64], 
 	bool:eiEditing
 }
 
@@ -281,11 +281,7 @@ public bool spawnFurniture(int id, char playerid[20], float pos[3], float angles
 	SetEntProp(furnitureEnt, Prop_Send, "m_nSolidType", 6);
 	SetEntProp(furnitureEnt, Prop_Data, "m_CollisionGroup", COLLISION_GROUP_PUSHAWAY);
 	
-	char cId[64];
-	IntToString(id, cId, sizeof(cId));
-	Format(cId, sizeof(cId), "%i %s", id, playerid);
-	
-	SetEntPropString(furnitureEnt, Prop_Data, "m_iName", cId);
+	SetEntPropString(furnitureEnt, Prop_Data, "m_iName", uniqueId);
 	DispatchSpawn(furnitureEnt);
 	
 	TeleportEntity(furnitureEnt, pos, angles, NULL_VECTOR);
@@ -443,11 +439,11 @@ public void updateFurnitureToMySQL(int index, char uniqueId[64]) {
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
 	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "UPDATE t_rpg_furniture SET pos_z = %.2f WHERE map = '%s' AND uniqueId = '%s';", pos[2], mapName, uniqueId);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
-	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "UPDATE t_rpg_furniture SET angles_x = %.2f WHERE map = '%s' AND uniqueId = '%s';", angles[0], mapName, uniqueId);
+	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "UPDATE t_rpg_furniture SET angle_x = %.2f WHERE map = '%s' AND uniqueId = '%s';", angles[0], mapName, uniqueId);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
-	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "UPDATE t_rpg_furniture SET angles_y = %.2f WHERE map = '%s' AND uniqueId = '%s';", angles[1], mapName, uniqueId);
+	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "UPDATE t_rpg_furniture SET angle_y = %.2f WHERE map = '%s' AND uniqueId = '%s';", angles[1], mapName, uniqueId);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
-	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "UPDATE t_rpg_furniture SET angles_z = %.2f WHERE map = '%s' AND uniqueId = '%s';", angles[2], mapName, uniqueId);
+	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "UPDATE t_rpg_furniture SET angle_z = %.2f WHERE map = '%s' AND uniqueId = '%s';", angles[2], mapName, uniqueId);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
 }
 
@@ -521,11 +517,9 @@ public void loadFurnitureQueryCallback(Handle owner, Handle hndl, const char[] e
 		SQL_FetchStringByName(hndl, "playername", playername, sizeof(playername));
 		SQL_FetchStringByName(hndl, "playerid", playerid, sizeof(playerid));
 		
-		PrintToChatAll("spawned %s trying", name);
 		int theId;
-		if ((theId = getLoadedIdByName(name)) != -1) {
+		if ((theId = getLoadedIdByName(name)) != -1)
 			spawnFurniture(theId, playerid, pos, angles, uniqueId);
-			PrintToChatAll("%i spawned %s", theId, name);
-		}
+
 	}
 } 

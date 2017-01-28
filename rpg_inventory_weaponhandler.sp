@@ -45,6 +45,8 @@ public Action cmdStashWeapon(int client, int args) {
 }
 
 public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]) {
+	if(!(StrEqual(category, "Weapon") || StrEqual(itemname, "item_kevlar") || StrEqual(itemname, "item_assaultsuit")))
+		return;
 	Menu wMenu = CreateMenu(weaponMenuHandler);
 	strcopy(g_cLastItemUsed[client], 128, itemname);
 	g_iLatestWeight[client] = weight;

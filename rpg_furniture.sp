@@ -30,9 +30,12 @@ int g_iLoadedFurniture;
 
 int g_iPlayerPrevButtons[MAXPLAYERS + 1];
 
+char dbconfig[] = "gsxh_multiroot";
+Database g_DB;
 
 enum EditItem {
 	eiRef, 
+	String:eiUniqueId, 
 	bool:eiEditing
 }
 
@@ -52,10 +55,21 @@ public void OnPluginStart() {
 	RegConsoleCmd("sm_furniture", openFurnitureMenu, "Opens the Furniture Menu");
 	RegAdminCmd("sm_reloadfurniture", cmdReloadFurniture, ADMFLAG_ROOT, "Reload the Furniture");
 	RegConsoleCmd("sm_builder", cmdBuild, "Edits Furniture");
+	
+	HookEvent("round_start", onRoundStart);
+	
+	char error[255];
+	g_DB = SQL_Connect(dbconfig, true, error, sizeof(error));
+	SQL_SetCharset(g_DB, "utf8");
+	
+	char createTableQuery[4096];
+	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_furniture ( `Id` BIGINT NOT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playername` VARCHAR(40) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `playerid` VARCHAR(20) NOT NULL, `uniqueId` VARCHAR(64) NOT NULL, `map` VARCHAR(64) NOT NULL , `name` VARCHAR(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `model` VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `price` INT NOT NULL , `pos_x` FLOAT NOT NULL , `pos_y` FLOAT NOT NULL , `pos_z` FLOAT NOT NULL , `angle_x` FLOAT NOT NULL , `angle_y` FLOAT NOT NULL , `angle_z` FLOAT NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
 }
 
 public void OnMapStart() {
-	inventory_addItemHandle("Furniture", 2);
+	inventory_addItemHandle("Furniture", 4);
+	inventory_addItemHandle("Apartment", 4);
 	loadFurniture();
 }
 
@@ -194,14 +208,72 @@ public void inventory_onItemUsed(int client, char itemname[128], int weight, cha
 	if ((id = getLoadedIdByName(itemName2)) == -1)
 		return;
 	
-	spawnFurniture(client, id);
+	firstSpawnFurniture(client, id);
 }
 
+public void firstSpawnFurniture(int client, int id) {
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	float pos[3];
+	pos = GetAimOrigin(client);
+	
+	float angles[3];
+	angles[0] = 0.0;
+	angles[1] = 0.0;
+	angles[2] = 0.0;
+	
+	
+	
+	char uniqueId[64];
+	Format(uniqueId, sizeof(uniqueId), "%i %s %i", id, playerid, GetTime());
+	char playername[MAX_NAME_LENGTH + 8];
+	GetClientName(client, playername, sizeof(playername));
+	char clean_playername[MAX_NAME_LENGTH * 2 + 16];
+	SQL_EscapeString(g_DB, playername, clean_playername, sizeof(clean_playername));
+	
+	char mapName[128];
+	GetCurrentMap(mapName, sizeof(mapName));
+	
+	if (!spawnFurniture(id, playerid, pos, angles, uniqueId))
+		return;
+	
+	char addFurnitureQuery[2048];
+	Format(addFurnitureQuery, sizeof(addFurnitureQuery), "INSERT IGNORE INTO `t_rpg_furniture`(`Id`, `timestamp`, `playername`, `playerid`, `uniqueId`, `map`, `name`, `model`, `price`, `pos_x`, `pos_y`, `pos_z`, `angle_x`, `angle_y`, `angle_z`)VALUES(NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s', '%i', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f');", clean_playername, playerid, uniqueId, mapName, LoadedFurnitureItems[id][lfName], LoadedFurnitureItems[id][lfModelPath], LoadedFurnitureItems[id][lfPrice], pos[0], pos[1], pos[2], angles[0], angles[1], angles[2]);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, addFurnitureQuery);
+	
+	char itemName2[128];
+	strcopy(itemName2, sizeof(itemName2), LoadedFurnitureItems[id][lfName]);
+	
+	DataPack dp = CreateDataPack();
+	ResetPack(dp, true);
+	WritePackCell(dp, GetClientUserId(client));
+	WritePackString(dp, itemName2);
+	WritePackCell(dp, 1);
+	WritePackString(dp, "Placed Item");
+	
+	CreateTimer(0.1, removeItemDelayed, dp);
+}
 
-public void spawnFurniture(int client, int id) {
+public Action removeItemDelayed(Handle Timer, any data) {
+	int client;
+	char itemName[128];
+	int amount;
+	char reason[256];
+	ResetPack(data);
+	client = GetClientOfUserId(ReadPackCell(data));
+	ReadPackString(data, itemName, sizeof(itemName));
+	amount = ReadPackCell(data);
+	ReadPackString(data, reason, sizeof(reason));
+	CloseHandle(data);
+	
+	inventory_removePlayerItems(client, itemName, amount, reason);
+}
+
+public bool spawnFurniture(int id, char playerid[20], float pos[3], float angles[3], char uniqueId[64]) {
 	int furnitureEnt = CreateEntityByName("prop_dynamic_override");
 	if (furnitureEnt == -1)
-		return;
+		return false;
 	char modelPath[128];
 	Format(modelPath, sizeof(modelPath), LoadedFurnitureItems[id][lfModelPath]);
 	SetEntityModel(furnitureEnt, modelPath);
@@ -211,22 +283,14 @@ public void spawnFurniture(int client, int id) {
 	
 	char cId[64];
 	IntToString(id, cId, sizeof(cId));
-	
-	char playerid[20];
-	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
-	
 	Format(cId, sizeof(cId), "%i %s", id, playerid);
 	
 	SetEntPropString(furnitureEnt, Prop_Data, "m_iName", cId);
 	DispatchSpawn(furnitureEnt);
-	float pos[3];
-	pos = GetAimOrigin(client);
-	TeleportEntity(furnitureEnt, pos, NULL_VECTOR, NULL_VECTOR);
-	Entity_SetGlobalName(furnitureEnt, LoadedFurnitureItems[id][lfName]);
 	
-	char itemName2[128];
-	strcopy(itemName2, sizeof(itemName2), LoadedFurnitureItems[id][lfName]);
-	inventory_removePlayerItems(client, itemName2, 1, "Placed Item");
+	TeleportEntity(furnitureEnt, pos, angles, NULL_VECTOR);
+	Entity_SetGlobalName(furnitureEnt, LoadedFurnitureItems[id][lfName]);
+	return true;
 }
 
 stock float[3] GetAimOrigin(int client) {
@@ -261,7 +325,7 @@ public Action cmdBuild(int client, int args) {
 	char entName[64];
 	Entity_GetGlobalName(id, entName, sizeof(entName));
 	
-	char uniqueId[40];
+	char uniqueId[64];
 	GetEntPropString(id, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
 	
 	char playerid[20];
@@ -272,7 +336,7 @@ public Action cmdBuild(int client, int args) {
 		return Plugin_Handled;
 	}
 	
-	
+	strcopy(PlayerEditItems[client][eiUniqueId], 64, uniqueId);
 	PlayerEditItems[client][eiRef] = EntIndexToEntRef(id);
 	PlayerEditItems[client][eiEditing] = true;
 	
@@ -287,8 +351,12 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 	if (IsClientInGame(client) && IsPlayerAlive(client)) {
 		if (PlayerEditItems[client][eiEditing]) {
 			if (!(g_iPlayerPrevButtons[client] & IN_USE) && iButtons & IN_USE) {
+				char uId[64];
+				strcopy(uId, sizeof(uId), PlayerEditItems[client][eiUniqueId]);
+				updateFurnitureToMySQL(EntRefToEntIndex(PlayerEditItems[client][eiRef]), uId);
 				PlayerEditItems[client][eiRef] = -1;
 				PlayerEditItems[client][eiEditing] = false;
+				strcopy(PlayerEditItems[client][eiUniqueId], 64, "");
 				PrintToChat(client, "[-T-] Finished Editing");
 				SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 1.0);
 			}
@@ -303,7 +371,6 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					PrintToChat(client, "[-T-] Too far away...");
 				else
 					TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
-				TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
 				iButtons ^= IN_JUMP;
 				return Plugin_Changed;
 			}
@@ -318,7 +385,6 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					PrintToChat(client, "[-T-] Too far away...");
 				else
 					TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
-				TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
 				iButtons ^= IN_DUCK;
 				return Plugin_Changed;
 			}
@@ -361,6 +427,30 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 	return Plugin_Continue;
 }
 
+public void updateFurnitureToMySQL(int index, char uniqueId[64]) {
+	char mapName[128];
+	GetCurrentMap(mapName, sizeof(mapName));
+	
+	float pos[3];
+	GetEntPropVector(index, Prop_Data, "m_vecOrigin", pos);
+	float angles[3];
+	GetEntPropVector(index, Prop_Data, "m_angRotation", angles);
+				
+	char updateFurnitureQuery[256];
+	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "UPDATE t_rpg_furniture SET pos_x = %.2f WHERE map = '%s' AND uniqueId = '%s';", pos[0], mapName, uniqueId);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
+	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "UPDATE t_rpg_furniture SET pos_y = %.2f WHERE map = '%s' AND uniqueId = '%s';", pos[1], mapName, uniqueId);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
+	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "UPDATE t_rpg_furniture SET pos_z = %.2f WHERE map = '%s' AND uniqueId = '%s';", pos[2], mapName, uniqueId);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
+	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "UPDATE t_rpg_furniture SET angles_x = %.2f WHERE map = '%s' AND uniqueId = '%s';", angles[0], mapName, uniqueId);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
+	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "UPDATE t_rpg_furniture SET angles_y = %.2f WHERE map = '%s' AND uniqueId = '%s';", angles[1], mapName, uniqueId);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
+	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "UPDATE t_rpg_furniture SET angles_z = %.2f WHERE map = '%s' AND uniqueId = '%s';", angles[2], mapName, uniqueId);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
+}
+
 
 public bool TraceEntityFilterPlayer(int entity, int contentsMask) {
 	for (int i = 0; i < MAXPLAYERS; i++) {
@@ -385,4 +475,57 @@ public int getLoadedIdByName(char name[64]) {
 
 stock bool isValidClient(int client) {
 	return (1 <= client <= MaxClients && IsClientInGame(client));
+}
+
+public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error, any data) {
+	if (!StrEqual(error, ""))
+		LogError(error);
+}
+
+public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
+	loadFurnitureFromDatabase();
+}
+
+public void loadFurnitureFromDatabase() {
+	char mapName[128];
+	GetCurrentMap(mapName, sizeof(mapName));
+	
+	char loadFurnitureQuery[1024];
+	Format(loadFurnitureQuery, sizeof(loadFurnitureQuery), "SELECT * FROM t_rpg_furniture WHERE map = '%s';", mapName);
+	SQL_TQuery(g_DB, loadFurnitureQueryCallback, loadFurnitureQuery);
+}
+
+public void loadFurnitureQueryCallback(Handle owner, Handle hndl, const char[] error, any data) {
+	while (SQL_FetchRow(hndl)) {
+		char uniqueId[64];
+		char name[64];
+		char model[128];
+		
+		float pos[3];
+		float angles[3];
+		
+		char playername[40];
+		char playerid[20];
+		
+		SQL_FetchStringByName(hndl, "uniqueId", uniqueId, sizeof(uniqueId));
+		SQL_FetchStringByName(hndl, "name", name, sizeof(name));
+		SQL_FetchStringByName(hndl, "model", model, sizeof(model));
+		
+		pos[0] = SQL_FetchFloatByName(hndl, "pos_x");
+		pos[1] = SQL_FetchFloatByName(hndl, "pos_y");
+		pos[2] = SQL_FetchFloatByName(hndl, "pos_z");
+		angles[0] = SQL_FetchFloatByName(hndl, "angle_x");
+		angles[1] = SQL_FetchFloatByName(hndl, "angle_y");
+		angles[2] = SQL_FetchFloatByName(hndl, "angle_z");
+		
+		SQL_FetchStringByName(hndl, "playername", playername, sizeof(playername));
+		SQL_FetchStringByName(hndl, "playerid", playerid, sizeof(playerid));
+		
+		PrintToChatAll("spawned %s trying", name);
+		int theId;
+		if ((theId = getLoadedIdByName(name)) != -1) {
+			spawnFurniture(theId, playerid, pos, angles, uniqueId);
+			PrintToChatAll("%i spawned %s", theId, name);
+		}
+	}
 } 

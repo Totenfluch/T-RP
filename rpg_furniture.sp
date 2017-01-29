@@ -43,7 +43,8 @@ char npctype[128] = "Furniture Vendor";
 enum EditItem {
 	eiRef, 
 	String:eiUniqueId[64], 
-	bool:eiEditing
+	bool:eiEditing, 
+	bool:eiInAdmin
 }
 
 int PlayerEditItems[MAXPLAYERS + 1][EditItem];
@@ -354,9 +355,11 @@ stock float[3] GetAimOrigin(int client) {
 public void OnClientPostAdminCheck(int client) {
 	PlayerEditItems[client][eiRef] = -1;
 	strcopy(activeZone[client], sizeof(activeZone), "");
+	PlayerEditItems[client][eiInAdmin] = false;
 }
 
 public Action cmdBuild(int client, int args) {
+	PlayerEditItems[client][eiInAdmin] = false;
 	int id;
 	if ((id = GetClientAimTarget(client, false)) < 0) {
 		PrintToChat(client, "[-T-] Invalid Item");
@@ -418,6 +421,7 @@ public int buildMenuHandler(Handle menu, MenuAction action, int client, int item
 			strcopy(PlayerEditItems[client][eiUniqueId], 64, uniqueId);
 			PlayerEditItems[client][eiRef] = EntIndexToEntRef(id);
 			PlayerEditItems[client][eiEditing] = true;
+			PlayerEditItems[client][eiInAdmin] = false;
 			
 			PrintToChat(client, "[-T-] Now editing %s", entName);
 			PrintToChat(client, "[-T-] Hold R for Placement, A & D for Angles JUMP for up, Crouch for down and E to Exit");
@@ -448,6 +452,7 @@ public int buildMenuHandler(Handle menu, MenuAction action, int client, int item
 }
 
 public Action cmdAdminBuilder(int client, int args) {
+	PlayerEditItems[client][eiInAdmin] = true;
 	int id;
 	if ((id = GetClientAimTarget(client, false)) < 0) {
 		PrintToChat(client, "[-T-] Invalid Item");
@@ -499,7 +504,7 @@ public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int
 			strcopy(PlayerEditItems[client][eiUniqueId], 64, uniqueId);
 			PlayerEditItems[client][eiRef] = EntIndexToEntRef(id);
 			PlayerEditItems[client][eiEditing] = true;
-			
+			PlayerEditItems[client][eiInAdmin] = true;
 			PrintToChat(client, "[-T-] Now editing %s", entName);
 			PrintToChat(client, "[-T-] Hold R for Placement, A & D for Angles JUMP for up, Crouch for down and E to Exit");
 			SetEntityMoveType(client, MOVETYPE_NONE);
@@ -548,12 +553,12 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				pos[2] += 1;
 				float clientPos[3];
 				GetClientAbsOrigin(client, clientPos);
-				if (GetVectorDistance(clientPos, pos) > 400.0)
+				if ((GetVectorDistance(clientPos, pos) > 400.0) && !PlayerEditItems[client][eiInAdmin])
 					PrintToChat(client, "[-T-] Too far away...");
 				
-				if (Zone_CheckIfZoneExists(activeZone[client], true, true)) {
-					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2])) {
-						if (aparments_isClientOwner(client, activeZone[client])) {
+				if (Zone_CheckIfZoneExists(activeZone[client], true, true) || PlayerEditItems[client][eiInAdmin]) {
+					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]) || PlayerEditItems[client][eiInAdmin]) {
+						if (aparments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
 							TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
 						} else {
 							PrintToChat(client, "[-T-] You do not own this Apartment");
@@ -575,12 +580,12 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				pos[2] -= 1;
 				float clientPos[3];
 				GetClientAbsOrigin(client, clientPos);
-				if (GetVectorDistance(clientPos, pos) > 400.0)
+				if ((GetVectorDistance(clientPos, pos) > 400.0) && !PlayerEditItems[client][eiInAdmin])
 					PrintToChat(client, "[-T-] Too far away...");
 				
-				if (Zone_CheckIfZoneExists(activeZone[client], true, true)) {
-					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2])) {
-						if (aparments_isClientOwner(client, activeZone[client])) {
+				if (Zone_CheckIfZoneExists(activeZone[client], true, true) || PlayerEditItems[client][eiInAdmin]) {
+					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]) || PlayerEditItems[client][eiInAdmin]) {
+						if (aparments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
 							TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
 						} else {
 							PrintToChat(client, "[-T-] You do not own this Apartment");
@@ -601,12 +606,12 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				pos = GetAimOrigin(client);
 				float clientPos[3];
 				GetClientAbsOrigin(client, clientPos);
-				if (GetVectorDistance(clientPos, pos) > 400.0)
+				if ((GetVectorDistance(clientPos, pos) > 400.0) && !PlayerEditItems[client][eiInAdmin])
 					PrintToChat(client, "[-T-] Too far away...");
 				
-				if (Zone_CheckIfZoneExists(activeZone[client], true, true)) {
-					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2])) {
-						if (aparments_isClientOwner(client, activeZone[client])) {
+				if (Zone_CheckIfZoneExists(activeZone[client], true, true) || PlayerEditItems[client][eiInAdmin]) {
+					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]) || PlayerEditItems[client][eiInAdmin]) {
+						if (aparments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
 							TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
 						} else {
 							PrintToChat(client, "[-T-] You do not own this Apartment");

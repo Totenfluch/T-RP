@@ -115,6 +115,7 @@ public void OnPluginStart()
 	
 	RegAdminCmd("sm_apartmentadmin", createApartmentCallback, ADMFLAG_ROOT, "Opens the Apartment Admin Menu");
 	RegConsoleCmd("sm_apartment", apartmentCommand, "Opens the Apartment Menu");
+	HookEvent("round_start", onRoundStart);
 	RegConsoleCmd("say", chatHook);
 	for (int i = 0; i < MAX_APARTMENTS; i++) {
 		ownedApartments[i][oaId] = -1;
@@ -195,9 +196,10 @@ public int Zone_OnClientEntry(int client, char[] zone) {
 					if (!StrEqual(ownedApartments[ownedId][oaPlayerid], playerid)) {
 						if (!jobs_isActiveJob(client, "Police")) {
 							if (ownedApartments[ownedId][oaDoor_locked]) {
-								Zone_GetZonePosition(zone, false, zone_pos[client]);
-								g_hClientTimers[client] = CreateTimer(0.1, Timer_Repeat, client, TIMER_REPEAT);
-								PrintToChat(client, "You can't enter %s", ownedApartments[ownedId][oaApartmentName]);
+								// PUSH ZONE - DIABLED
+								//Zone_GetZonePosition(zone, false, zone_pos[client]);
+								//g_hClientTimers[client] = CreateTimer(0.1, Timer_Repeat, client, TIMER_REPEAT);
+								//PrintToChat(client, "You can't enter %s", ownedApartments[ownedId][oaApartmentName]);
 							} else {
 								PrintToConsole(client, "door unlocked");
 							}
@@ -673,7 +675,35 @@ public void SQLLoadOwnedApartmentsQueryCallback(Handle owner, Handle hndl, const
 		SQL_FetchStringByName(hndl, "playername", ownedApartments[g_iOwnedApartmentsCount][oaPlayername], 48);
 		SQL_FetchStringByName(hndl, "apartment_name", ownedApartments[g_iOwnedApartmentsCount][oaApartmentName], 255);
 		SQL_FetchStringByName(hndl, "allowed_players", ownedApartments[g_iOwnedApartmentsCount][oaAllowed_players], 550);
-		ownedApartments[g_iOwnedApartmentsCount++][oaDoor_locked] = SQL_FetchBoolByName(hndl, "door_locked");
+		ownedApartments[g_iOwnedApartmentsCount][oaDoor_locked] = SQL_FetchBoolByName(hndl, "door_locked");
+		
+		
+		char aptName[128];
+		strcopy(aptName, sizeof(aptName), ownedApartments[g_iOwnedApartmentsCount][oaApartment_Id]);
+		ReplaceString(aptName, sizeof(aptName), "apartment_", "", false);
+		int entity = -1;
+		while ((entity = FindEntityByClassname(entity, "prop_door_rotating")) != INVALID_ENT_REFERENCE) {
+			char uniqueId[64];
+			GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
+			if (StrEqual(aptName, uniqueId)) {
+				if (ownedApartments[g_iOwnedApartmentsCount][oaDoor_locked])
+					AcceptEntityInput(entity, "lock", -1);
+				else
+					AcceptEntityInput(entity, "unlock", -1);
+			}
+		}
+		entity = -1;
+		while ((entity = FindEntityByClassname(entity, "func_door")) != INVALID_ENT_REFERENCE) {
+			char uniqueId[64];
+			GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
+			if (StrEqual(aptName, uniqueId)) {
+				if (ownedApartments[g_iOwnedApartmentsCount][oaDoor_locked])
+					AcceptEntityInput(entity, "lock", -1);
+				else
+					AcceptEntityInput(entity, "unlock", -1);
+			}
+		}
+		g_iOwnedApartmentsCount++;
 	}
 }
 
@@ -738,8 +768,37 @@ public void changeDoorLock(int client, int state/* 1 = Locked | 0 = Unlocked */)
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateDoorLockQuery);
 	int aptId = getOwnedApartmentFromKey(playerProperties[client][ppZone]);
 	ownedApartments[aptId][oaDoor_locked] = state == 1;
-	strcopy(playerProperties[client][ppZone], 128, "");
 	PrintToConsole(client, "%i %s %s %i", state, playerProperties[client][ppZone], mapName, aptId);
+	
+	char aptName[64];
+	strcopy(aptName, sizeof(aptName), playerProperties[client][ppZone]);
+	
+	strcopy(playerProperties[client][ppZone], 128, "");
+	
+	
+	ReplaceString(aptName, sizeof(aptName), "apartment_", "", false);
+	int entity = -1;
+	while ((entity = FindEntityByClassname(entity, "prop_door_rotating")) != INVALID_ENT_REFERENCE) {
+		char uniqueId[64];
+		GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
+		if (StrEqual(aptName, uniqueId)) {
+			if (state)
+				AcceptEntityInput(entity, "lock", -1);
+			else
+				AcceptEntityInput(entity, "unlock", -1);
+		}
+	}
+	entity = -1;
+	while ((entity = FindEntityByClassname(entity, "func_door")) != INVALID_ENT_REFERENCE) {
+		char uniqueId[64];
+		GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
+		if (StrEqual(aptName, uniqueId)) {
+			if (state)
+				AcceptEntityInput(entity, "lock", -1);
+			else
+				AcceptEntityInput(entity, "unlock", -1);
+		}
+	}
 }
 
 public void sellApartment(int client) {
@@ -868,4 +927,34 @@ public void KnockbackSetVelocity(int client, const float startpoint[3], const fl
 	
 	
 	TeleportEntity(client, NULL_VECTOR, NULL_VECTOR, vector);
+}
+
+public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
+	for (int i = 0; i < g_iOwnedApartmentsCount; i++) {
+		char aptName[128];
+		strcopy(aptName, sizeof(aptName), ownedApartments[i][oaApartment_Id]);
+		ReplaceString(aptName, sizeof(aptName), "apartment_", "", false);
+		int entity = -1;
+		while ((entity = FindEntityByClassname(entity, "prop_door_rotating")) != INVALID_ENT_REFERENCE) {
+			char uniqueId[64];
+			GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
+			if (StrEqual(aptName, uniqueId)) {
+				if (ownedApartments[i][oaDoor_locked])
+					AcceptEntityInput(entity, "lock", -1);
+				else
+					AcceptEntityInput(entity, "unlock", -1);
+			}
+		}
+		entity = -1;
+		while ((entity = FindEntityByClassname(entity, "func_door")) != INVALID_ENT_REFERENCE) {
+			char uniqueId[64];
+			GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
+			if (StrEqual(aptName, uniqueId)) {
+				if (ownedApartments[i][oaDoor_locked])
+					AcceptEntityInput(entity, "lock", -1);
+				else
+					AcceptEntityInput(entity, "unlock", -1);
+			}
+		}
+	}
 } 

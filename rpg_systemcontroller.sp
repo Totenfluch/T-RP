@@ -253,8 +253,8 @@ public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error,
 		if (!StrEqual(nade5, ""))
 			GivePlayerItem(client, nade5);
 		CPrintToChat(client, "{orange}[{purple}-T-{orange}] {green}Sucessfully load you ({orange}%N{green})!", client);
-		g_bIsPlayerLoaded[client] = true;
 	}
+	g_bIsPlayerLoaded[client] = true;
 }
 
 public void OnClientDisconnect(int client) {

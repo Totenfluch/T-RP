@@ -8,6 +8,9 @@
 #include <rpg_inventory_core>
 #include <tConomy>
 #include <smlib>
+#include <devzones>
+#include <rpg_apartments>
+#include <rpg_npc_core>
 
 #pragma newdecls required
 
@@ -29,9 +32,13 @@ int LoadedFurnitureItems[MAX_FURNITURE][LoadedFurniture];
 int g_iLoadedFurniture;
 
 int g_iPlayerPrevButtons[MAXPLAYERS + 1];
+char activeZone[MAXPLAYERS + 1][128];
+int g_iLastInteractedWith[MAXPLAYERS + 1];
 
 char dbconfig[] = "gsxh_multiroot";
 Database g_DB;
+
+char npctype[128] = "Furniture Vendor";
 
 enum EditItem {
 	eiRef, 
@@ -52,11 +59,14 @@ public Plugin myinfo =
 };
 
 public void OnPluginStart() {
-	RegConsoleCmd("sm_furniture", openFurnitureMenu, "Opens the Furniture Menu");
+	//RegConsoleCmd("sm_furniture", openFurnitureMenu, "Opens the Furniture Menu");
 	RegAdminCmd("sm_reloadfurniture", cmdReloadFurniture, ADMFLAG_ROOT, "Reload the Furniture");
 	RegConsoleCmd("sm_builder", cmdBuild, "Edits Furniture");
+	RegAdminCmd("sm_abuilder", cmdAdminBuilder, ADMFLAG_ROOT, "Opens the Admin Builder Menu");
 	
 	HookEvent("round_start", onRoundStart);
+	
+	npc_registerNpcType(npctype);
 	
 	char error[255];
 	g_DB = SQL_Connect(dbconfig, true, error, sizeof(error));
@@ -140,7 +150,18 @@ public Action cmdReloadFurniture(int client, int args) {
 	return Plugin_Handled;
 }
 
-public Action openFurnitureMenu(int client, int args) {
+public void openFurnitureMenu(int client) {
+	float playerPos[3];
+	float entPos[3];
+	if (!isValidClient(client))
+		return;
+	if (!IsValidEntity(g_iLastInteractedWith[client]))
+		return;
+	GetClientAbsOrigin(client, playerPos);
+	GetEntPropVector(g_iLastInteractedWith[client], Prop_Data, "m_vecOrigin", entPos);
+	if (GetVectorDistance(playerPos, entPos) > 100.0)
+		return;
+	
 	Handle menu = CreateMenu(furnitureMenuHandler);
 	char menuTitle[128];
 	Format(menuTitle, sizeof(menuTitle), "Loaded Furniture (%i)", g_iLoadedFurniture);
@@ -151,7 +172,6 @@ public Action openFurnitureMenu(int client, int args) {
 		AddMenuItem(menu, cId, LoadedFurnitureItems[i][lfName]);
 	}
 	DisplayMenu(menu, client, 60);
-	return Plugin_Handled;
 }
 
 public int furnitureMenuHandler(Handle menu, MenuAction action, int client, int item) {
@@ -223,7 +243,29 @@ public void firstSpawnFurniture(int client, int id) {
 	angles[1] = 0.0;
 	angles[2] = 0.0;
 	
+	float clientPos[3];
+	GetClientAbsOrigin(client, clientPos);
+	if (GetVectorDistance(clientPos, pos) > 400.0) {
+		PrintToChat(client, "[-T-] Too far away...");
+		return;
+	}
 	
+	if (Zone_CheckIfZoneExists(activeZone[client], true, true)) {
+		if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2])) {
+			if (aparments_isClientOwner(client, activeZone[client])) {
+				// Hurra!
+			} else {
+				PrintToChat(client, "[-T-] You do not own this Apartment");
+				return;
+			}
+		} else {
+			PrintToChat(client, "[-T-] Not in your Apartment");
+			return;
+		}
+	} else {
+		PrintToChat(client, "[-T-] Not an Apartment");
+		return;
+	}
 	
 	char uniqueId[64];
 	Format(uniqueId, sizeof(uniqueId), "%i %s %i", id, playerid, GetTime());
@@ -311,12 +353,15 @@ stock float[3] GetAimOrigin(int client) {
 
 public void OnClientPostAdminCheck(int client) {
 	PlayerEditItems[client][eiRef] = -1;
+	strcopy(activeZone[client], sizeof(activeZone), "");
 }
 
 public Action cmdBuild(int client, int args) {
 	int id;
-	if ((id = GetClientAimTarget(client, false)) < 0)
+	if ((id = GetClientAimTarget(client, false)) < 0) {
+		PrintToChat(client, "[-T-] Invalid Item");
 		return Plugin_Handled;
+	}
 	
 	char entName[64];
 	Entity_GetGlobalName(id, entName, sizeof(entName));
@@ -327,20 +372,160 @@ public Action cmdBuild(int client, int args) {
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
-	if (StrContains(uniqueId, playerid) == -1) {
+	if (StrContains(uniqueId, playerid) < 2) {
 		PrintToChat(client, "[-T-] You do not own that Item.");
 		return Plugin_Handled;
 	}
 	
-	strcopy(PlayerEditItems[client][eiUniqueId], 64, uniqueId);
-	PlayerEditItems[client][eiRef] = EntIndexToEntRef(id);
-	PlayerEditItems[client][eiEditing] = true;
-	
-	PrintToChat(client, "[-T-] Now editing %s", entName);
-	PrintToChat(client, "[-T-] R to Teleport, A & D for Angles JUMP for up E to Exit");
-	SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 0.0);
+	Menu buildMenu = CreateMenu(buildMenuHandler);
+	SetMenuTitle(buildMenu, "Modify Furniture (keep Aiming at the Item!)");
+	AddMenuItem(buildMenu, "edit", "Edit Position");
+	AddMenuItem(buildMenu, "stash", "Put Furniture in Inventory");
+	AddMenuItem(buildMenu, "delete", "Delete Furniture");
+	DisplayMenu(buildMenu, client, 60);
 	
 	return Plugin_Handled;
+}
+
+public int buildMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		
+		int id;
+		if ((id = GetClientAimTarget(client, false)) < 0) {
+			PrintToChat(client, "[-T-] Invalid Item");
+			return 0;
+		}
+		char entName[64];
+		Entity_GetGlobalName(id, entName, sizeof(entName));
+		
+		char uniqueId[64];
+		GetEntPropString(id, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
+		
+		char playerid[20];
+		GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+		
+		char globalName[128];
+		Entity_GetGlobalName(id, globalName, sizeof(globalName));
+		
+		if (StrContains(uniqueId, playerid) < 2) {
+			PrintToChat(client, "[-T-] You do not own that Item.");
+			return 0;
+		}
+		
+		if (StrEqual(cValue, "edit")) {
+			strcopy(PlayerEditItems[client][eiUniqueId], 64, uniqueId);
+			PlayerEditItems[client][eiRef] = EntIndexToEntRef(id);
+			PlayerEditItems[client][eiEditing] = true;
+			
+			PrintToChat(client, "[-T-] Now editing %s", entName);
+			PrintToChat(client, "[-T-] Hold R for Placement, A & D for Angles JUMP for up, Crouch for down and E to Exit");
+			SetEntityMoveType(client, MOVETYPE_NONE);
+		} else if (StrEqual(cValue, "stash")) {
+			char mapName[128];
+			GetCurrentMap(mapName, sizeof(mapName));
+			
+			char updateFurnitureQuery[256];
+			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
+			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
+			
+			AcceptEntityInput(id, "kill");
+			inventory_givePlayerItem(client, globalName, 100, "", "Furniture", "Apartment Stuff", 1, "Stashed Furniture");
+		} else if (StrEqual(cValue, "delete")) {
+			char mapName[128];
+			GetCurrentMap(mapName, sizeof(mapName));
+			
+			char updateFurnitureQuery[256];
+			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
+			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
+			
+			AcceptEntityInput(id, "kill");
+			PrintToChat(client, "[-T-] Deleted %s", globalName);
+		}
+	}
+	return 1;
+}
+
+public Action cmdAdminBuilder(int client, int args) {
+	int id;
+	if ((id = GetClientAimTarget(client, false)) < 0) {
+		PrintToChat(client, "[-T-] Invalid Item");
+		return Plugin_Handled;
+	}
+	
+	char entName[64];
+	Entity_GetGlobalName(id, entName, sizeof(entName));
+	
+	char uniqueId[64];
+	GetEntPropString(id, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
+	
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	Menu buildMenu = CreateMenu(adminBuildMenuHandler);
+	SetMenuTitle(buildMenu, "Modify Furniture (keep Aiming at the Item!)");
+	AddMenuItem(buildMenu, "edit", "Edit Position");
+	AddMenuItem(buildMenu, "stash", "Put Furniture in Inventory");
+	AddMenuItem(buildMenu, "delete", "Delete Furniture");
+	DisplayMenu(buildMenu, client, 60);
+	
+	return Plugin_Handled;
+}
+
+public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		
+		int id;
+		if ((id = GetClientAimTarget(client, false)) < 0) {
+			PrintToChat(client, "[-T-] Invalid Item");
+			return 0;
+		}
+		char entName[64];
+		Entity_GetGlobalName(id, entName, sizeof(entName));
+		
+		char uniqueId[64];
+		GetEntPropString(id, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
+		
+		char playerid[20];
+		GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+		
+		char globalName[128];
+		Entity_GetGlobalName(id, globalName, sizeof(globalName));
+		
+		if (StrEqual(cValue, "edit")) {
+			strcopy(PlayerEditItems[client][eiUniqueId], 64, uniqueId);
+			PlayerEditItems[client][eiRef] = EntIndexToEntRef(id);
+			PlayerEditItems[client][eiEditing] = true;
+			
+			PrintToChat(client, "[-T-] Now editing %s", entName);
+			PrintToChat(client, "[-T-] Hold R for Placement, A & D for Angles JUMP for up, Crouch for down and E to Exit");
+			SetEntityMoveType(client, MOVETYPE_NONE);
+		} else if (StrEqual(cValue, "stash")) {
+			char mapName[128];
+			GetCurrentMap(mapName, sizeof(mapName));
+			
+			char updateFurnitureQuery[256];
+			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
+			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
+			
+			AcceptEntityInput(id, "kill");
+			inventory_givePlayerItem(client, globalName, 100, "", "Furniture", "Apartment Stuff", 1, "Stashed Furniture");
+		} else if (StrEqual(cValue, "delete")) {
+			char mapName[128];
+			GetCurrentMap(mapName, sizeof(mapName));
+			
+			char updateFurnitureQuery[256];
+			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
+			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
+			
+			AcceptEntityInput(id, "kill");
+			PrintToChat(client, "[-T-] Deleted %s", globalName);
+		}
+	}
+	return 1;
 }
 
 public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
@@ -354,7 +539,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				PlayerEditItems[client][eiEditing] = false;
 				strcopy(PlayerEditItems[client][eiUniqueId], 64, "");
 				PrintToChat(client, "[-T-] Finished Editing");
-				SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 1.0);
+				SetEntityMoveType(client, MOVETYPE_WALK);
 			}
 			if (!(g_iPlayerPrevButtons[client] & IN_JUMP) && iButtons & IN_JUMP) {
 				int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
@@ -365,8 +550,21 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				GetClientAbsOrigin(client, clientPos);
 				if (GetVectorDistance(clientPos, pos) > 400.0)
 					PrintToChat(client, "[-T-] Too far away...");
-				else
-					TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
+				
+				if (Zone_CheckIfZoneExists(activeZone[client], true, true)) {
+					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2])) {
+						if (aparments_isClientOwner(client, activeZone[client])) {
+							TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
+						} else {
+							PrintToChat(client, "[-T-] You do not own this Apartment");
+						}
+					} else {
+						PrintToChat(client, "[-T-] Not in your Apartment");
+					}
+				} else {
+					PrintToChat(client, "[-T-] Not an Apartment");
+				}
+				
 				iButtons ^= IN_JUMP;
 				return Plugin_Changed;
 			}
@@ -379,8 +577,21 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				GetClientAbsOrigin(client, clientPos);
 				if (GetVectorDistance(clientPos, pos) > 400.0)
 					PrintToChat(client, "[-T-] Too far away...");
-				else
-					TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
+				
+				if (Zone_CheckIfZoneExists(activeZone[client], true, true)) {
+					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2])) {
+						if (aparments_isClientOwner(client, activeZone[client])) {
+							TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
+						} else {
+							PrintToChat(client, "[-T-] You do not own this Apartment");
+						}
+					} else {
+						PrintToChat(client, "[-T-] Not in your Apartment");
+					}
+				} else {
+					PrintToChat(client, "[-T-] Not an Apartment");
+				}
+				
 				iButtons ^= IN_DUCK;
 				return Plugin_Changed;
 			}
@@ -390,10 +601,23 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				pos = GetAimOrigin(client);
 				float clientPos[3];
 				GetClientAbsOrigin(client, clientPos);
-				if (GetVectorDistance(clientPos, pos) > 500.0)
+				if (GetVectorDistance(clientPos, pos) > 400.0)
 					PrintToChat(client, "[-T-] Too far away...");
-				else
-					TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
+				
+				if (Zone_CheckIfZoneExists(activeZone[client], true, true)) {
+					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2])) {
+						if (aparments_isClientOwner(client, activeZone[client])) {
+							TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
+						} else {
+							PrintToChat(client, "[-T-] You do not own this Apartment");
+						}
+					} else {
+						PrintToChat(client, "[-T-] Not in your Apartment");
+					}
+				} else {
+					PrintToChat(client, "[-T-] Not an Apartment");
+				}
+				
 				iButtons ^= IN_RELOAD;
 				return Plugin_Changed;
 			}
@@ -431,7 +655,7 @@ public void updateFurnitureToMySQL(int index, char uniqueId[64]) {
 	GetEntPropVector(index, Prop_Data, "m_vecOrigin", pos);
 	float angles[3];
 	GetEntPropVector(index, Prop_Data, "m_angRotation", angles);
-				
+	
 	char updateFurnitureQuery[256];
 	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "UPDATE t_rpg_furniture SET pos_x = %.2f WHERE map = '%s' AND uniqueId = '%s';", pos[0], mapName, uniqueId);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
@@ -520,6 +744,21 @@ public void loadFurnitureQueryCallback(Handle owner, Handle hndl, const char[] e
 		int theId;
 		if ((theId = getLoadedIdByName(name)) != -1)
 			spawnFurniture(theId, playerid, pos, angles, uniqueId);
-
+		
 	}
+}
+
+public int Zone_OnClientEntry(int client, char[] zone) {
+	strcopy(activeZone[client], sizeof(activeZone), zone);
+}
+
+public int Zone_OnClientLeave(int client, char[] zone) {
+	strcopy(activeZone[client], sizeof(activeZone), "");
+}
+
+public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex) {
+	if (!StrEqual(npcType, npctype))
+		return;
+	g_iLastInteractedWith[client] = entIndex;
+	openFurnitureMenu(client);
 } 

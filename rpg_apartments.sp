@@ -82,6 +82,15 @@ public void OnPluginStart()
 	CreateNative("aparments_allowPlayer", Native_allowPlayer);
 	
 	/*
+		Checks if a client is the owner of an Apartment
+		@Param1 -> int owner
+		@Param2 -> apartmentId[128] (zone ID)
+		return true or false
+	*/
+	CreateNative("aparments_isClientOwner", Native_isClientOwner);
+	
+	
+	/*
 		Table Struct (1) (existing apartments)
 		Id		apartment_id	apartment_price	buyable	flag	bought	map
 		int		vchar			int				bool	vchar	boolean	vchar
@@ -118,6 +127,24 @@ public int Native_allowPlayer(Handle plugin, int numParams) {
 	int client = GetNativeCell(1);
 	int target = GetNativeCell(2);
 	allowPlayerToApartmentChooser(client, target);
+}
+
+public int Native_isClientOwner(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	char apartmentId[128];
+	GetNativeString(2, apartmentId, sizeof(apartmentId));
+	int aptId;
+	if ((aptId = getLoadedIdFromApartmentId(apartmentId)) != -1) {
+		int ownedId;
+		if ((ownedId = ApartmentIdToOwnedId(aptId)) != -1) {
+			char playerid[20];
+			GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+			if (StrEqual(ownedApartments[ownedId][oaPlayerid], playerid)) {
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
@@ -174,7 +201,7 @@ public int Zone_OnClientEntry(int client, char[] zone) {
 							} else {
 								PrintToConsole(client, "door unlocked");
 							}
-						}else{
+						} else {
 							PrintToConsole(client, "Police");
 						}
 					} else {
@@ -214,7 +241,7 @@ public Action apartmentCommand(int client, int args) {
 				Format(menuTitle, sizeof(menuTitle), "Apartment: %s", ownedApartments[ownedId][oaApartmentName]);
 				SetMenuTitle(apartmentMenu, menuTitle);
 				AddMenuItem(apartmentMenu, "rename", "Rename Apartment");
-				if(tConomy_getCurrency(client) >= 3000)
+				if (tConomy_getCurrency(client) >= 3000)
 					AddMenuItem(apartmentMenu, "revoke", "Change Doorlock (3000)");
 				else
 					AddMenuItem(apartmentMenu, "revoke", "Change Doorlock (3000)", ITEMDRAW_DISABLED);
@@ -241,7 +268,7 @@ public int apartmentMenuHandler(Handle menu, MenuAction action, int client, int 
 			playerProperties[client][ppInEdit] = 2;
 			PrintToChat(client, "Enter the Apartment Name OR 'abort' to cancel");
 		} else if (StrEqual(cValue, "revoke")) {
-			if(tConomy_getCurrency(client) >= 3000){
+			if (tConomy_getCurrency(client) >= 3000) {
 				tConomy_removeCurrency(client, 3000, "Changed Doorlock");
 				revokeAllAccess(client);
 				PrintToChat(client, "Revoked all Allowed Players");

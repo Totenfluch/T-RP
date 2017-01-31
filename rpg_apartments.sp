@@ -9,6 +9,8 @@
 #include <tConomy>
 #include <smlib>
 #include <rpg_jobs_core>
+#include <rpg_inventory_core>
+#include <tCrime>
 
 #pragma newdecls required
 
@@ -70,26 +72,7 @@ public Plugin myinfo =
 };
 
 public void OnPluginStart()
-{
-	/*
-		Allows a Player to an Apartment
-		@Param1-> int owner
-		@Param2-> int target
-		
-		@return true if successfull false if not
-	
-	*/
-	CreateNative("aparments_allowPlayer", Native_allowPlayer);
-	
-	/*
-		Checks if a client is the owner of an Apartment
-		@Param1 -> int owner
-		@Param2 -> apartmentId[128] (zone ID)
-		return true or false
-	*/
-	CreateNative("aparments_isClientOwner", Native_isClientOwner);
-	
-	
+{	
 	/*
 		Table Struct (1) (existing apartments)
 		Id		apartment_id	apartment_price	buyable	flag	bought	map
@@ -122,6 +105,26 @@ public void OnPluginStart()
 		existingApartments[i][eaId] = -1;
 	}
 	loadApartments();
+}
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
+	/*
+		Allows a Player to an Apartment
+		@Param1-> int owner
+		@Param2-> int target
+		
+		@return true if successfull false if not
+	
+	*/
+	CreateNative("aparments_allowPlayer", Native_allowPlayer);
+	
+	/*
+		Checks if a client is the owner of an Apartment
+		@Param1 -> int owner
+		@Param2 -> apartmentId[128] (zone ID)
+		return true or false
+	*/
+	CreateNative("apartments_isClientOwner", Native_isClientOwner);
 }
 
 public int Native_allowPlayer(Handle plugin, int numParams) {
@@ -232,10 +235,112 @@ public int Zone_OnClientLeave(int client, char[] zone) {
 }
 
 public void doorAction(int client, char zone[128], int doorEnt) {
+	if (!apartmentExists(zone))
+		return;
+	int apartmentId;
+	int ownedId;
+	if ((apartmentId = getLoadedIdFromApartmentId(zone)) != -1) {
+		ownedId = ApartmentIdToOwnedId(apartmentId);
+	}
+	bool option = false;
 	if (isOwnedBy(client, zone)) {
+		option = true;
 		apartmentCommand(client, 0);
-	} else {
-		apartmentAction(client);
+	}
+	if (apartmentId != -1) {
+		if (existingApartments[apartmentId][eaBuyable] && !existingApartments[apartmentId][eaBought]) {
+			option = true;
+			apartmentAction(client);
+		}
+	}
+	
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	if (!option && ownedId != -1) {
+		if (StrContains(ownedApartments[ownedId][oaAllowed_players], playerid) != -1) {
+			allowedAction(client, zone);
+		} else if (ownedApartments[ownedId][oaDoor_locked] && jobs_isActiveJob(client, "Police")) {
+			raidAction(client, zone);
+		} else if (ownedApartments[ownedId][oaDoor_locked] && inventory_hasPlayerItem(client, "Lockpick")) {
+			lockpickAction(client, zone);
+		}
+	}
+}
+
+public void lockpickAction(int client, char zone[128]) {
+	Menu apartmentMenu = CreateMenu(lockpickActionHandler);
+	char menuTitle[128];
+	Format(menuTitle, sizeof(menuTitle), "Raid Apartment");
+	SetMenuTitle(apartmentMenu, menuTitle);
+	AddMenuItem(apartmentMenu, "lockpick", "Lockpick Door");
+	DisplayMenu(apartmentMenu, client, 60);
+	strcopy(playerProperties[client][ppZone], 128, zone);
+}
+
+public int lockpickActionHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "lockpick")) {
+			if (GetRandomInt(0, 10) == 2) {
+				changeDoorLock(client, 0);
+				PrintToChat(client, "lockpicked Apartment");
+				tCrime_addCrime(client, 300);
+			} else {
+				PrintToChat(client, "lockpicking failed");
+				tCrime_addCrime(client, 75);
+			}
+			if (GetRandomInt(0, 3) == 1){
+				inventory_removePlayerItems(client, "Lockpick", 1, "Lockpick broke");
+				tCrime_addCrime(client, 50);
+			}
+		}
+	}
+}
+
+public void allowedAction(int client, char zone[128]) {
+	Menu apartmentMenu = CreateMenu(apartmentDoorHandler);
+	char menuTitle[128];
+	Format(menuTitle, sizeof(menuTitle), "Allowed Player @ Apartment Door");
+	SetMenuTitle(apartmentMenu, menuTitle);
+	AddMenuItem(apartmentMenu, "lock", "Lock Door");
+	AddMenuItem(apartmentMenu, "unlock", "Unlock Door");
+	DisplayMenu(apartmentMenu, client, 60);
+	strcopy(playerProperties[client][ppZone], 128, zone);
+}
+
+public int apartmentDoorHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "lock")) {
+			changeDoorLock(client, 1);
+			PrintToChat(client, "Locked Doors");
+		} else if (StrEqual(cValue, "unlock")) {
+			changeDoorLock(client, 0);
+			PrintToChat(client, "Unlocked Doors");
+		}
+	}
+}
+
+public void raidAction(int client, char zone[128]) {
+	Menu apartmentMenu = CreateMenu(apartmentDoorRaidHandler);
+	char menuTitle[128];
+	Format(menuTitle, sizeof(menuTitle), "Raid Apartment");
+	SetMenuTitle(apartmentMenu, menuTitle);
+	AddMenuItem(apartmentMenu, "raid", ">> RAID <<");
+	DisplayMenu(apartmentMenu, client, 60);
+	strcopy(playerProperties[client][ppZone], 128, zone);
+}
+
+public int apartmentDoorRaidHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "raid")) {
+			changeDoorLock(client, 0);
+			PrintToChat(client, "Raided Apartment");
+		}
 	}
 }
 
@@ -256,8 +361,8 @@ public Action apartmentCommand(int client, int args) {
 					AddMenuItem(apartmentMenu, "revoke", "Change Doorlock (3000)");
 				else
 					AddMenuItem(apartmentMenu, "revoke", "Change Doorlock (3000)", ITEMDRAW_DISABLED);
-				AddMenuItem(apartmentMenu, "lock", "Lock Doors");
-				AddMenuItem(apartmentMenu, "unlock", "Unlock Doors");
+				AddMenuItem(apartmentMenu, "lock", "Lock Door");
+				AddMenuItem(apartmentMenu, "unlock", "Unlock Door");
 				char sellPriceDisplay[128];
 				Format(sellPriceDisplay, sizeof(sellPriceDisplay), "Sell Apartment for %.1f", ownedApartments[ownedId][oaPrice_of_purchase] * 0.80);
 				AddMenuItem(apartmentMenu, "sell", sellPriceDisplay);

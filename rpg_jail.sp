@@ -177,6 +177,7 @@ public void putInCell(int client, int cellnumber) {
 	jailpos[0] = g_eJailSpawnPoints[cellnumber][gXPos];
 	jailpos[1] = g_eJailSpawnPoints[cellnumber][gYPos];
 	jailpos[2] = g_eJailSpawnPoints[cellnumber][gZPos];
+	g_ePlayerData[client][ppCell_number] = cellnumber;
 	TeleportEntity(client, jailpos, NULL_VECTOR, NULL_VECTOR);
 }
 

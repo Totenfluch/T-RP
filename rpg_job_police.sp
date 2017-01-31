@@ -1024,7 +1024,9 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				if ((gc_iHandCuffsDistance > distance)) {
 					g_iOfficerTarget[client] = Target;
 					Menu m = CreateMenu(searchMenuHandler);
-					SetMenuTitle(m, "What do you want to do?");
+					char menuTitle[128];
+					Format(menuTitle, sizeof(menuTitle), "What do you want to do? (Crime: %i)", tCrime_getCrime(Targetw));
+					SetMenuTitle(m, menuTitle);
 					AddMenuItem(m, "arrest", "Arrest Player");
 					AddMenuItem(m, "search", "Search Inventory");
 					AddMenuItem(m, "licenses", "Lookup Licenses");
@@ -1044,7 +1046,7 @@ public int searchMenuHandler(Handle menu, MenuAction action, int client, int ite
 		} else if (StrEqual(cValue, "search")) {
 			inventory_showInventoryOfClientToOtherClient(g_iOfficerTarget[client], client);
 		} else if (StrEqual(cValue, "licenses")) {
-			inventory_showInventoryOfClientToOtherClientByCategory(g_iOfficerTarget[client], client, "License");
+			inventory_showInventoryOfClientToOtherClientByCategory(g_iOfficerTarget[client], client, "License");											  																						
 		}
 		g_iOfficerTarget[client] = -1;
 	}

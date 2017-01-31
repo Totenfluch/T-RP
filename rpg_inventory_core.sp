@@ -81,12 +81,20 @@ public void OnPluginStart() {
 	
 	HookEvent("round_start", onRoundStart);
 	
-	g_aHandledItems = CreateArray(400, 200);
-	g_aHandledCategories = CreateArray(300, 100);
-	g_aHandledCategories2 = CreateArray(300, 100);
-	ClearArray(g_aHandledItems);
-	ClearArray(g_aHandledCategories);
-	ClearArray(g_aHandledCategories2);
+	if (g_aHandledItems == INVALID_HANDLE) {
+		g_aHandledItems = CreateArray(400, 200);
+		ClearArray(g_aHandledItems);
+	}
+	
+	if (g_aHandledCategories == INVALID_HANDLE) {
+		g_aHandledCategories = CreateArray(300, 100);
+		ClearArray(g_aHandledCategories);
+	}
+	
+	if (g_aHandledCategories2 == INVALID_HANDLE) {
+		g_aHandledCategories2 = CreateArray(300, 100);
+		ClearArray(g_aHandledCategories2);
+	}
 }
 
 public bool liCheck() {
@@ -96,13 +104,13 @@ public bool liCheck() {
 	char checksum[128];
 	char tochecksum[128];
 	int t = GetTime();
-	int w = t/10000+(24*60*60)*3;
+	int w = t / 10000 + (24 * 60 * 60) * 3;
 	Format(tochecksum, sizeof(tochecksum), "|||success %i %s|||", w, licenseKey);
 	SHA1String(tochecksum, checksum, true);
 	return StrEqual(checksum, shaKey);
 }
 
-public void onRoundStart(Handle event, const char[] name, bool dontBroadcast){
+public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 	if (!licensing_isValid() || !liCheck())
 		SetFailState("Invalid License");
 }
@@ -281,6 +289,21 @@ public int Native_showInventoryOfClientToOtherClientByCategory(Handle plugin, in
 }
 
 public int Native_addItemHandle(Handle plugin, int numParams) {
+	if (g_aHandledItems == INVALID_HANDLE) {
+		g_aHandledItems = CreateArray(400, 200);
+		ClearArray(g_aHandledItems);
+	}
+	
+	if (g_aHandledCategories == INVALID_HANDLE) {
+		g_aHandledCategories = CreateArray(300, 100);
+		ClearArray(g_aHandledCategories);
+	}
+	
+	if (g_aHandledCategories2 == INVALID_HANDLE) {
+		g_aHandledCategories2 = CreateArray(300, 100);
+		ClearArray(g_aHandledCategories2);
+	}
+	
 	char itemName[128];
 	GetNativeString(1, itemName, sizeof(itemName));
 	int type = GetNativeCell(2);
@@ -315,7 +338,8 @@ public void resetLocalInventory(int client) {
 }
 
 public void resetLocalInventorySlot(int client, int slot) {
-	PrintToConsole(client, "cleared: %i", slot);
+	if(IsClientInGame(client))
+		PrintToConsole(client, "cleared: %i", slot);
 	strcopy(g_ePlayerInventory[client][slot][iTimestamp], 64, "");
 	strcopy(g_ePlayerInventory[client][slot][iPlayerid], 20, "");
 	strcopy(g_ePlayerInventory[client][slot][iPlayername], 64, "");
@@ -521,8 +545,8 @@ public void showInventoryOfClientToOtherClientByCategory(int client1, int client
 	SetMenuTitle(menu, menuTitle);
 	for (int i = 0; i < MAX_ITEMS; i++) {
 		if (g_ePlayerInventory[client1][i][iIsActive]) {
-			if (StrContains(g_ePlayerInventory[client1][i][iCategory], category) != 1 || StrContains(g_ePlayerInventory[client1][i][iCategory2], category) != -1) {
-				char id[8];
+			if ((StrEqual(g_ePlayerInventory[client1][i][iCategory], category)) || (StrEqual(g_ePlayerInventory[client1][i][iCategory2], category))) {
+				char id[8]; 
 				IntToString(i, id, sizeof(id));
 				AddMenuItem(menu, id, g_ePlayerInventory[client1][i][iItemname], ITEMDRAW_DISABLED);
 			}

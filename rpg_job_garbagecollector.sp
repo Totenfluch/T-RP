@@ -82,7 +82,8 @@ public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 	for (int i = 0; i < MAX_GARBAGE; i++) {
 		int index1 = GetRandomInt(0, (g_iLoadedGarbage - 1));
 		int index2 = GetRandomInt(0, (g_iLoadedGarbage - 1));
-		SwapArrayItems(randomNumbers, index1, index2);
+		if(GetArraySize(randomNumbers) > 0)
+			SwapArrayItems(randomNumbers, index1, index2);
 	}
 	
 	int spawns = 0;

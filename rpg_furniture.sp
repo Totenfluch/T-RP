@@ -5,12 +5,12 @@
 
 #include <sourcemod>
 #include <sdktools>
+#include <rpg_apartments>
+#include <rpg_npc_core>
 #include <rpg_inventory_core>
 #include <tConomy>
 #include <smlib>
 #include <devzones>
-#include <rpg_apartments>
-#include <rpg_npc_core>
 
 #pragma newdecls required
 
@@ -252,7 +252,7 @@ public void firstSpawnFurniture(int client, int id) {
 	
 	if (Zone_CheckIfZoneExists(activeZone[client], true, true)) {
 		if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2])) {
-			if (aparments_isClientOwner(client, activeZone[client])) {
+			if (apartments_isClientOwner(client, activeZone[client])) {
 				// Hurra!
 			} else {
 				PrintToChat(client, "[-T-] You do not own this Apartment");
@@ -557,7 +557,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				
 				if (Zone_CheckIfZoneExists(activeZone[client], true, true) || PlayerEditItems[client][eiInAdmin]) {
 					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]) || PlayerEditItems[client][eiInAdmin]) {
-						if (aparments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
+						if (apartments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
 							TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
 						} else {
 							PrintToChat(client, "[-T-] You do not own this Apartment");
@@ -584,7 +584,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				
 				if (Zone_CheckIfZoneExists(activeZone[client], true, true) || PlayerEditItems[client][eiInAdmin]) {
 					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]) || PlayerEditItems[client][eiInAdmin]) {
-						if (aparments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
+						if (apartments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
 							TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
 						} else {
 							PrintToChat(client, "[-T-] You do not own this Apartment");
@@ -610,7 +610,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				
 				if (Zone_CheckIfZoneExists(activeZone[client], true, true) || PlayerEditItems[client][eiInAdmin]) {
 					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]) || PlayerEditItems[client][eiInAdmin]) {
-						if (aparments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
+						if (apartments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
 							TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
 						} else {
 							PrintToChat(client, "[-T-] You do not own this Apartment");

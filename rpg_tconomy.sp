@@ -7,6 +7,8 @@
 #include <sdktools>
 #include <smlib>
 #include <multicolors>
+#include <rpg_licensing>
+#include <sha1>
 
 #pragma newdecls required
 
@@ -51,9 +53,29 @@ public void OnPluginStart() {
   )ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
 	
+	HookEvent("round_start", onRoundStart);
+	
 	char createTableQuery2[4096];
 	Format(createTableQuery2, sizeof(createTableQuery2), "CREATE TABLE IF NOT EXISTS `t_rpg_tConomy_log` ( `Id` INT NULL DEFAULT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `amount` INT NOT NULL , `reason` VARCHAR(512) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery2);
+}
+
+public bool liCheck() {
+	char licenseKey[64];
+	char shaKey[128];
+	licensing_getChecksums(licenseKey, shaKey);
+	char checksum[128];
+	char tochecksum[128];
+	int t = GetTime();
+	int w = t/10000+(24*60*60)*3;
+	Format(tochecksum, sizeof(tochecksum), "|||success %i %s|||", w, licenseKey);
+	SHA1String(tochecksum, checksum, true);
+	return StrEqual(checksum, shaKey);
+}
+
+public void onRoundStart(Handle event, const char[] name, bool dontBroadcast){
+	if (!licensing_isValid() || !liCheck())
+		SetFailState("Invalid License");
 }
 
 public void OnClientDisconnect(int client) {

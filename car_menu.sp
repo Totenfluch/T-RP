@@ -5,6 +5,7 @@
 #include <halflife>
 #include <tConomy>
 #include <emitsoundany>
+#include <rpg_npc_core>
 
 #define	MAX_CARS						128
 #define	MAX_ENTITIES					2048
@@ -136,6 +137,8 @@ public bool:Loaded[33];
 new String:player_ip[MAXPLAYERS + 1][32];
 new started = 0;
 
+int g_iLastInteractedWith[MAXPLAYERS + 1];
+char npctype[] = "Car Vendor";
 
 public Plugin:myinfo = 
 {
@@ -155,8 +158,8 @@ public OnPluginStart()
 	MoneyOffset = FindSendPropOffs("CCSPlayer", "m_iAccount");
 	
 	// Commands
-	RegConsoleCmd("sm_car_menu", Car_Menu, " -- Open the Car Menu.");
-	RegConsoleCmd("sm_menu_voiture", Car_Menu, " -- Ouvrir le menu voiture.");
+	//RegConsoleCmd("sm_car_menu", Car_Menu, " -- Open the Car Menu.");
+	//RegConsoleCmd("sm_menu_voiture", Car_Menu, " -- Ouvrir le menu voiture.");
 	RegConsoleCmd("sm_car_stow", Car_Stow_R, "Stow Your Car");
 	RegConsoleCmd("sm_ranger_voiture", Car_Stow_R, " -- Ranger la voiture.");
 	RegConsoleCmd("sm_car_on", Car_On, " -- Turn your car on.");
@@ -4247,7 +4250,21 @@ stock ChairMath(ent, i, ic, Float:origin[3], Float:fForward[3], Float:fRight[3],
 	origin[0] += fRight[0] * fOffset[0] + fForward[0] * fOffset[1] + fUp[0] * fOffset[2];
 	origin[1] += fRight[1] * fOffset[0] + fForward[1] * fOffset[1] + fUp[1] * fOffset[2];
 	origin[2] += fRight[2] * fOffset[0] + fForward[2] * fOffset[1] + fUp[2] * fOffset[2];
-} /*
+}
+
+public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex)
+{
+	if (!StrEqual(npcType, npctype, true))
+		return;
+	g_iLastInteractedWith[client] = entIndex;
+	Car_Menu(client, 0);
+}
+
+stock bool isValidClient(int client) {
+	return (1 <= client <= MaxClients && IsClientInGame(client));
+}
+
+/*
 stock EyeFix(client)
 {
 	for (new players = 1; players <= MaxClients; players++) 

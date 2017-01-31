@@ -67,8 +67,6 @@ public void OnPluginStart() {
 	
 	HookEvent("round_start", onRoundStart);
 	
-	npc_registerNpcType(npctype);
-	
 	char error[255];
 	g_DB = SQL_Connect(dbconfig, true, error, sizeof(error));
 	SQL_SetCharset(g_DB, "utf8");
@@ -79,6 +77,7 @@ public void OnPluginStart() {
 }
 
 public void OnMapStart() {
+	npc_registerNpcType(npctype);
 	inventory_addItemHandle("Furniture", 4);
 	inventory_addItemHandle("Apartment", 4);
 	loadFurniture();

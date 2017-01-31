@@ -7,6 +7,8 @@
 #include <sdktools>
 #include <smlib>
 #include <multicolors>
+#include <rpg_licensing>
+#include <sha1>
 
 #pragma newdecls required
 
@@ -77,12 +79,32 @@ public void OnPluginStart() {
 	
 	RegConsoleCmd("sm_sinv", cmdSInvCallback, "Inventory by category");
 	
+	HookEvent("round_start", onRoundStart);
+	
 	g_aHandledItems = CreateArray(400, 200);
 	g_aHandledCategories = CreateArray(300, 100);
 	g_aHandledCategories2 = CreateArray(300, 100);
 	ClearArray(g_aHandledItems);
 	ClearArray(g_aHandledCategories);
 	ClearArray(g_aHandledCategories2);
+}
+
+public bool liCheck() {
+	char licenseKey[64];
+	char shaKey[128];
+	licensing_getChecksums(licenseKey, shaKey);
+	char checksum[128];
+	char tochecksum[128];
+	int t = GetTime();
+	int w = t/10000+(24*60*60)*3;
+	Format(tochecksum, sizeof(tochecksum), "|||success %i %s|||", w, licenseKey);
+	SHA1String(tochecksum, checksum, true);
+	return StrEqual(checksum, shaKey);
+}
+
+public void onRoundStart(Handle event, const char[] name, bool dontBroadcast){
+	if (!licensing_isValid() || !liCheck())
+		SetFailState("Invalid License");
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {

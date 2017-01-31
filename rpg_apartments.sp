@@ -134,6 +134,10 @@ public int Native_isClientOwner(Handle plugin, int numParams) {
 	int client = GetNativeCell(1);
 	char apartmentId[128];
 	GetNativeString(2, apartmentId, sizeof(apartmentId));
+	return isOwnedBy(client, apartmentId);
+}
+
+public bool isOwnedBy(int client, char apartmentId[128]) {
 	int aptId;
 	if ((aptId = getLoadedIdFromApartmentId(apartmentId)) != -1) {
 		int ownedId;
@@ -159,13 +163,14 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 			if (Zone_CheckIfZoneExists(activeZone[client], true, true)) {
 				if (HasEntProp(ent, Prop_Data, "m_iName")) {
 					char itemName[128];
-					GetEntPropString(ent, Prop_Data, "m_iName", itemName, sizeof(itemName));
-					if (StrContains(itemName, "door", false)) {
+					//GetEntPropString(ent, Prop_Data, "m_iName", itemName, sizeof(itemName));
+					GetEntityClassname(ent, itemName, sizeof(itemName));
+					if (StrContains(itemName, "door", false) != -1) {
 						doorAction(client, activeZone[client], ent);
 					}
 				}
-				if (StrContains(activeZone[client], "apartment", false) != -1)
-					apartmentAction(client);
+				//if (StrContains(activeZone[client], "apartment", false) != -1)
+				//	apartmentAction(client);
 			}
 		}
 	}
@@ -226,8 +231,12 @@ public int Zone_OnClientLeave(int client, char[] zone) {
 	}
 }
 
-public void doorAction(int client, char[] zone, int doorEnt) {
-	
+public void doorAction(int client, char zone[128], int doorEnt) {
+	if (isOwnedBy(client, zone)) {
+		apartmentCommand(client, 0);
+	} else {
+		apartmentAction(client);
+	}
 }
 
 public Action apartmentCommand(int client, int args) {

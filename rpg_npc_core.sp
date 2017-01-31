@@ -6,6 +6,8 @@
 #include <sourcemod>
 #include <sdktools>
 #include <smlib>
+#include <rpg_licensing>
+#include <sha1>
 
 #define MAX_NPCS 512
 #define MAX_TYPES 64
@@ -116,6 +118,19 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		@return -
 	*/
 	g_hOnNpcInteract = CreateGlobalForward("OnNpcInteract", ET_Ignore, Param_Cell, Param_String, Param_String, Param_Cell);
+}
+
+public bool liCheck() {
+	char licenseKey[64];
+	char shaKey[128];
+	licensing_getChecksums(licenseKey, shaKey);
+	char checksum[128];
+	char tochecksum[128];
+	int t = GetTime();
+	int w = t/10000+(24*60*60)*3;
+	Format(tochecksum, sizeof(tochecksum), "|||success %i %s|||", w, licenseKey);
+	SHA1String(tochecksum, checksum, true);
+	return StrEqual(checksum, shaKey);
 }
 
 public int Native_RegisterNpcType(Handle plugin, int numParams) {
@@ -569,6 +584,8 @@ public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error,
 
 public void onRoundStart(Handle event, const char[] name, bool dontBroadcast)
 {
+	if (!licensing_isValid() || !liCheck())
+		SetFailState("Invalid License");
 	g_iNpcId = 0;
 	loadNpcs();
 }

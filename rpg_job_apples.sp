@@ -81,6 +81,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				if (g_iCollectedLoot[client][g_iPlayerZoneId[client]] >= MAX_COLLECT || g_iAppleZoneCooldown[client][g_iPlayerZoneId[client]] > 0) {
 					CPrintToChat(client, "{red}Apple Harvesting at this Tree is on cooldown");
 					g_iPlayerPrevButtons[client] = iButtons;
+					setInfo(client);
 					return;
 				}
 				if (!jobs_isActiveJob(client, "Apple Harvester"))
@@ -88,6 +89,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				char infoString[64];
 				Format(infoString, sizeof(infoString), "Apple Harvesting (%i)", jobs_getLevel(client));
 				jobs_startProgressBar(client, 1, infoString);
+				setInfo(client);
 			}
 		}
 		g_iPlayerPrevButtons[client] = iButtons;
@@ -106,6 +108,7 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 	Format(addCurrencyReason, sizeof(addCurrencyReason), "Apple Harvesting (Level %i)", jobs_getLevel(client));
 	inventory_givePlayerItem(client, "Apple", 20, "", "Crafting Materials", "Apple Harvesting", 1, addCurrencyReason);
 	jobs_addExperience(client, 10, "Apple Harvester");
+	setInfo(client);
 }
 
 public void OnClientAuthorized(int client) {
@@ -136,9 +139,7 @@ public int Zone_OnClientEntry(int client, char[] zone) {
 		g_bPlayerInAppleZone[client] = false;
 		g_iPlayerZoneId[client] = -1;
 	}
-	char out[512];
-	Format(out, sizeof(out), "Entry: %s", zone);
-	PrintToChat(client, out);
+	setInfo(client);
 }
 
 public int Zone_OnClientLeave(int client, char[] zone) {
@@ -150,9 +151,7 @@ public int Zone_OnClientLeave(int client, char[] zone) {
 		g_bPlayerInAppleZone[client] = false;
 		g_iPlayerZoneId[client] = -1;
 	}
-	char out[512];
-	Format(out, sizeof(out), "Exiting: %s", zone);
-	PrintToChat(client, out);
+	eraseInfo(client);
 }
 
 public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex) {
@@ -229,5 +228,17 @@ stock bool isValidClient(int client) {
 		return false;
 	
 	return true;
+}
+
+public void setInfo(int client) {
+	if (!jobs_isActiveJob(client, "Apple Harvester"))
+		return;
+	char info[128];
+	Format(info, sizeof(info), "%s: Harvested %i/%i (%is Cd)", activeZone[client], g_iCollectedLoot[client][g_iPlayerZoneId[client]], MAX_COLLECT, g_iAppleZoneCooldown[client][g_iPlayerZoneId[client]]);
+	jobs_setCurrentInfo(client, info);
+}
+
+public void eraseInfo(int client) {
+	jobs_setCurrentInfo(client, "");
 }
 

@@ -77,6 +77,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				if (g_iCollectedLoot[client][g_iPlayerZoneId[client]] >= MAX_COLLECT || g_iGardenerZoneCooldown[client][g_iPlayerZoneId[client]] > 0) {
 					CPrintToChat(client, "{red}Gardening in this area is on cooldown");
 					g_iPlayerPrevButtons[client] = iButtons;
+					setInfo(client);
 					return;
 				}
 				if (!jobs_isActiveJob(client, "Gardener"))
@@ -84,6 +85,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				char infoString[64];
 				Format(infoString, sizeof(infoString), "Gardening (%i)", jobs_getLevel(client));
 				jobs_startProgressBar(client, 3, infoString);
+				setInfo(client);
 			}
 		}
 		g_iPlayerPrevButtons[client] = iButtons;
@@ -102,6 +104,7 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 	Format(addCurrencyReason, sizeof(addCurrencyReason), "Gardening (Level %i)", jobs_getLevel(client));
 	tConomy_addBankCurrency(client, 20, "Gardening");
 	jobs_addExperience(client, 20, "Gardener");
+	setInfo(client);
 }
 
 public void OnClientAuthorized(int client) {
@@ -132,6 +135,7 @@ public int Zone_OnClientEntry(int client, char[] zone) {
 		g_bPlayerInGardenerZone[client] = false;
 		g_iPlayerZoneId[client] = -1;
 	}
+	setInfo(client);
 }
 
 public int Zone_OnClientLeave(int client, char[] zone) {
@@ -143,6 +147,7 @@ public int Zone_OnClientLeave(int client, char[] zone) {
 		g_bPlayerInGardenerZone[client] = false;
 		g_iPlayerZoneId[client] = -1;
 	}
+	eraseInfo(client);
 }
 
 public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex) {
@@ -200,3 +205,14 @@ stock bool isValidClient(int client) {
 	return true;
 }
 
+public void setInfo(int client) {
+	if (!jobs_isActiveJob(client, "Gardener"))
+		return;
+	char info[128];
+	Format(info, sizeof(info), "%s: Gardened %i/%i (%is Cd)", activeZone[client], g_iCollectedLoot[client][g_iPlayerZoneId[client]], MAX_COLLECT, g_iGardenerZoneCooldown[client][g_iPlayerZoneId[client]]);
+	jobs_setCurrentInfo(client, info);
+}
+
+public void eraseInfo(int client) {
+	jobs_setCurrentInfo(client, "");
+} 

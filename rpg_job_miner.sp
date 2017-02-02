@@ -77,6 +77,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				if (g_iCollectedLoot[client][g_iPlayerZoneId[client]] >= MAX_COLLECT || g_iMiningZoneCooldown[client][g_iPlayerZoneId[client]] > 0) {
 					CPrintToChat(client, "{red}Mining in this field is on cooldown");
 					g_iPlayerPrevButtons[client] = iButtons;
+					setInfo(client);
 					return;
 				}
 				if (!jobs_isActiveJob(client, "Mining"))
@@ -84,6 +85,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				char infoString[64];
 				Format(infoString, sizeof(infoString), "Mining (%i)", jobs_getLevel(client));
 				jobs_startProgressBar(client, 5, infoString);
+				setInfo(client);
 			}
 		}
 		g_iPlayerPrevButtons[client] = iButtons;
@@ -103,6 +105,7 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 	//tConomy_addCurrency(client, 10 * jobs_getLevel(client), addCurrencyReason);
 	inventory_givePlayerItem(client, "Iron ore", 20, "", "Crafting Materials", "Mining", 1, addCurrencyReason);
 	jobs_addExperience(client, 10, "Mining");
+	setInfo(client);
 }
 
 public void OnClientAuthorized(int client) {
@@ -133,6 +136,7 @@ public int Zone_OnClientEntry(int client, char[] zone) {
 		g_bPlayerInMiningZone[client] = false;
 		g_iPlayerZoneId[client] = -1;
 	}
+	setInfo(client);
 }
 
 public int Zone_OnClientLeave(int client, char[] zone) {
@@ -144,6 +148,7 @@ public int Zone_OnClientLeave(int client, char[] zone) {
 		g_bPlayerInMiningZone[client] = false;
 		g_iPlayerZoneId[client] = -1;
 	}
+	eraseInfo(client);
 }
 
 public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex) {
@@ -231,3 +236,14 @@ stock bool isValidClient(int client) {
 	return true;
 }
 
+public void setInfo(int client) {
+	if (!jobs_isActiveJob(client, "Mining"))
+		return;
+	char info[128];
+	Format(info, sizeof(info), "%s: Mined %i/%i (%is Cd)", activeZone[client], g_iCollectedLoot[client][g_iPlayerZoneId[client]], MAX_COLLECT, g_iMiningZoneCooldown[client][g_iPlayerZoneId[client]]);
+	jobs_setCurrentInfo(client, info);
+}
+
+public void eraseInfo(int client) {
+	jobs_setCurrentInfo(client, "");
+}

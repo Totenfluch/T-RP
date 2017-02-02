@@ -127,7 +127,7 @@ public bool liCheck() {
 	char checksum[128];
 	char tochecksum[128];
 	int t = GetTime();
-	int w = t/10000+(24*60*60)*3;
+	int w = t / 10000 + (24 * 60 * 60) * 3;
 	Format(tochecksum, sizeof(tochecksum), "|||success %i %s|||", w, licenseKey);
 	SHA1String(tochecksum, checksum, true);
 	return StrEqual(checksum, shaKey);
@@ -525,7 +525,7 @@ public Action chatHook(int client, int args) {
 	} else if (g_eNpcEdit[client][nWaitingForName] && StrContains(text, "abort") == -1) {
 		SetVariantString(text);
 		char entityName[256];
-		Format(entityName, sizeof(entityName), "npc_%s", text);
+		Format(entityName, sizeof(entityName), "%s", text);
 		Entity_SetGlobalName(g_eNpcEdit[client][nNpcId], entityName, sizeof(entityName));
 		PrintToChat(client, "Set Name of %s TO %s", entityName, text);
 		g_eNpcEdit[client][nWaitingForName] = false;
@@ -659,9 +659,9 @@ public void CreateNpc(char uniqueId[128], char name[64], char model[256], char i
 	
 	char entityName[128];
 	if (StrEqual(name, ""))
-		Format(entityName, sizeof(entityName), "npc_%i", g_iNpcId);
+		Format(entityName, sizeof(entityName), "%i", g_iNpcId);
 	else
-		Format(entityName, sizeof(entityName), "npc_%s", name);
+		Format(entityName, sizeof(entityName), "%s", name);
 	Entity_SetGlobalName(npc, entityName);
 	g_iNpcId++;
 	

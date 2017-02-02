@@ -72,7 +72,7 @@ public Plugin myinfo =
 };
 
 public void OnPluginStart()
-{	
+{
 	/*
 		Table Struct (1) (existing apartments)
 		Id		apartment_id	apartment_price	buyable	flag	bought	map
@@ -290,7 +290,7 @@ public int lockpickActionHandler(Handle menu, MenuAction action, int client, int
 				PrintToChat(client, "lockpicking failed");
 				tCrime_addCrime(client, 75);
 			}
-			if (GetRandomInt(0, 3) == 1){
+			if (GetRandomInt(0, 3) == 1) {
 				inventory_removePlayerItems(client, "Lockpick", 1, "Lockpick broke");
 				tCrime_addCrime(client, 50);
 			}
@@ -891,11 +891,12 @@ public void changeDoorLock(int client, int state/* 1 = Locked | 0 = Unlocked */)
 	
 	
 	ReplaceString(aptName, sizeof(aptName), "apartment_", "", false);
+	PrintToChat(client, ">>%s<<", aptName);
 	int entity = -1;
 	while ((entity = FindEntityByClassname(entity, "prop_door_rotating")) != INVALID_ENT_REFERENCE) {
 		char uniqueId[64];
 		GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
-		if (StrEqual(aptName, uniqueId)) {
+		if (StrContains(uniqueId, aptName) != -1) {
 			if (state)
 				AcceptEntityInput(entity, "lock", -1);
 			else
@@ -906,7 +907,7 @@ public void changeDoorLock(int client, int state/* 1 = Locked | 0 = Unlocked */)
 	while ((entity = FindEntityByClassname(entity, "func_door")) != INVALID_ENT_REFERENCE) {
 		char uniqueId[64];
 		GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
-		if (StrEqual(aptName, uniqueId)) {
+		if (StrContains(uniqueId, aptName) != -1) {
 			if (state)
 				AcceptEntityInput(entity, "lock", -1);
 			else

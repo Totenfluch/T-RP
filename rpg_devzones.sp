@@ -260,6 +260,11 @@ public void ReadZones() {
 	
 	char map[64];
 	GetCurrentMap(map, sizeof(map));
+	if (StrContains(map, "workshop") != -1) {
+		char mapPart[3][64];
+		ExplodeString(map, "/", mapPart, 3, 64);
+		strcopy(map, sizeof(map), mapPart[2]);
+	}
 	BuildPath(Path_SM, Path, sizeof(Path), "configs/dev_zones/%s.zones.txt", map);
 	if (!FileExists(Path))
 	{
@@ -301,6 +306,11 @@ public void SaveZones(int client) {
 	char Path[512];
 	char map[64];
 	GetCurrentMap(map, sizeof(map));
+	if (StrContains(map, "workshop") != -1) {
+		char mapPart[3][64];
+		ExplodeString(map, "/", mapPart, 3, 64);
+		strcopy(map, sizeof(map), mapPart[2]);
+	}
 	BuildPath(Path_SM, Path, sizeof(Path), "configs/dev_zones/%s.zones.txt", map);
 	Handle file = OpenFile(Path, "w+");
 	CloseHandle(file);

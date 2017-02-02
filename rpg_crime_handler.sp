@@ -28,6 +28,10 @@ public void onPlayerHurt(Handle event, const char[] name, bool dontBroadcast) {
 	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 	int hurtdmg = GetEventInt(event, "dmg_health");
 	
+	if (!isValidClient(attacker))
+		return;
+	
+	
 	if (jobs_isActiveJob(attacker, "Police"))
 		return;
 	
@@ -36,10 +40,18 @@ public void onPlayerHurt(Handle event, const char[] name, bool dontBroadcast) {
 
 public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(GetEventInt(event, "attacker"));
+	
+	if (!isValidClient(client))
+		return;
+		
 	if (jobs_isActiveJob(client, "Police"))
 		return;
 	
 	tCrime_addCrime(client, 400);
+}
+
+stock bool isValidClient(int client) {
+	return (1 <= client <= MaxClients && IsClientInGame(client));
 }
 
 

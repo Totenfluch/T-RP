@@ -26,7 +26,9 @@ int g_iAppleZoneCooldown[MAXPLAYERS + 1][MAX_ZONES];
 int g_iLoadedZones = 0;
 
 int g_iZoneCooldown = 100;
-int MAX_COLLECT = 50;
+int MAX_COLLECT = 5;
+
+char activeZone[MAXPLAYERS + 1][128];
 
 char npctype[128] = "Apple Recruiter";
 
@@ -125,6 +127,7 @@ public void OnClientDisconnect(int client) {
 }
 
 public int Zone_OnClientEntry(int client, char[] zone) {
+	strcopy(activeZone[client], sizeof(activeZone), zone);
 	if (StrContains(zone, "Apple", false) != -1) {
 		addZone(zone);
 		g_bPlayerInAppleZone[client] = true;
@@ -139,6 +142,10 @@ public int Zone_OnClientEntry(int client, char[] zone) {
 }
 
 public int Zone_OnClientLeave(int client, char[] zone) {
+	float pos[3];
+	GetClientAbsOrigin(client, pos);
+	if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]))
+		return;
 	if (StrContains(zone, "Apple", false) != -1) {
 		g_bPlayerInAppleZone[client] = false;
 		g_iPlayerZoneId[client] = -1;
@@ -187,13 +194,13 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			jobs_giveJob(client, "Apple Harvester");
 		} else if (StrEqual(cValue, "sellApple")) {
 			if (inventory_hasPlayerItem(client, "Apple")) {
-				tConomy_addCurrency(client, 5, "Sold Apple to Vendor");
+				tConomy_addCurrency(client, 5 + jobs_getLevel(client), "Sold Apple to Vendor");
 				inventory_removePlayerItems(client, "Apple", 1, "Sold to Vendor");
 			}
 		} else if (StrEqual(cValue, "sellAllApples")) {
 			int itemamount = inventory_getPlayerItemAmount(client, "Apple");
 			if (inventory_removePlayerItems(client, "Apple", itemamount, "Sold to Vendor (Mass Sell)"))
-				tConomy_addCurrency(client, 5 * itemamount, "Sold Apple to Vendor");
+				tConomy_addCurrency(client, (5 + jobs_getLevel(client)) * itemamount, "Sold Apple to Vendor");
 		}
 	}
 }

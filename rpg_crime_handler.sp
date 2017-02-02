@@ -43,7 +43,7 @@ public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 	
 	if (!isValidClient(client))
 		return;
-		
+	
 	if (jobs_isActiveJob(client, "Police"))
 		return;
 	

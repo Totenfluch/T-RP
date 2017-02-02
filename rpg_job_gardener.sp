@@ -26,7 +26,9 @@ int g_iGardenerZoneCooldown[MAXPLAYERS + 1][MAX_ZONES];
 int g_iLoadedZones = 0;
 
 int g_iZoneCooldown = 200;
-int MAX_COLLECT = 20;
+int MAX_COLLECT = 10;
+
+char activeZone[MAXPLAYERS + 1][128];
 
 char npctype[128] = "Gardener Recruiter";
 
@@ -121,6 +123,7 @@ public void OnClientDisconnect(int client) {
 }
 
 public int Zone_OnClientEntry(int client, char[] zone) {
+	strcopy(activeZone[client], sizeof(activeZone), zone);
 	if (StrContains(zone, "garden") != -1) {
 		addZone(zone);
 		g_bPlayerInGardenerZone[client] = true;
@@ -132,6 +135,10 @@ public int Zone_OnClientEntry(int client, char[] zone) {
 }
 
 public int Zone_OnClientLeave(int client, char[] zone) {
+	float pos[3];
+	GetClientAbsOrigin(client, pos);
+	if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]))
+		return;
 	if (StrContains(zone, "garden", false) != -1) {
 		g_bPlayerInGardenerZone[client] = false;
 		g_iPlayerZoneId[client] = -1;

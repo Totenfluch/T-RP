@@ -20,6 +20,7 @@
 int g_iPlayerPrevButtons[MAXPLAYERS + 1];
 char g_cDBConfig[] = "gsxh_multiroot";
 char activeZone[MAXPLAYERS + 1][128];
+char prevZone[MAXPLAYERS + 1][128];
 
 Database g_DB;
 
@@ -190,6 +191,7 @@ public void OnClientPostAdminCheck(int client) {
 }
 
 public int Zone_OnClientEntry(int client, char[] zone) {
+	strcopy(prevZone[client], sizeof(prevZone), activeZone[client]);
 	strcopy(activeZone[client], sizeof(activeZone), zone);
 	if (StrContains(zone, "apartment_", false) == 0) {
 		int zoneId;
@@ -226,6 +228,11 @@ public int Zone_OnClientEntry(int client, char[] zone) {
 }
 
 public int Zone_OnClientLeave(int client, char[] zone) {
+	float pos[3];
+	GetClientAbsOrigin(client, pos);
+	if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]))
+		return;
+	strcopy(prevZone[client], sizeof(prevZone), "");
 	strcopy(activeZone[client], sizeof(activeZone), "");
 	if (StrContains(zone, "apartment_", false) != -1) {
 		if (g_hClientTimers[client] != INVALID_HANDLE)
@@ -265,6 +272,7 @@ public void doorAction(int client, char zone[128], int doorEnt) {
 			lockpickAction(client, zone);
 		}
 	}
+	PrintToChat(client, "Apartment '%s' is owned by %s", ownedApartments[ownedId][oaApartmentName], ownedApartments[ownedId][oaPlayername]);
 }
 
 public void lockpickAction(int client, char zone[128]) {
@@ -430,7 +438,7 @@ public void apartmentAction(int client) {
 				PrintToChat(client, "This Apartment (%i | %i) '%s' is owned by %s", apartmentId, owned, ownedApartments[owned][oaApartmentName], ownedApartments[owned][oaPlayername]);
 		}
 	}
-	PrintToChat(client, "Selected: %i", apartmentId);
+	//PrintToChat(client, "Selected: %i", apartmentId);
 }
 
 public int buyApartmentHandler(Handle menu, MenuAction action, int client, int item) {
@@ -891,7 +899,7 @@ public void changeDoorLock(int client, int state/* 1 = Locked | 0 = Unlocked */)
 	
 	
 	ReplaceString(aptName, sizeof(aptName), "apartment_", "", false);
-	PrintToChat(client, ">>%s<<", aptName);
+	//PrintToChat(client, ">>%s<<", aptName);
 	int entity = -1;
 	while ((entity = FindEntityByClassname(entity, "prop_door_rotating")) != INVALID_ENT_REFERENCE) {
 		char uniqueId[64];
@@ -920,6 +928,8 @@ public void sellApartment(int client) {
 	int aptId = getOwnedApartmentFromKey(playerProperties[client][ppZone]);
 	int sellPrice = RoundToNearest(ownedApartments[aptId][oaPrice_of_purchase] * 0.80);
 	tConomy_addCurrency(client, sellPrice, "Sold Apartment");
+	
+	changeDoorLock(client, 0);
 	
 	char mapName[128];
 	GetCurrentMap(mapName, sizeof(mapName));

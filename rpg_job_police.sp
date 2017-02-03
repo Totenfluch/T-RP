@@ -21,6 +21,7 @@
 
 #pragma newdecls required
 
+#define MAX_CUFF_TIME 30
 
 Handle g_hPlayTimeNeededForPolice;
 int g_iPlayTimeNeededForPolice = 18000;
@@ -156,11 +157,11 @@ bool g_bCuffed[MAXPLAYERS + 1] = false;
 int g_iPlayerHandCuffs[MAXPLAYERS + 1];
 int g_iCuffed = 0;
 
-char g_sEquipWeapon[MAXPLAYERS + 1][32];
-
 int gc_iHandCuffsDistance = 5;
 
 int g_iOfficerTarget[MAXPLAYERS + 1];
+int g_iCuffedBy[MAXPLAYERS + 1];
+int g_iCuffedTimeLeft[MAXPLAYERS + 1];
 
 char g_sSoundCuffsPath[256];
 char g_sOverlayCuffsPath[256];
@@ -1025,7 +1026,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					g_iOfficerTarget[client] = Target;
 					Menu m = CreateMenu(searchMenuHandler);
 					char menuTitle[128];
-					Format(menuTitle, sizeof(menuTitle), "What do you want to do? (Crime: %i)", tCrime_getCrime(Targetw));
+					Format(menuTitle, sizeof(menuTitle), "What do you want to do? (Crime: %i)", tCrime_getCrime(Target));
 					SetMenuTitle(m, menuTitle);
 					AddMenuItem(m, "arrest", "Arrest Player");
 					AddMenuItem(m, "search", "Search Inventory");
@@ -1046,7 +1047,7 @@ public int searchMenuHandler(Handle menu, MenuAction action, int client, int ite
 		} else if (StrEqual(cValue, "search")) {
 			inventory_showInventoryOfClientToOtherClient(g_iOfficerTarget[client], client);
 		} else if (StrEqual(cValue, "licenses")) {
-			inventory_showInventoryOfClientToOtherClientByCategory(g_iOfficerTarget[client], client, "License");											  																						
+			inventory_showInventoryOfClientToOtherClientByCategory(g_iOfficerTarget[client], client, "License");
 		}
 		g_iOfficerTarget[client] = -1;
 	}
@@ -1087,12 +1088,18 @@ public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &dam
 
 
 public void OnClientDisconnect(int client) {
+	for (int i = 0; i < MAXPLAYERS; i++)
+	if (g_iCuffedBy[i] != -1)
+		if (!isValidClient(g_iCuffedBy[i]))
+		g_iCuffedBy[i] = -1;
 	if (g_bCuffed[client])g_iCuffed--;
 }
 
 public void OnClientPostAdminCheck(int client) {
 	g_iPlayerHandCuffs[client] = 10000;
 	g_iOfficerTarget[client] = -1;
+	g_iCuffedTimeLeft[client] = -1;
+	g_iCuffedBy[client] = -1;
 }
 
 public void OnMapEnd()
@@ -1106,6 +1113,7 @@ public void OnMapEnd()
 
 public void OnMapStart()
 {
+	CreateTimer(1.0, refreshTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	g_iHaloSprite = PrecacheModel("materials/sprites/halo01.vmt");
 	g_iFire = PrecacheModel("materials/sprites/fire2.vmt");
 	PrecacheSoundAnyDownload(g_sSoundCuffsPath);
@@ -1132,6 +1140,8 @@ public Action CuffsEm(int client, int attacker)
 		ShowOverlay(client, g_sOverlayCuffsPath, 0.0);
 		g_iPlayerHandCuffs[attacker]--;
 		g_iCuffed++;
+		g_iCuffedBy[client] = attacker;
+		g_iCuffedTimeLeft[client] = MAX_CUFF_TIME;
 		if (g_bSounds)EmitSoundToAllAny(g_sSoundCuffsPath);
 		
 		//CPrintToChatAll("%t %t", "warden_tag", "warden_cuffson", attacker, client);
@@ -1153,7 +1163,7 @@ public Action FreeEm(int client, int attacker)
 	CreateTimer(0.0, DeleteOverlay, client);
 	g_iCuffed--;
 	if (g_bSounds)StopSoundAny(client, SNDCHAN_AUTO, g_sSoundUnLockCuffsPath);
-	if ((attacker != 0) && (g_iCuffed == 0) && (g_iPlayerHandCuffs[attacker] < 1))SetPlayerWeaponAmmo(attacker, Client_GetActiveWeapon(attacker), _, 0);
+	if ((attacker != 0) && (attacker != -1) && (g_iCuffed == 0) && (g_iPlayerHandCuffs[attacker] < 1))SetPlayerWeaponAmmo(attacker, Client_GetActiveWeapon(attacker), _, 0);
 	//if (attacker != 0)CPrintToChatAll("%t %t", "warden_tag", "warden_cuffsoff", attacker, client);
 }
 
@@ -1323,4 +1333,20 @@ stock bool CheckVipFlag(int client, const char[] flagsNeed)
 		return true;
 	}
 	return false;
+}
+
+public Action refreshTimer(Handle Timer) {
+	for (int client = 1; client < MAXPLAYERS; client++) {
+		if (!isValidClient(client))
+			continue;
+		if (g_bCuffed[client]) {
+			if (g_iCuffedTimeLeft[client] == 1)
+				FreeEm(client, g_iCuffedBy[client]);
+			else if (g_iCuffedTimeLeft[client] > 1)
+				g_iCuffedTimeLeft[client]--;
+			
+			if (!IsPlayerAlive(g_iCuffedBy[client]))
+				FreeEm(client, g_iCuffedBy[client]);
+		}
+	}
 } 

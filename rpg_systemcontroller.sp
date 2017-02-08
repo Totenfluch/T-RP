@@ -43,8 +43,8 @@ public void OnPluginStart() {
 		HP	Armor	Speed	Gravity	Angles(2)	Pos_x	Pos_y	Pos_z	primaryWeapon	primaryWeaponClip	primaryWeaponAmmo		
 		int	int		float	float	float		float	float	float	vchar			int					int
 		
-		secondaryWeapon	secondaryWeaponClip	secondaryWeaponAmmo	nade1	nade2	nade3	nade4	nade5	flags	extern	extern2	extern3
-		vchar			int					int					vchar	vchar	vchar	vchar	vchar	vchar	vchar	vchar	extern3
+		secondaryWeapon	secondaryWeaponClip	secondaryWeaponAmmo	nade1	nade2	nade3	nade4	nade5	flags	extern1	extern2	extern3
+		vchar			int					int					vchar	vchar	vchar	vchar	vchar	vchar	vchar	vchar	vchar
 	*/
 	char createTableQuery[8096];
 	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_playercontroller (`Id`BIGINT NULL DEFAULT NULL AUTO_INCREMENT, `playername`VARCHAR(64)CHARACTER SET utf8 COLLATE utf8_bin NOT NULL, `playerid`VARCHAR(20)NOT NULL, `timestamp`TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, `map`VARCHAR(64)CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,`hp`INT NOT NULL, `armor`INT NOT NULL, `speed`FLOAT NOT NULL, `gravity`FLOAT NOT NULL, `angles`FLOAT NOT NULL, `pos_x`FLOAT NOT NULL, `pos_y`FLOAT NOT NULL, `pos_z`FLOAT NOT NULL, `primaryWeapon`VARCHAR(64)NOT NULL, `primaryWeaponClip`INT NOT NULL, `primaryWeaponAmmo`INT NOT NULL, `secondaryWeapon`VARCHAR(64)NOT NULL, `secondaryWeaponClip`INT NOT NULL, `secondaryWeaponAmmo`INT NOT NULL, `nade1`VARCHAR(64)NOT NULL, `nade2`VARCHAR(64)NOT NULL, `nade3`VARCHAR(64)NOT NULL, `nade4`VARCHAR(64)NOT NULL, `nade5`VARCHAR(64)NOT NULL, `flags`VARCHAR(8)NOT NULL, `extern1`VARCHAR(128)NOT NULL, `extern2`VARCHAR(128)NOT NULL, `extern3`VARCHAR(128)NOT NULL, PRIMARY KEY(`Id`), UNIQUE(`playerid`, `map`))ENGINE = InnoDB CHARSET = utf8 COLLATE utf8_bin; ");
@@ -222,6 +222,9 @@ public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error,
 		char nade5[64];
 		SQL_FetchStringByName(hndl, "nade5", nade5, sizeof(nade5));
 		
+		char extern1[64];
+		SQL_FetchStringByName(hndl, "extern1", extern1, sizeof(extern1));
+		
 		if (Hp != 0)
 			SetEntityHealth(client, Hp);
 		if (Armor != 0)
@@ -252,6 +255,9 @@ public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error,
 			GivePlayerItem(client, nade4);
 		if (!StrEqual(nade5, ""))
 			GivePlayerItem(client, nade5);
+		
+		if (StrContains(extern1, "taser") != -1)
+			GivePlayerItem(client, "weapon_taser");
 		CPrintToChat(client, "{orange}[{purple}-T-{orange}] {green}Sucessfully load you ({orange}%N{green})!", client);
 	}
 	g_bIsPlayerLoaded[client] = true;
@@ -344,6 +350,10 @@ public void savePlayer(int client) {
 	
 	removeNades(client);
 	
+	char extern1[64];
+	if (Client_HasWeapon(client, "weapon_taser"))
+		strcopy(extern1, sizeof(extern1), "taser");
+	
 	char mapName[128];
 	GetCurrentMap(mapName, sizeof(mapName));
 	
@@ -363,7 +373,7 @@ public void savePlayer(int client) {
 	
 	char insertDataQuery[4096];
 	Format(insertDataQuery, sizeof(insertDataQuery), "INSERT INTO `t_rpg_playercontroller` (`Id`, `playername`, `playerid`, `timestamp`, `map`, `hp`, `armor`, `speed`, `gravity`, `angles`, `pos_x`, `pos_y`, `pos_z`, `primaryWeapon`, `primaryWeaponClip`, `primaryWeaponAmmo`, `secondaryWeapon`, `secondaryWeaponClip`, `secondaryWeaponAmmo`, `nade1`, `nade2`, `nade3`, `nade4`, `nade5`, `flags`, `extern1`, `extern2`, `extern3`) VALUES (NULL, '%s', '%s', CURRENT_TIMESTAMP, '%s', '%i', '%i', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%s', '%i', '%i', '%s', '%i', '%i', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');", 
-		clean_playername, playerid, mapName, Hp, Armor, Speed, Gravity, Angles[1], Position[0], Position[1], Position[2], primaryWeapon, primaryWeaponClip, primaryWeaponAmmo, secondaryWeapon, secondaryWeaponClip, secondaryWeaponAmmo, nades[0], nades[1], nades[2], nades[3], nades[4], "FLAGS", "EXTERN1", "EXTERN2", "EXTERN3");
+		clean_playername, playerid, mapName, Hp, Armor, Speed, Gravity, Angles[1], Position[0], Position[1], Position[2], primaryWeapon, primaryWeaponClip, primaryWeaponAmmo, secondaryWeapon, secondaryWeaponClip, secondaryWeaponAmmo, nades[0], nades[1], nades[2], nades[3], nades[4], "FLAGS", extern1, "EXTERN2", "EXTERN3");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, insertDataQuery);
 	//PrintToServer("'%s', '%s', '%s', '%i', '%i', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%s', '%i', '%i', '%s', '%i', '%i', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", clean_playername, playerid, mapName, Hp, Armor, Speed, Gravity, Angles[1], Position[0], Position[1], Position[2], primaryWeapon, primaryWeaponClip, primaryWeaponAmmo, secondaryWeapon, secondaryWeaponClip, secondaryWeaponAmmo, nades[0], nades[1], nades[2], nades[3], nades[4], "FLAGS", "EXTERN1", "EXTERN2", "EXTERN3");
 	//PrintToServer("Saved!");

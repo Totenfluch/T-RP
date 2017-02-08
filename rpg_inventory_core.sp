@@ -12,7 +12,7 @@
 
 #pragma newdecls required
 
-#define MAX_ITEMS 500
+#define MAX_ITEMS 550
 
 enum Item {
 	String:iTimestamp[64], 
@@ -79,8 +79,6 @@ public void OnPluginStart() {
 	
 	RegConsoleCmd("sm_sinv", cmdSInvCallback, "Inventory by category");
 	
-	HookEvent("round_start", onRoundStart);
-	
 	if (g_aHandledItems == INVALID_HANDLE) {
 		g_aHandledItems = CreateArray(400, 200);
 		ClearArray(g_aHandledItems);
@@ -110,7 +108,7 @@ public bool liCheck() {
 	return StrEqual(checksum, shaKey);
 }
 
-public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
+public void licensing_OnTokenRefreshed(char serverToken[64], char sha1Token[128]) {
 	if (!licensing_isValid() || !liCheck())
 		SetFailState("Invalid License");
 }

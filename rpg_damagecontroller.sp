@@ -6,6 +6,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#include <rpg_jail>
 
 #pragma newdecls required
 
@@ -46,8 +47,11 @@ public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &dam
 	if (StrContains(weaponName, "knife") != -1) {
 		damage = 0.0;
 		return Plugin_Changed;
-	} else {
+	} else if (jail_isInJail(attacker)) {
 		damage = 0.0;
+		return Plugin_Changed;
+	} else {
+		damage = 0.3;
 		return Plugin_Changed;
 	}
 }

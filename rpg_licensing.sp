@@ -20,6 +20,8 @@ char sha1Buffer[128];
 
 bool g_bValidLicense = false;
 
+Handle g_hOnTokenRefreshed;
+
 public Plugin myinfo = 
 {
 	name = "Licensing Software for T-RP", 
@@ -55,6 +57,16 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		@Param2 -> char[128] sha1 Buffer
 	*/
 	CreateNative("licensing_getChecksums", Native_getChecksums);
+	
+	/*
+		Forward when the Token is refreshed
+		
+		@Param1 -> char[64] ServerToken
+		@Param1 -> char[128] Sha1Token
+			
+		@return -
+	*/
+	g_hOnTokenRefreshed = CreateGlobalForward("licensing_OnTokenRefreshed", ET_Ignore, Param_String, Param_String);
 }
 
 public int Native_getChecksums(Handle plugin, int numParams) {
@@ -123,6 +135,11 @@ public OnSocketReceive(Handle socket, char[] receiveData, const int dataSize, an
 		CPrintToChatAll("{red}No Valid License!");
 	}
 	PrintToServer("-------------------------------------------");
+	
+	Call_StartForward(g_hOnTokenRefreshed);
+	Call_PushString(g_cServerToken);
+	Call_PushString(sha1Buffer);
+	Call_Finish();
 }
 
 public OnSocketDisconnected(Handle socket, any hFile) {

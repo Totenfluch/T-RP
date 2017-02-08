@@ -40,15 +40,22 @@ public Action updateHUD(Handle Timer) {
 		char printHudString[1024];
 		if (GetClientAimTarget(client, true) > -1) {
 			int target = GetClientAimTarget(client, true);
-			Format(printHudString, sizeof(printHudString), "<font size='16'>Target: %N\n", target);
-		} else if (GetClientAimTarget(client, false) > -1) {
+			float tpos[3];
+			GetClientAbsOrigin(target, tpos);
+			float pos[3];
+			GetClientAbsOrigin(client, pos);
+			if (GetVectorDistance(tpos, pos) < 300.0)
+				Format(printHudString, sizeof(printHudString), "<font size='16'>Target: %N\n", target);
+			else
+				Format(printHudString, sizeof(printHudString), "<font size='16'>Target: Out of Range\n");
+			/*} else if (GetClientAimTarget(client, false) > -1) {
 			int ent = GetClientAimTarget(client, false);
 			if (HasEntProp(ent, Prop_Data, "m_iName") && HasEntProp(ent, Prop_Data, "m_iGlobalname")) {
 				char entName[256];
 				Entity_GetGlobalName(ent, entName, sizeof(entName));
 				//GetEntPropString(ent, Prop_Data, "m_iGlobalName", entName, sizeof(entName));
 				Format(printHudString, sizeof(printHudString), "<font size='16'>Target: %s\n", entName);
-			}
+			}*/
 		} else {
 			Format(printHudString, sizeof(printHudString), "<font size='16'>Target: none\n");
 		}

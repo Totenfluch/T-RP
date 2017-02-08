@@ -1079,7 +1079,7 @@ public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 	setDoorLocks();
 }
 
-public void setDoorLocks(){
+public void setDoorLocks() {
 	for (int i = 0; i < g_iOwnedApartmentsCount; i++) {
 		char aptName[128];
 		strcopy(aptName, sizeof(aptName), ownedApartments[i][oaApartment_Id]);
@@ -1092,10 +1092,10 @@ public void setDoorLocks(){
 			GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
 			if (StrContains(uniqueId, aptName) != -1) {
 				//PrintToChatAll("%i]: %d %s %i", i, ownedApartments[i][oaDoor_locked], uniqueId, entity);
-				if (ownedApartments[i][oaDoor_locked]){
+				if (ownedApartments[i][oaDoor_locked]) {
 					AcceptEntityInput(entity, "lock", -1);
 					//PrintToChatAll("Used 'lock' ON %i (%s)", entity, uniqueId);
-				}else
+				} else
 					AcceptEntityInput(entity, "unlock", -1);
 			}
 		}

@@ -53,8 +53,6 @@ public void OnPluginStart() {
   )ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
 	
-	HookEvent("round_start", onRoundStart);
-	
 	char createTableQuery2[4096];
 	Format(createTableQuery2, sizeof(createTableQuery2), "CREATE TABLE IF NOT EXISTS `t_rpg_tConomy_log` ( `Id` INT NULL DEFAULT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `amount` INT NOT NULL , `reason` VARCHAR(512) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery2);
@@ -73,7 +71,7 @@ public bool liCheck() {
 	return StrEqual(checksum, shaKey);
 }
 
-public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
+public void licensing_OnTokenRefreshed(char serverToken[64], char sha1Token[128]) {
 	if (!licensing_isValid() || !liCheck())
 		SetFailState("Invalid License");
 }
@@ -393,8 +391,10 @@ public Action cmdGiveMoney(int client, int args) {
 	GetCmdArg(2, tempCurrencyString, sizeof(tempCurrencyString));
 	
 	int tempCurrency = StringToInt(tempCurrencyString);
-	if (tempCurrency < -100000 || tempCurrency > 100000)
-		ReplyToCommand(client, "Invalind Amount | < -100000 || > 100000");
+	if (tempCurrency < -100000 || tempCurrency > 100000) {
+		ReplyToCommand(client, "Invalid Amount | < -100000 || > 100000");
+		return Plugin_Handled;
+	}
 	
 	char pattern[MAX_NAME_LENGTH + 8];
 	char buffer[MAX_NAME_LENGTH + 8];
@@ -432,8 +432,10 @@ public Action cmdGiveBankedMoney(int client, int args) {
 	GetCmdArg(2, tempCurrencyString, sizeof(tempCurrencyString));
 	
 	int tempCurrency = StringToInt(tempCurrencyString);
-	if (tempCurrency < -100000 || tempCurrency > 100000)
+	if (tempCurrency < -100000 || tempCurrency > 100000) {
 		ReplyToCommand(client, "Invalid Amount | < -100000 || > 100000");
+		return Plugin_Handled;
+	}
 	
 	char pattern[MAX_NAME_LENGTH + 8];
 	char buffer[MAX_NAME_LENGTH + 8];

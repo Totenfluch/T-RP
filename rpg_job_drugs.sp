@@ -13,6 +13,7 @@
 #include <tCrime>
 #include <smlib>
 #include <rpg_inventory_core>
+#include <rpg_jail>
 
 #pragma newdecls required
 
@@ -258,6 +259,11 @@ public void SQLLoadPlantsQuery(Handle owner, Handle hndl, const char[] error, an
 public Action cmdPlantCommand(int client, int args) {
 	if (g_iPlayerPlanted[client] > (3 + jobs_getLevel(client) / 5)) {
 		CPrintToChat(client, "[-T-]{red} You can not have more than %i active plants (%i Active)", (4 + jobs_getLevel(client) / 5), g_iPlayerPlanted[client]);
+		return Plugin_Handled;
+	}
+	
+	if(jail_isInJail(client)){
+		CPrintToChat(client, "[-T-]{red} You can't plant drugs in jail...'");
 		return Plugin_Handled;
 	}
 	

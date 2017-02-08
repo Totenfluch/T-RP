@@ -582,12 +582,14 @@ public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error,
 		LogError(error);
 }
 
-public void onRoundStart(Handle event, const char[] name, bool dontBroadcast)
-{
-	if (!licensing_isValid() || !liCheck())
-		SetFailState("Invalid License");
+public void onRoundStart(Handle event, const char[] name, bool dontBroadcast){
 	g_iNpcId = 0;
 	loadNpcs();
+}
+
+public void licensing_OnTokenRefreshed(char serverToken[64], char sha1Token[128]) {
+	if (!licensing_isValid() || !liCheck())
+		SetFailState("Invalid License");
 }
 
 public void loadNpcs() {

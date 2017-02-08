@@ -99,14 +99,24 @@ public void OnPluginStart()
 	
 	RegAdminCmd("sm_apartmentadmin", createApartmentCallback, ADMFLAG_ROOT, "Opens the Apartment Admin Menu");
 	RegConsoleCmd("sm_apartment", apartmentCommand, "Opens the Apartment Menu");
+	RegAdminCmd("sm_apartmentlist", listAps, ADMFLAG_ROOT, "list aps");
+	RegAdminCmd("sm_postloadaps", postloadaps, ADMFLAG_ROOT, "postloads aps");
 	HookEvent("round_start", onRoundStart);
 	RegConsoleCmd("say", chatHook);
 	for (int i = 0; i < MAX_APARTMENTS; i++) {
 		ownedApartments[i][oaId] = -1;
 		existingApartments[i][eaId] = -1;
 	}
+}
+
+public void OnMapStart() {
 	loadApartments();
 }
+
+public Action postloadaps(int client, int args) {
+	loadApartments();
+}
+
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	/*
@@ -142,6 +152,8 @@ public int Native_isClientOwner(Handle plugin, int numParams) {
 }
 
 public bool isOwnedBy(int client, char apartmentId[128]) {
+	if (StrEqual(apartmentId, ""))
+		return false;
 	int aptId;
 	if ((aptId = getLoadedIdFromApartmentId(apartmentId)) != -1) {
 		int ownedId;
@@ -248,6 +260,8 @@ public void doorAction(int client, char zone[128], int doorEnt) {
 	int ownedId;
 	if ((apartmentId = getLoadedIdFromApartmentId(zone)) != -1) {
 		ownedId = ApartmentIdToOwnedId(apartmentId);
+		if (ownedId != -1)
+			PrintToChat(client, "Apartment '%s' is owned by %s", ownedApartments[ownedId][oaApartmentName], ownedApartments[ownedId][oaPlayername]);
 	}
 	bool option = false;
 	if (isOwnedBy(client, zone)) {
@@ -272,7 +286,6 @@ public void doorAction(int client, char zone[128], int doorEnt) {
 			lockpickAction(client, zone);
 		}
 	}
-	PrintToChat(client, "Apartment '%s' is owned by %s", ownedApartments[ownedId][oaApartmentName], ownedApartments[ownedId][oaPlayername]);
 }
 
 public void lockpickAction(int client, char zone[128]) {
@@ -336,7 +349,7 @@ public void raidAction(int client, char zone[128]) {
 	char menuTitle[128];
 	Format(menuTitle, sizeof(menuTitle), "Raid Apartment");
 	SetMenuTitle(apartmentMenu, menuTitle);
-	AddMenuItem(apartmentMenu, "raid", ">> RAID <<");
+	AddMenuItem(apartmentMenu, "raid", ">> RAID <<", ITEMDRAW_DISABLED);
 	DisplayMenu(apartmentMenu, client, 60);
 	strcopy(playerProperties[client][ppZone], 128, zone);
 }
@@ -767,11 +780,11 @@ public void loadApartments() {
 	char mapName[128];
 	GetCurrentMap(mapName, sizeof(mapName));
 	
-	char loadApartmentsQuery[1024];
+	char loadApartmentsQuery[2048];
 	Format(loadApartmentsQuery, sizeof(loadApartmentsQuery), "SELECT apartment_id,apartment_price,buyable,flag,bought FROM t_rpg_apartments WHERE map = '%s';", mapName);
 	SQL_TQuery(g_DB, SQLLoadApartmentsQueryCallback, loadApartmentsQuery);
 	
-	char loadOwnedApartments[1024];
+	char loadOwnedApartments[2048];
 	Format(loadOwnedApartments, sizeof(loadOwnedApartments), "SELECT time_of_purchase,price_of_purchase,apartment_id,playerid,playername,apartment_name,allowed_players,door_locked FROM t_rpg_boughtApartments WHERE map = '%s';", mapName);
 	SQL_TQuery(g_DB, SQLLoadOwnedApartmentsQueryCallback, loadOwnedApartments);
 }
@@ -791,7 +804,7 @@ public void SQLLoadOwnedApartmentsQueryCallback(Handle owner, Handle hndl, const
 	while (SQL_FetchRow(hndl)) {
 		ownedApartments[g_iOwnedApartmentsCount][oaId] = g_iOwnedApartmentsCount;
 		SQL_FetchStringByName(hndl, "time_of_purchase", ownedApartments[g_iOwnedApartmentsCount][oaTime_of_purchase], 64);
-		ownedApartments[g_iOwnedApartmentsCount][oaPrice_of_purchase] = SQL_FetchIntByName(hndl, "oaPrice_of_purchase");
+		ownedApartments[g_iOwnedApartmentsCount][oaPrice_of_purchase] = SQL_FetchIntByName(hndl, "price_of_purchase");
 		SQL_FetchStringByName(hndl, "apartment_id", ownedApartments[g_iOwnedApartmentsCount][oaApartment_Id], 128);
 		SQL_FetchStringByName(hndl, "playerid", ownedApartments[g_iOwnedApartmentsCount][oaPlayerid], 20);
 		SQL_FetchStringByName(hndl, "playername", ownedApartments[g_iOwnedApartmentsCount][oaPlayername], 48);
@@ -882,15 +895,21 @@ public void revokeAllAccess(int client) {
 }
 
 public void changeDoorLock(int client, int state/* 1 = Locked | 0 = Unlocked */) {
+	char checkSum[128];
+	strcopy(checkSum, sizeof(checkSum), playerProperties[client][ppZone]);
+	
+	if (StrEqual(checkSum, ""))
+		return;
+	
 	char mapName[128];
 	GetCurrentMap(mapName, sizeof(mapName));
-	strcopy(playerProperties[client][ppZone], 128, activeZone[client]);
+	
 	char updateDoorLockQuery[1024];
 	Format(updateDoorLockQuery, sizeof(updateDoorLockQuery), "UPDATE t_rpg_boughtApartments SET door_locked = %i WHERE apartment_id = '%s' AND map = '%s';", state, playerProperties[client][ppZone], mapName);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateDoorLockQuery);
 	int aptId = getOwnedApartmentFromKey(playerProperties[client][ppZone]);
 	ownedApartments[aptId][oaDoor_locked] = state == 1;
-	PrintToConsole(client, "%i %s %s %i", state, playerProperties[client][ppZone], mapName, aptId);
+	PrintToConsole(client, "%i %s %s %i > %s", state, playerProperties[client][ppZone], mapName, aptId, checkSum);
 	
 	char aptName[64];
 	strcopy(aptName, sizeof(aptName), playerProperties[client][ppZone]);
@@ -909,6 +928,7 @@ public void changeDoorLock(int client, int state/* 1 = Locked | 0 = Unlocked */)
 				AcceptEntityInput(entity, "lock", -1);
 			else
 				AcceptEntityInput(entity, "unlock", -1);
+			PrintToConsole(client, "t1: |%s| |%s| to %i", uniqueId, aptName, state);
 		}
 	}
 	entity = -1;
@@ -920,6 +940,7 @@ public void changeDoorLock(int client, int state/* 1 = Locked | 0 = Unlocked */)
 				AcceptEntityInput(entity, "lock", -1);
 			else
 				AcceptEntityInput(entity, "unlock", -1);
+			PrintToConsole(client, "t2: |%s| |%s| to %i", uniqueId, aptName, state);
 		}
 	}
 }
@@ -1055,6 +1076,47 @@ public void KnockbackSetVelocity(int client, const float startpoint[3], const fl
 }
 
 public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
+	setDoorLocks();
+}
+
+public void setDoorLocks(){
+	for (int i = 0; i < g_iOwnedApartmentsCount; i++) {
+		char aptName[128];
+		strcopy(aptName, sizeof(aptName), ownedApartments[i][oaApartment_Id]);
+		//PrintToChatAll("<<<<%s ", aptName);
+		ReplaceString(aptName, sizeof(aptName), "apartment_", "", false);
+		int entity = -1;
+		//PrintToChatAll(">>>%s ", aptName);
+		while ((entity = FindEntityByClassname(entity, "prop_door_rotating")) != INVALID_ENT_REFERENCE) {
+			char uniqueId[64];
+			GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
+			if (StrContains(uniqueId, aptName) != -1) {
+				//PrintToChatAll("%i]: %d %s %i", i, ownedApartments[i][oaDoor_locked], uniqueId, entity);
+				if (ownedApartments[i][oaDoor_locked]){
+					AcceptEntityInput(entity, "lock", -1);
+					//PrintToChatAll("Used 'lock' ON %i (%s)", entity, uniqueId);
+				}else
+					AcceptEntityInput(entity, "unlock", -1);
+			}
+		}
+		entity = -1;
+		while ((entity = FindEntityByClassname(entity, "func_door")) != INVALID_ENT_REFERENCE) {
+			char uniqueId[64];
+			GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
+			if (StrContains(uniqueId, aptName) != -1) {
+				if (ownedApartments[i][oaDoor_locked])
+					AcceptEntityInput(entity, "lock", -1);
+				else
+					AcceptEntityInput(entity, "unlock", -1);
+			}
+		}
+	}
+}
+
+public Action listAps(int client, int args) {
+	for (int i = 0; i < g_iLoadedApartments; i++) {
+		PrintToConsole(client, "Id: %i time: %s price: %i id2: %i playerid: %s name: %s aptname: %s |l: %d", ownedApartments[i][oaId], ownedApartments[i][oaTime_of_purchase], ownedApartments[i][oaPrice_of_purchase], ownedApartments[i][oaApartment_Id], ownedApartments[i][oaPlayerid], ownedApartments[i][oaPlayername], ownedApartments[i][oaApartmentName], ownedApartments[i][oaDoor_locked]);
+	}
 	for (int i = 0; i < g_iOwnedApartmentsCount; i++) {
 		char aptName[128];
 		strcopy(aptName, sizeof(aptName), ownedApartments[i][oaApartment_Id]);
@@ -1063,7 +1125,7 @@ public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 		while ((entity = FindEntityByClassname(entity, "prop_door_rotating")) != INVALID_ENT_REFERENCE) {
 			char uniqueId[64];
 			GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
-			if (StrEqual(aptName, uniqueId)) {
+			if (StrContains(aptName, uniqueId) != -1) {
 				if (ownedApartments[i][oaDoor_locked])
 					AcceptEntityInput(entity, "lock", -1);
 				else
@@ -1074,7 +1136,7 @@ public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 		while ((entity = FindEntityByClassname(entity, "func_door")) != INVALID_ENT_REFERENCE) {
 			char uniqueId[64];
 			GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
-			if (StrEqual(aptName, uniqueId)) {
+			if (StrContains(aptName, uniqueId) != -1) {
 				if (ownedApartments[i][oaDoor_locked])
 					AcceptEntityInput(entity, "lock", -1);
 				else
@@ -1082,4 +1144,5 @@ public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 			}
 		}
 	}
-} 
+	return Plugin_Handled;
+}

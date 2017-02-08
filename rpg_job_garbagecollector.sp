@@ -50,7 +50,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_garbagespawns", addSpawnPoints, ADMFLAG_ROOT, "Opens the Menu to add Garbage spawnpoints");
 	HookEvent("round_start", onRoundStart);
 	
-	jobs_registerJob("Garbage Collector", "Collect Garbage and put it in the Trash Cans", 10, 300, 2.0);
+	jobs_registerJob("Garbage Collector", "Collect Garbage and put it in the Trash Cans", 20, 400, 3.0);
 	npc_registerNpcType("Garbagerman Recruiter");
 }
 
@@ -82,7 +82,7 @@ public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 	for (int i = 0; i < MAX_GARBAGE; i++) {
 		int index1 = GetRandomInt(0, (g_iLoadedGarbage - 1));
 		int index2 = GetRandomInt(0, (g_iLoadedGarbage - 1));
-		if(GetArraySize(randomNumbers) > 0)
+		if (GetArraySize(randomNumbers) > 0)
 			SwapArrayItems(randomNumbers, index1, index2);
 	}
 	
@@ -369,15 +369,15 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			jobs_giveJob(client, "Garbage Collector");
 		} else if (StrEqual(cValue, "recycle")) {
 			if (inventory_hasPlayerItem(client, "Garbage")) {
-				tConomy_addCurrency(client, 25, "Recycled Garbage");
+				tConomy_addCurrency(client, 65, "Recycled Garbage");
 				inventory_removePlayerItems(client, "Garbage", 1, "Recycled");
-				jobs_addExperience(client, 10, "Garbage Collector");
+				jobs_addExperience(client, 50, "Garbage Collector");
 			}
 		} else if (StrEqual(cValue, "recycleAll")) {
 			int itemamount = inventory_getPlayerItemAmount(client, "Garbage");
 			if (inventory_removePlayerItems(client, "Garbage", itemamount, "Recycled Garbage (Mass)")) {
-				tConomy_addCurrency(client, 25 * itemamount, "Recycled Garbage");
-				jobs_addExperience(client, 10 * itemamount, "Garbage Collector");
+				tConomy_addCurrency(client, 65 * itemamount, "Recycled Garbage");
+				jobs_addExperience(client, 50 * itemamount, "Garbage Collector");
 			}
 		}
 	}

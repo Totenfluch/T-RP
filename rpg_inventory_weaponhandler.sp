@@ -45,7 +45,7 @@ public Action cmdStashWeapon(int client, int args) {
 }
 
 public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]) {
-	if(!(StrEqual(category, "Weapon") || StrEqual(itemname, "item_kevlar") || StrEqual(itemname, "item_assaultsuit")))
+	if (!(StrEqual(category, "Weapon") || StrEqual(itemname, "item_kevlar") || StrEqual(itemname, "item_assaultsuit")))
 		return;
 	Menu wMenu = CreateMenu(weaponMenuHandler);
 	strcopy(g_cLastItemUsed[client], 128, itemname);
@@ -55,8 +55,8 @@ public void inventory_onItemUsed(int client, char itemname[128], int weight, cha
 	PrintToConsole(client, out);
 	SetMenuTitle(wMenu, "What do you want to do?");
 	if (StrContains(itemname, "weapon_") != -1) {
-		AddMenuItem(wMenu, "EquipAndStash", "Stash Weapon and equip new one");
-		AddMenuItem(wMenu, "GiveWeapon", "Give me the Weapon");
+		AddMenuItem(wMenu, "EquipAndStash", "Equip Weapon (Stashes weapon slot)");
+		//AddMenuItem(wMenu, "GiveWeapon", "Give me the Weapon");
 		AddMenuItem(wMenu, "Delete", "Delete Weapon");
 	} else if (StrEqual(itemname, "item_assaultsuit")) {
 		SetMenuTitle(wMenu, "What do you want to do?");
@@ -99,10 +99,12 @@ public void stashWeapon(int client, bool useOverride, char[] weapon) {
 	GetClientWeapon(client, item, sizeof(item));
 	if (useOverride)
 		strcopy(item, sizeof(item), weapon);
-	if (StrEqual(item, "") || StrContains(item, "knife") != -1) {
+	if (StrContains(item, "knife") != -1) {
 		PrintToChat(client, "Can't stash this one");
 		return;
 	}
+	if (StrEqual(item, ""))
+		return;
 	
 	int slot = getSlot(item);
 	

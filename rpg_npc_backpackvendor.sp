@@ -47,8 +47,6 @@ public Plugin myinfo =
 };
 
 public void OnPluginStart() {
-	npc_registerNpcType(my_npcType);
-	
 	AutoExecConfig_SetFile("rpg_npc_backpackvendor");
 	AutoExecConfig_SetCreateFile(true);
 	
@@ -62,6 +60,10 @@ public void OnPluginStart() {
 	
 	AutoExecConfig_CleanFile();
 	AutoExecConfig_ExecuteFile();
+}
+
+public void OnMapStart() {
+	npc_registerNpcType(my_npcType);
 }
 
 public void OnConfigsExecuted() {

@@ -45,6 +45,8 @@ char g_cProgressBarInfo[MAXPLAYERS + 1][64];
 
 int g_iPlayerPrevButtons[MAXPLAYERS + 1];
 
+char g_cPlayerJobInfo[MAXPLAYERS + 1][128];
+
 Handle g_hOnJobAccepted;
 Handle g_hOnJobQuit;
 Handle g_hOnJobLevelUp;
@@ -205,6 +207,26 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("jobs_quitJob", Native_quitJob);
 	
 	/*
+		Sets the Client Job info
+		
+		@Param1 -> int client
+		@Param2 -> char info[128]
+		
+		@return none
+	*/
+	CreateNative("jobs_setCurrentInfo", Native_setCurrentInfo);
+	
+	/*
+		Get the Client Job info
+		
+		@Param1 -> int client
+		@Param2 -> char info[128]
+		
+		@return none
+	*/
+	CreateNative("jobs_getCurrentInfo", Native_getCurrentInfo);
+	
+	/*
 		Forward on Job Accepted
 		
 		@Param1 -> int client
@@ -356,6 +378,18 @@ public int Native_getExperienceForNextLevel(Handle plugin, int numParams) {
 	return iExperienceNeeded;
 }
 
+public int Native_setCurrentInfo(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	char info[128];
+	GetNativeString(2, info, sizeof(info));
+	strcopy(g_cPlayerJobInfo[client], 128, info);
+}
+
+public int Native_getCurrentInfo(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	SetNativeString(2, g_cPlayerJobInfo[client], 128);
+}
+
 public void OnMapStart() {
 	CreateTimer(0.1, refreshTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
@@ -397,6 +431,7 @@ public void OnClientAuthorized(int client) {
 	g_iProgressBarProgress[client] = -1;
 	g_iProgressBarTarget[client] = -1;
 	strcopy(g_cProgressBarInfo[client], 64, "");
+	strcopy(g_cPlayerJobInfo[client], 64, "");
 }
 
 public void loadClientJob(int client) {

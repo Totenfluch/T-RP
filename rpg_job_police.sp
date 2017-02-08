@@ -185,7 +185,7 @@ public Plugin myinfo =
 };
 
 public void OnPluginStart() {
-	jobs_registerJob("Police", "Stop the criminals from beeing criminal", 3, 1000, 4.0);
+	jobs_registerJob("Police", "Stop the criminals from beeing criminal", 3, 5000, 12.0);
 	npc_registerNpcType("Police Recruiter");
 	npc_registerNpcType("Police Weapon Vendor");
 	
@@ -1081,6 +1081,7 @@ public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &dam
 	if (g_bCuffed[victim])
 		FreeEm(victim, attacker);
 	else
+		if (!jobs_getActiveJob(victim, "Police"))
 		CuffsEm(victim, attacker);
 	
 	return Plugin_Handled;
@@ -1090,8 +1091,10 @@ public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &dam
 public void OnClientDisconnect(int client) {
 	for (int i = 0; i < MAXPLAYERS; i++)
 	if (g_iCuffedBy[i] != -1)
-		if (!isValidClient(g_iCuffedBy[i]))
+		if (!isValidClient(g_iCuffedBy[i])) {
 		g_iCuffedBy[i] = -1;
+		FreeEm(i, 0);
+	}
 	if (g_bCuffed[client])g_iCuffed--;
 }
 
@@ -1134,8 +1137,9 @@ public Action CuffsEm(int client, int attacker)
 		SetEntityMoveType(client, MOVETYPE_NONE);
 		SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 0.0);
 		SetEntityRenderColor(client, 0, 190, 0, 255);
-		StripAllPlayerWeapons(client);
-		GivePlayerItem(client, "weapon_knife");
+		//StripAllPlayerWeapons(client);
+		//GivePlayerItem(client, "weapon_knife");
+		EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, 3));
 		g_bCuffed[client] = true;
 		ShowOverlay(client, g_sOverlayCuffsPath, 0.0);
 		g_iPlayerHandCuffs[attacker]--;

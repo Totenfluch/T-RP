@@ -255,15 +255,15 @@ public void firstSpawnFurniture(int client, int id) {
 			if (apartments_isClientOwner(client, activeZone[client])) {
 				// Hurra!
 			} else {
-				PrintToChat(client, "[-T-] You do not own this Apartment");
+				PrintToChat(client, "[-T-] (%s) You do not own this Apartment", activeZone[client]);
 				return;
 			}
 		} else {
-			PrintToChat(client, "[-T-] Not in your Apartment");
+			PrintToChat(client, "[-T-] (%s) Not in your Apartment", activeZone[client]);
 			return;
 		}
 	} else {
-		PrintToChat(client, "[-T-] Not an Apartment");
+		PrintToChat(client, "[-T-] (%s) Not an Apartment", activeZone[client]);
 		return;
 	}
 	
@@ -534,116 +534,118 @@ public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int
 
 public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
 	if (IsClientInGame(client) && IsPlayerAlive(client)) {
-		if (PlayerEditItems[client][eiEditing]) {
-			if (!(g_iPlayerPrevButtons[client] & IN_USE) && iButtons & IN_USE) {
-				char uId[64];
-				strcopy(uId, sizeof(uId), PlayerEditItems[client][eiUniqueId]);
-				updateFurnitureToMySQL(EntRefToEntIndex(PlayerEditItems[client][eiRef]), uId);
-				PlayerEditItems[client][eiRef] = -1;
-				PlayerEditItems[client][eiEditing] = false;
-				strcopy(PlayerEditItems[client][eiUniqueId], 64, "");
-				PrintToChat(client, "[-T-] Finished Editing");
-				SetEntityMoveType(client, MOVETYPE_WALK);
-			}
-			if (!(g_iPlayerPrevButtons[client] & IN_JUMP) && iButtons & IN_JUMP) {
-				int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
-				float pos[3];
-				GetEntPropVector(ent, Prop_Data, "m_vecOrigin", pos);
-				pos[2] += 1;
-				float clientPos[3];
-				GetClientAbsOrigin(client, clientPos);
-				if ((GetVectorDistance(clientPos, pos) > 400.0) && !PlayerEditItems[client][eiInAdmin])
-					PrintToChat(client, "[-T-] Too far away...");
-				
-				if (Zone_CheckIfZoneExists(activeZone[client], true, true) || PlayerEditItems[client][eiInAdmin]) {
-					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]) || PlayerEditItems[client][eiInAdmin]) {
-						if (apartments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
-							TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
+		if (IsValidEntity(EntRefToEntIndex(PlayerEditItems[client][eiRef]))) {
+			if (PlayerEditItems[client][eiEditing]) {
+				if (!(g_iPlayerPrevButtons[client] & IN_USE) && iButtons & IN_USE) {
+					char uId[64];
+					strcopy(uId, sizeof(uId), PlayerEditItems[client][eiUniqueId]);
+					updateFurnitureToMySQL(EntRefToEntIndex(PlayerEditItems[client][eiRef]), uId);
+					PlayerEditItems[client][eiRef] = -1;
+					PlayerEditItems[client][eiEditing] = false;
+					strcopy(PlayerEditItems[client][eiUniqueId], 64, "");
+					PrintToChat(client, "[-T-] Finished Editing");
+					SetEntityMoveType(client, MOVETYPE_WALK);
+				}
+				if (!(g_iPlayerPrevButtons[client] & IN_JUMP) && iButtons & IN_JUMP) {
+					int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
+					float pos[3];
+					GetEntPropVector(ent, Prop_Data, "m_vecOrigin", pos);
+					pos[2] += 1;
+					float clientPos[3];
+					GetClientAbsOrigin(client, clientPos);
+					if ((GetVectorDistance(clientPos, pos) > 400.0) && !PlayerEditItems[client][eiInAdmin])
+						PrintToChat(client, "[-T-] Too far away...");
+					
+					if (Zone_CheckIfZoneExists(activeZone[client], true, true) || PlayerEditItems[client][eiInAdmin]) {
+						if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]) || PlayerEditItems[client][eiInAdmin]) {
+							if (apartments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
+								TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
+							} else {
+								PrintToChat(client, "[-T-] You do not own this Apartment");
+							}
 						} else {
-							PrintToChat(client, "[-T-] You do not own this Apartment");
+							PrintToChat(client, "[-T-] Not in your Apartment");
 						}
 					} else {
-						PrintToChat(client, "[-T-] Not in your Apartment");
+						PrintToChat(client, "[-T-] Not an Apartment");
 					}
-				} else {
-					PrintToChat(client, "[-T-] Not an Apartment");
+					
+					iButtons ^= IN_JUMP;
+					return Plugin_Changed;
 				}
-				
-				iButtons ^= IN_JUMP;
-				return Plugin_Changed;
-			}
-			if (!(g_iPlayerPrevButtons[client] & IN_DUCK) && iButtons & IN_DUCK) {
-				int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
-				float pos[3];
-				GetEntPropVector(ent, Prop_Data, "m_vecOrigin", pos);
-				pos[2] -= 1;
-				float clientPos[3];
-				GetClientAbsOrigin(client, clientPos);
-				if ((GetVectorDistance(clientPos, pos) > 400.0) && !PlayerEditItems[client][eiInAdmin])
-					PrintToChat(client, "[-T-] Too far away...");
-				
-				if (Zone_CheckIfZoneExists(activeZone[client], true, true) || PlayerEditItems[client][eiInAdmin]) {
-					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]) || PlayerEditItems[client][eiInAdmin]) {
-						if (apartments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
-							TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
+				if (!(g_iPlayerPrevButtons[client] & IN_DUCK) && iButtons & IN_DUCK) {
+					int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
+					float pos[3];
+					GetEntPropVector(ent, Prop_Data, "m_vecOrigin", pos);
+					pos[2] -= 1;
+					float clientPos[3];
+					GetClientAbsOrigin(client, clientPos);
+					if ((GetVectorDistance(clientPos, pos) > 400.0) && !PlayerEditItems[client][eiInAdmin])
+						PrintToChat(client, "[-T-] Too far away...");
+					
+					if (Zone_CheckIfZoneExists(activeZone[client], true, true) || PlayerEditItems[client][eiInAdmin]) {
+						if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]) || PlayerEditItems[client][eiInAdmin]) {
+							if (apartments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
+								TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
+							} else {
+								PrintToChat(client, "[-T-] You do not own this Apartment");
+							}
 						} else {
-							PrintToChat(client, "[-T-] You do not own this Apartment");
+							PrintToChat(client, "[-T-] Not in your Apartment");
 						}
 					} else {
-						PrintToChat(client, "[-T-] Not in your Apartment");
+						PrintToChat(client, "[-T-] Not an Apartment");
 					}
-				} else {
-					PrintToChat(client, "[-T-] Not an Apartment");
+					
+					iButtons ^= IN_DUCK;
+					return Plugin_Changed;
 				}
-				
-				iButtons ^= IN_DUCK;
-				return Plugin_Changed;
-			}
-			if (!(g_iPlayerPrevButtons[client] & IN_RELOAD) && iButtons & IN_RELOAD) {
-				int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
-				float pos[3];
-				pos = GetAimOrigin(client);
-				float clientPos[3];
-				GetClientAbsOrigin(client, clientPos);
-				if ((GetVectorDistance(clientPos, pos) > 400.0) && !PlayerEditItems[client][eiInAdmin])
-					PrintToChat(client, "[-T-] Too far away...");
-				
-				if (Zone_CheckIfZoneExists(activeZone[client], true, true) || PlayerEditItems[client][eiInAdmin]) {
-					if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]) || PlayerEditItems[client][eiInAdmin]) {
-						if (apartments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
-							TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
+				if (!(g_iPlayerPrevButtons[client] & IN_RELOAD) && iButtons & IN_RELOAD) {
+					int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
+					float pos[3];
+					pos = GetAimOrigin(client);
+					float clientPos[3];
+					GetClientAbsOrigin(client, clientPos);
+					if ((GetVectorDistance(clientPos, pos) > 400.0) && !PlayerEditItems[client][eiInAdmin])
+						PrintToChat(client, "[-T-] Too far away...");
+					
+					if (Zone_CheckIfZoneExists(activeZone[client], true, true) || PlayerEditItems[client][eiInAdmin]) {
+						if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]) || PlayerEditItems[client][eiInAdmin]) {
+							if (apartments_isClientOwner(client, activeZone[client]) || PlayerEditItems[client][eiInAdmin]) {
+								TeleportEntity(ent, pos, NULL_VECTOR, NULL_VECTOR);
+							} else {
+								PrintToChat(client, "[-T-] You do not own this Apartment");
+							}
 						} else {
-							PrintToChat(client, "[-T-] You do not own this Apartment");
+							PrintToChat(client, "[-T-] Not in your Apartment");
 						}
 					} else {
-						PrintToChat(client, "[-T-] Not in your Apartment");
+						PrintToChat(client, "[-T-] Not an Apartment");
 					}
-				} else {
-					PrintToChat(client, "[-T-] Not an Apartment");
+					
+					iButtons ^= IN_RELOAD;
+					return Plugin_Changed;
 				}
-				
-				iButtons ^= IN_RELOAD;
-				return Plugin_Changed;
-			}
-			if (!(g_iPlayerPrevButtons[client] & IN_MOVELEFT) && iButtons & IN_MOVELEFT) {
-				int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
-				float angles[3];
-				GetEntPropVector(ent, Prop_Data, "m_angRotation", angles);
-				angles[1] += 1;
-				TeleportEntity(ent, NULL_VECTOR, angles, NULL_VECTOR);
-				iButtons &= ~IN_MOVELEFT;
-				iButtons &= IN_MOVERIGHT;
-				return Plugin_Changed;
-			}
-			if (!(g_iPlayerPrevButtons[client] & IN_MOVERIGHT) && iButtons & IN_MOVERIGHT) {
-				int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
-				float angles[3];
-				GetEntPropVector(ent, Prop_Data, "m_angRotation", angles);
-				angles[1] -= 1;
-				TeleportEntity(ent, NULL_VECTOR, angles, NULL_VECTOR);
-				iButtons &= ~IN_MOVERIGHT;
-				iButtons &= IN_MOVELEFT;
-				return Plugin_Changed;
+				if (!(g_iPlayerPrevButtons[client] & IN_MOVELEFT) && iButtons & IN_MOVELEFT) {
+					int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
+					float angles[3];
+					GetEntPropVector(ent, Prop_Data, "m_angRotation", angles);
+					angles[1] += 1;
+					TeleportEntity(ent, NULL_VECTOR, angles, NULL_VECTOR);
+					iButtons &= ~IN_MOVELEFT;
+					iButtons &= IN_MOVERIGHT;
+					return Plugin_Changed;
+				}
+				if (!(g_iPlayerPrevButtons[client] & IN_MOVERIGHT) && iButtons & IN_MOVERIGHT) {
+					int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
+					float angles[3];
+					GetEntPropVector(ent, Prop_Data, "m_angRotation", angles);
+					angles[1] -= 1;
+					TeleportEntity(ent, NULL_VECTOR, angles, NULL_VECTOR);
+					iButtons &= ~IN_MOVERIGHT;
+					iButtons &= IN_MOVELEFT;
+					return Plugin_Changed;
+				}
 			}
 		}
 		g_iPlayerPrevButtons[client] = iButtons;
@@ -757,6 +759,10 @@ public int Zone_OnClientEntry(int client, char[] zone) {
 }
 
 public int Zone_OnClientLeave(int client, char[] zone) {
+	float pos[3];
+	GetClientAbsOrigin(client, pos);
+	if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]))
+		return;
 	strcopy(activeZone[client], sizeof(activeZone), "");
 }
 

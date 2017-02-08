@@ -18,7 +18,11 @@ public Plugin myinfo =
 	url = "http://ggc-base.de"
 };
 
-public void OnPluginStart() {  }
+public void OnPluginStart() {
+	for (int i = 1; i < MAXPLAYERS; i++)
+	if (isValidClient(i))
+		SDKHook(i, SDKHook_OnTakeDamage, OnTakeDamage);
+}
 
 public void OnClientPutInServer(int client) {
 	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
@@ -43,7 +47,7 @@ public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &dam
 		damage = 0.0;
 		return Plugin_Changed;
 	} else {
-		damage *= 0.30;
+		damage = 0.0;
 		return Plugin_Changed;
 	}
 }

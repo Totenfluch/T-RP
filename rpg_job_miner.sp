@@ -239,6 +239,8 @@ stock bool isValidClient(int client) {
 public void setInfo(int client) {
 	if (!jobs_isActiveJob(client, "Mining"))
 		return;
+	if (StrContains(activeZone[client], "mining", false) == -1)
+		return;
 	char info[128];
 	Format(info, sizeof(info), "%s: Mined %i/%i (%is Cd)", activeZone[client], g_iCollectedLoot[client][g_iPlayerZoneId[client]], MAX_COLLECT, g_iMiningZoneCooldown[client][g_iPlayerZoneId[client]]);
 	jobs_setCurrentInfo(client, info);

@@ -338,7 +338,7 @@ public void resetLocalInventory(int client) {
 }
 
 public void resetLocalInventorySlot(int client, int slot) {
-	if(IsClientInGame(client))
+	if (IsClientInGame(client))
 		PrintToConsole(client, "cleared: %i", slot);
 	strcopy(g_ePlayerInventory[client][slot][iTimestamp], 64, "");
 	strcopy(g_ePlayerInventory[client][slot][iPlayerid], 20, "");
@@ -546,7 +546,7 @@ public void showInventoryOfClientToOtherClientByCategory(int client1, int client
 	for (int i = 0; i < MAX_ITEMS; i++) {
 		if (g_ePlayerInventory[client1][i][iIsActive]) {
 			if ((StrEqual(g_ePlayerInventory[client1][i][iCategory], category)) || (StrEqual(g_ePlayerInventory[client1][i][iCategory2], category))) {
-				char id[8]; 
+				char id[8];
 				IntToString(i, id, sizeof(id));
 				AddMenuItem(menu, id, g_ePlayerInventory[client1][i][iItemname], ITEMDRAW_DISABLED);
 			}
@@ -566,7 +566,7 @@ public Action cmdOpenInventory(int client, const char[] command, int argc) {
 	char menuTitle[128];
 	Format(menuTitle, sizeof(menuTitle), "Your Inventory (%i/%i)", getPlayerItems(client), maxPlayerItems(client));
 	SetMenuTitle(menu, menuTitle);
-	ArrayList containedItems = CreateArray(800, 800);
+	ArrayList containedItems = CreateArray(501, 500);
 	for (int i = 0; i < MAX_ITEMS; i++) {
 		if (g_ePlayerInventory[client][i][iIsActive]) {
 			if (FindStringInArray(containedItems, g_ePlayerInventory[client][i][iItemname]) == -1) {
@@ -590,6 +590,7 @@ public Action cmdOpenInventory(int client, const char[] command, int argc) {
 			}
 		}
 	}
+	delete containedItems;
 	DisplayMenu(menu, client, 60);
 	
 	return Plugin_Continue;

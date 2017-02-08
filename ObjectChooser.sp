@@ -88,7 +88,7 @@ public int Zone_OnClientLeave(int client, char[] zone) {
 stock int GetTargetBlock(int client)
 {
 	int entity = GetClientAimTarget(client, false);
-	if (IsValidEntity(entity))
+	if (IsValidEdict(entity))
 	{
 		
 		return entity;

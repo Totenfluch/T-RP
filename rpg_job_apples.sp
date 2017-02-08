@@ -43,7 +43,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	jobs_registerJob("Apple Harvester", "Harvest Apples to earn Money", 10, 50, 2.0);
+	jobs_registerJob("Apple Harvester", "Harvest Apples to earn Money", 20, 100, 3.0);
 	npc_registerNpcType(npctype);
 	RegConsoleCmd("sm_astats", cmdOnMStats, "shows Apple Harvesting stats");
 }
@@ -232,6 +232,8 @@ stock bool isValidClient(int client) {
 
 public void setInfo(int client) {
 	if (!jobs_isActiveJob(client, "Apple Harvester"))
+		return;
+	if (StrContains(activeZone[client], "Apple", false) == -1)
 		return;
 	char info[128];
 	Format(info, sizeof(info), "%s: Harvested %i/%i (%is Cd)", activeZone[client], g_iCollectedLoot[client][g_iPlayerZoneId[client]], MAX_COLLECT, g_iAppleZoneCooldown[client][g_iPlayerZoneId[client]]);

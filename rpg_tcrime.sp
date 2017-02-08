@@ -38,6 +38,15 @@ public void OnPluginStart()
 	char CreateCrimeTableQuery[512];
 	Format(CreateCrimeTableQuery, sizeof(CreateCrimeTableQuery), "CREATE TABLE IF NOT EXISTS `t_rpg_tcrime` ( `Id` BIGINT NULL DEFAULT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP on update CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playername` VARCHAR(40) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `playerid` VARCHAR(20) NOT NULL , `crime` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , PRIMARY KEY (`Id`, `playerid`), UNIQUE KEY `playerid` (`playerid`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, CreateCrimeTableQuery);
+	RegAdminCmd("sm_resetCrime", cmdResetCrime, ADMFLAG_ROOT, "resets the crime");
+}
+
+public Action cmdResetCrime(int client, int args) {
+	for (int i = 1; i < MAXPLAYERS; i++) {
+		if (!isValidClient(i))
+			continue;
+		setCrime(i, 0);
+	}
 }
 
 public void OnMapStart() {

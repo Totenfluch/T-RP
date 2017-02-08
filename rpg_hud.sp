@@ -71,6 +71,11 @@ public Action updateHUD(Handle Timer) {
 			Format(printHudString, sizeof(printHudString), "%sJob: %s | Level: %i | XP: %i/%i\n", printHudString, jobname, jobs_getLevel(client), jobs_getExperience(client), jobs_getExperienceForNextLevel(client));
 		}
 		
+		char info[128];
+		jobs_getCurrentInfo(client, info);
+		if (!StrEqual(info, ""))
+			Format(printHudString, sizeof(printHudString), "%s%s\n", printHudString, info);
+		
 		
 		PrintHintText(client, printHudString);
 	}

@@ -43,7 +43,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	jobs_registerJob("Gardener", "Mow grass and do gardening stuff", 10, 50, 2.0);
+	jobs_registerJob("Gardener", "Mow grass and do gardening stuff", 20, 200, 3.0);
 	npc_registerNpcType(npctype);
 	RegConsoleCmd("sm_mstats", cmdOnMStats, "shows gardening stats");
 }
@@ -207,6 +207,8 @@ stock bool isValidClient(int client) {
 
 public void setInfo(int client) {
 	if (!jobs_isActiveJob(client, "Gardener"))
+		return;
+	if (StrContains(activeZone[client], "garden", false) == -1)
 		return;
 	char info[128];
 	Format(info, sizeof(info), "%s: Gardened %i/%i (%is Cd)", activeZone[client], g_iCollectedLoot[client][g_iPlayerZoneId[client]], MAX_COLLECT, g_iGardenerZoneCooldown[client][g_iPlayerZoneId[client]]);

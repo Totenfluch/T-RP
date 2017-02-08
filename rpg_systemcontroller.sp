@@ -365,8 +365,8 @@ public void savePlayer(int client) {
 	Format(insertDataQuery, sizeof(insertDataQuery), "INSERT INTO `t_rpg_playercontroller` (`Id`, `playername`, `playerid`, `timestamp`, `map`, `hp`, `armor`, `speed`, `gravity`, `angles`, `pos_x`, `pos_y`, `pos_z`, `primaryWeapon`, `primaryWeaponClip`, `primaryWeaponAmmo`, `secondaryWeapon`, `secondaryWeaponClip`, `secondaryWeaponAmmo`, `nade1`, `nade2`, `nade3`, `nade4`, `nade5`, `flags`, `extern1`, `extern2`, `extern3`) VALUES (NULL, '%s', '%s', CURRENT_TIMESTAMP, '%s', '%i', '%i', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%s', '%i', '%i', '%s', '%i', '%i', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');", 
 		clean_playername, playerid, mapName, Hp, Armor, Speed, Gravity, Angles[1], Position[0], Position[1], Position[2], primaryWeapon, primaryWeaponClip, primaryWeaponAmmo, secondaryWeapon, secondaryWeaponClip, secondaryWeaponAmmo, nades[0], nades[1], nades[2], nades[3], nades[4], "FLAGS", "EXTERN1", "EXTERN2", "EXTERN3");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, insertDataQuery);
-	PrintToServer("'%s', '%s', '%s', '%i', '%i', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%s', '%i', '%i', '%s', '%i', '%i', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", clean_playername, playerid, mapName, Hp, Armor, Speed, Gravity, Angles[1], Position[0], Position[1], Position[2], primaryWeapon, primaryWeaponClip, primaryWeaponAmmo, secondaryWeapon, secondaryWeaponClip, secondaryWeaponAmmo, nades[0], nades[1], nades[2], nades[3], nades[4], "FLAGS", "EXTERN1", "EXTERN2", "EXTERN3");
-	PrintToServer("Saved!");
+	//PrintToServer("'%s', '%s', '%s', '%i', '%i', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%s', '%i', '%i', '%s', '%i', '%i', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", clean_playername, playerid, mapName, Hp, Armor, Speed, Gravity, Angles[1], Position[0], Position[1], Position[2], primaryWeapon, primaryWeaponClip, primaryWeaponAmmo, secondaryWeapon, secondaryWeaponClip, secondaryWeaponAmmo, nades[0], nades[1], nades[2], nades[3], nades[4], "FLAGS", "EXTERN1", "EXTERN2", "EXTERN3");
+	//PrintToServer("Saved!");
 }
 
 
@@ -486,6 +486,8 @@ public void SetServerConvars() {
 	SetConVarBounds(FindConVar("mp_roundtime"), ConVarBound_Upper, true, 1501102101.0);
 	
 	ServerCommand("mp_roundtime 1501102101");
+	
+	ServerCommand("sm_cvar sm_voiceradius_live_distance 350");
 }
 
 int g_iaGrenadeOffsets[] =  { 15, 17, 16, 14, 18, 17 };

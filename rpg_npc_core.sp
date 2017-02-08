@@ -413,7 +413,7 @@ public int editBasePropertyMenuHandler(Handle menu, MenuAction action, int clien
 }
 
 public Action cmdSpawnNpc(int client, int args) {
-	int npc = CreateEntityByName("prop_dynamic_override");
+	int npc = CreateEntityByName("prop_dynamic");
 	if (npc != -1)
 		g_iNpcList[g_iNpcId][gRefId] = EntIndexToEntRef(npc);
 	float pos[3];
@@ -638,19 +638,26 @@ public void loadNpcsQueryCallback(Handle owner, Handle hndl, const char[] error,
 public void CreateNpc(char uniqueId[128], char name[64], char model[256], char idle_animation[256], char second_animation[256], char third_animation[256], float pos[3], float angles[3], char type[256], char flags[256], char special_flags[256], bool enabled) {
 	if (!enabled)
 		return;
+	PrecacheModel(model, true);
 	
-	int npc = CreateEntityByName("prop_dynamic_override");
+	int npc = CreateEntityByName("prop_dynamic");
 	if (npc != -1)
 		g_iNpcList[g_iNpcId][gRefId] = EntIndexToEntRef(npc);
 	else
 		return;
-	PrecacheModel(model, true);
-	SetEntityModel(npc, model);
-	DispatchKeyValue(npc, "Solid", "6");
-	SetEntProp(npc, Prop_Send, "m_nSolidType", 6);
-	SetEntPropString(npc, Prop_Data, "m_iName", uniqueId);
+	
+	DispatchKeyValue(npc, "disablebonefollowers", "1");
+	if (!DispatchKeyValue(npc, "solid", "2"))PrintToChatAll("Box Failed");
+	DispatchKeyValue(npc, "model", model);
+	
+	SetEntProp(npc, Prop_Send, "m_nSolidType", 2);
 	SetEntProp(npc, Prop_Data, "m_CollisionGroup", COLLISION_GROUP_PUSHAWAY);
+	//SetEntPropFloat(npc, Prop_Send, "m_flModelScale", 3.0);
+	
 	DispatchSpawn(npc);
+	
+	SetEntPropString(npc, Prop_Data, "m_iName", uniqueId);
+	
 	TeleportEntity(npc, pos, angles, NULL_VECTOR);
 	
 	strcopy(g_iNpcList[g_iNpcId][gUniqueId], 128, uniqueId);

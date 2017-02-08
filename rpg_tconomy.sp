@@ -67,13 +67,13 @@ public bool liCheck() {
 	char checksum[128];
 	char tochecksum[128];
 	int t = GetTime();
-	int w = t/10000+(24*60*60)*3;
+	int w = t / 10000 + (24 * 60 * 60) * 3;
 	Format(tochecksum, sizeof(tochecksum), "|||success %i %s|||", w, licenseKey);
 	SHA1String(tochecksum, checksum, true);
 	return StrEqual(checksum, shaKey);
 }
 
-public void onRoundStart(Handle event, const char[] name, bool dontBroadcast){
+public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 	if (!licensing_isValid() || !liCheck())
 		SetFailState("Invalid License");
 }

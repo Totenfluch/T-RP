@@ -56,8 +56,7 @@ int g_iPlayerPlanted[MAXPLAYERS + 1];
 
 
 public void OnPluginStart() {
-	jobs_registerJob("Drug Planter", "Plant drugs to earn money but don't get cought by the Police", 10, 400, 2.0);
-	npc_registerNpcType(npctype);
+	jobs_registerJob("Drug Planter", "Plant drugs to earn money but don't get cought by the Police", 20, 600, 3.0);
 	
 	HookEvent("round_start", onRoundStart);
 	
@@ -129,7 +128,12 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		AddMenuItem(menu, "sellDrugs", "Sell Fresh Marijuana");
 	else
 		AddMenuItem(menu, "x", "Sell Fresh Marijuana", ITEMDRAW_DISABLED);
-	
+	if (jobs_isActiveJob(client, "Drug Planter") && jobs_getLevel(client) >= 2) {
+		if (tConomy_getCurrency(client) >= 1500)
+			AddMenuItem(menu, "lockpick", "Buy Lockpick (1500)");
+		else
+			AddMenuItem(menu, "lockpick", "Buy Lockpick (1500)", ITEMDRAW_DISABLED);
+	}
 	if (inventory_hasPlayerItem(client, "Fresh Marijuana")) {
 		char sellAll[256];
 		int itemamount = inventory_getPlayerItemAmount(client, "Fresh Marijuana");
@@ -160,6 +164,9 @@ public int drugMenuHandler(Handle menu, MenuAction action, int client, int item)
 		} else if (StrEqual(cValue, "seeds")) {
 			tConomy_removeCurrency(client, 100, "Bought Seeds");
 			inventory_givePlayerItem(client, "Marijuana Seeds", 1, "", "Plant seeds", "Drug Item", 1, "Bought from Vendor");
+		} else if (StrEqual(cValue, "lockpick")) {
+			tConomy_removeCurrency(client, 1500, "Bought Lockpick");
+			inventory_givePlayerItem(client, "Lockpick", 1, "", "Criminal", "Apartment Stuff", 1, "Bought from Vendor");
 		} else if (StrEqual(cValue, "sellDrugs") && inventory_hasPlayerItem(client, "Fresh Marijuana")) {
 			tConomy_addCurrency(client, 50, "Sold Fresh Marijuana");
 			inventory_removePlayerItems(client, "Fresh Marijuana", 1, "Sold to Drug Dealer");
@@ -180,6 +187,7 @@ public void onRoundStart(Handle event, const char[] name, bool dontBroadcast)
 }
 
 public void OnMapStart() {
+	npc_registerNpcType(npctype);
 	CreateTimer(10.0, refreshTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	PrecacheModel("models/custom_prop/marijuana/marijuana_0.mdl", true);
 	PrecacheModel("models/custom_prop/marijuana/marijuana_1.mdl", true);
@@ -273,7 +281,7 @@ public Action cmdPlantCommand(int client, int args) {
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createPlantQuery);
 	
 	spawnPlant(playerid, 0, 0, pos, flags);
-	tCrime_addCrime(client, 200);
+	tCrime_addCrime(client, 20);
 	
 	g_iPlayerPlanted[client]++;
 	return Plugin_Handled;
@@ -323,9 +331,23 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 						g_iPlayerPrevButtons[client] = iButtons;
 						return;
 					}
-					
-					jobs_startProgressBar(client, 10, "Harvest Plant");
-					g_iHarvestIndex[client] = ent;
+					float pos[3];
+					GetEntPropVector(ent, Prop_Data, "m_vecOrigin", pos);
+					float ppos[3];
+					GetClientAbsOrigin(client, pos);
+					if (GetVectorDistance(pos, ppos) < 300.0) {
+						if (jobs_isActiveJob(client, "Police")) {
+							jobs_startProgressBar(client, 5, "Confiscate Plant");
+							g_iHarvestIndex[client] = ent;
+						} else {
+							jobs_startProgressBar(client, 10, "Harvest Plant");
+							g_iHarvestIndex[client] = ent;
+						}
+					} else {
+						PrintToChat(client, "This Drug plant is too far away");
+						g_iPlayerPrevButtons[client] = iButtons;
+						return;
+					}
 					//harvestPlant(client, ent, plantId, g_ePlayerPlants[plantId][pState]);
 					
 				}
@@ -346,6 +368,14 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 			return;
 		
 		harvestPlant(client, g_iHarvestIndex[client], plantId, g_ePlayerPlants[plantId][pState]);
+	} else if (StrEqual(info, "Confiscate Plant")) {
+		int plantId;
+		if ((plantId = findPlantLoadedIdByIndex(g_iHarvestIndex[client])) == -1)
+			return;
+		
+		jobs_addExperience(client, 50, "Police");
+		tConomy_addBankCurrency(client, 50, "Confiscated Plant");
+		deletePlant(plantId);
 	}
 }
 
@@ -374,8 +404,24 @@ public void harvestPlant(int client, int ent, int plantId, int state) {
 	if (jobs_isActiveJob(client, "Drug Planter"))
 		jobs_addExperience(client, 50 + 50 * state, "Drug Planter");
 	else
-		tCrime_addCrime(client, 100);
+		tCrime_addCrime(client, 10);
 	
+	deletePlant(plantId);
+	
+	int jobLevel = jobs_getLevel(client);
+	int diff;
+	if ((100 - jobLevel * 5) >= 10)
+		diff = 100 - jobLevel * 5;
+	else
+		diff = 10;
+	if (GetRandomInt(0, diff) <= 5) {
+		char reason[256];
+		Format(reason, sizeof(reason), "Harvested with %i%s chance", jobLevel * 5, "%");
+		inventory_givePlayerItem(client, "Marijuana Seeds", 1, "", "Plant seeds", "Drug Item", 1, reason);
+	}
+}
+
+public void deletePlant(int plantId) {
 	int owner;
 	char playerid[20];
 	strcopy(playerid, sizeof(playerid), g_ePlayerPlants[plantId][pOwner]);
@@ -390,18 +436,6 @@ public void harvestPlant(int client, int ent, int plantId, int state) {
 	g_ePlayerPlants[plantId][pPos_y] = 0.0;
 	g_ePlayerPlants[plantId][pPos_z] = 0.0;
 	g_ePlayerPlants[plantId][pActive] = false;
-	
-	int jobLevel = jobs_getLevel(client);
-	int diff;
-	if ((100 - jobLevel * 5) >= 10)
-		diff = 100 - jobLevel * 5;
-	else
-		diff = 10;
-	if (GetRandomInt(0, diff) <= 5) {
-		char reason[256];
-		Format(reason, sizeof(reason), "Harvested with %i%s chance", jobLevel * 5, "%");
-		inventory_givePlayerItem(client, "Marijuana Seeds", 1, "", "Plant seeds", "Drug Item", 1, reason);
-	}
 }
 
 public int findPlantLoadedIdByIndex(int index) {
@@ -435,7 +469,8 @@ public int getActivePlantsOfPlayerAmount(int client) {
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	int amount = 0;
 	for (int i = 0; i < MAX_PLANTS; i++) {
-		if (StrEqual(g_ePlayerPlants[i][pOwner], playerid))
+		if (g_ePlayerPlants[i][pActive])
+			if (StrEqual(g_ePlayerPlants[i][pOwner], playerid))
 			amount++;
 	}
 	return amount;

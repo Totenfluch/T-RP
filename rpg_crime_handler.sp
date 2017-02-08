@@ -26,28 +26,53 @@ public void OnPluginStart() {
 
 public void onPlayerHurt(Handle event, const char[] name, bool dontBroadcast) {
 	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
 	int hurtdmg = GetEventInt(event, "dmg_health");
+	
+	char weapon[64];
+	GetClientWeapon(attacker, weapon, sizeof(weapon));
+	
+	if (victim == attacker)
+		return;
 	
 	if (!isValidClient(attacker))
 		return;
 	
-	
-	if (jobs_isActiveJob(attacker, "Police"))
+	if (jobs_isActiveJob(attacker, "Police")) {
+		if (!StrEqual(weapon, "weapon_taser"))
+			if (isValidClient(victim))
+			if (attacker != victim)
+			if (tCrime_getCrime(victim) == 0)
+			KickClient(attacker, "RDM");
+		
 		return;
+	}
+	
 	
 	tCrime_addCrime(attacker, hurtdmg / 4);
 }
 
 public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
 	
 	if (!isValidClient(client))
 		return;
 	
-	if (jobs_isActiveJob(client, "Police"))
+	if (client == victim)
 		return;
 	
-	tCrime_addCrime(client, 400);
+	if (jobs_isActiveJob(client, "Police")) {
+		if (isValidClient(victim)) {
+			if (client != victim)
+				if (tCrime_getCrime(victim) == 0)
+				KickClient(client, "RDM");
+		}
+		return;
+	}
+	
+	
+	tCrime_addCrime(client, 2000);
 }
 
 stock bool isValidClient(int client) {

@@ -16,6 +16,7 @@
 
 
 #define MAX_APARTMENTS 512
+#define MAX_OWNED 2
 
 int g_iPlayerPrevButtons[MAXPLAYERS + 1];
 char g_cDBConfig[] = "gsxh_multiroot";
@@ -434,11 +435,11 @@ public void apartmentAction(int client) {
 			Menu buyApartmentMenu = CreateMenu(buyApartmentHandler);
 			SetMenuTitle(buyApartmentMenu, "Apartment Menu");
 			char buyApartmentText[512];
-			if (tConomy_getCurrency(client) >= existingApartments[apartmentId][eaApartment_Price]) {
+			if (tConomy_getCurrency(client) >= existingApartments[apartmentId][eaApartment_Price] && getOwnedApartments(client) < MAX_OWNED) {
 				Format(buyApartmentText, sizeof(buyApartmentText), "Buy Apartment for %i", existingApartments[apartmentId][eaApartment_Price]);
 				AddMenuItem(buyApartmentMenu, val, buyApartmentText);
 			} else {
-				Format(buyApartmentText, sizeof(buyApartmentText), "Buy Apartment for %i (no Money)", existingApartments[apartmentId][eaApartment_Price]);
+				Format(buyApartmentText, sizeof(buyApartmentText), "Buy Apartment for %i (no Money | %i/%i Aps)", existingApartments[apartmentId][eaApartment_Price], getOwnedApartments(client), MAX_OWNED);
 				AddMenuItem(buyApartmentMenu, val, buyApartmentText, ITEMDRAW_DISABLED);
 			}
 			
@@ -1004,6 +1005,17 @@ public Action Timer_Repeat(Handle timer, any client) {
 	
 	KnockbackSetVelocity(client, zone_pos[client], clientloc, 300.0);
 	return Plugin_Continue;
+}
+
+public int getOwnedApartments(int client){
+	int owned = 0;
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	for (int i = 0; i < MAX_APARTMENTS; i++) {
+		if (StrEqual(playerid, ownedApartments[i][oaPlayerid]))
+			owned++;
+	}
+	return owned;
 }
 
 int g_iPlayerTargetKey[MAXPLAYERS + 1];

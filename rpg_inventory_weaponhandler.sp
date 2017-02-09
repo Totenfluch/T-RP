@@ -79,7 +79,7 @@ public int weaponMenuHandler(Handle menu, MenuAction action, int client, int ite
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		
 		if (StrEqual(cValue, "EquipAndStash")) {
-			stashWeapon(client, false, g_cLastItemUsed[client]);
+			stashWeapon(client, true, g_cLastItemUsed[client]);
 			takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);
 		} else if (StrEqual(cValue, "GiveWeapon")) {
 			takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);

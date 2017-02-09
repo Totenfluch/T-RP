@@ -153,49 +153,49 @@ public void OnPluginStart() {
 	AutoExecConfig_SetFile("rpg_npc_weaponvendor");
 	AutoExecConfig_SetCreateFile(true);
 	
-	g_hKevlarPrice = AutoExecConfig_CreateConVar("rpg_weaponhandler_kevlar", "35", "Price of the kevlar in menu");
-	g_hHelmetKevlarPrice = AutoExecConfig_CreateConVar("rpg_weaponhandler_helmetkevlar", "35", "Price of the helmetkevlar in menu");
-	g_hFlashbangPrice = AutoExecConfig_CreateConVar("rpg_weaponhandler_flashbang", "35", "Price of the flashbang in menu");
-	g_hGrenadePrice = AutoExecConfig_CreateConVar("rpg_weaponhandler_grenade", "40", "Price of the grenade in menu");
-	g_hSmokegrenadePrice = AutoExecConfig_CreateConVar("rpg_weaponhandler_smoke", "50", "Price of the smoke in menu");
+	g_hKevlarPrice = AutoExecConfig_CreateConVar("rpg_weaponhandler_kevlar", "350", "Price of the kevlar in menu");
+	g_hHelmetKevlarPrice = AutoExecConfig_CreateConVar("rpg_weaponhandler_helmetkevlar", "350", "Price of the helmetkevlar in menu");
+	g_hFlashbangPrice = AutoExecConfig_CreateConVar("rpg_weaponhandler_flashbang", "350", "Price of the flashbang in menu");
+	g_hGrenadePrice = AutoExecConfig_CreateConVar("rpg_weaponhandler_grenade", "400", "Price of the grenade in menu");
+	g_hSmokegrenadePrice = AutoExecConfig_CreateConVar("rpg_weaponhandler_smoke", "500", "Price of the smoke in menu");
 	
 	
-	g_hUspValue = AutoExecConfig_CreateConVar("rpg_usp", "10", "Price of the usp in menu");
-	g_hP2000Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_p2000", "10", "Price of the p2000 in menu");
-	g_hGlockValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_glock", "20", "Price of the glock in menu");
-	g_hP250Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_p250", "25", "Price of the p250 in menu");
-	g_hDeagleValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_deagle", "25", "Price of the deagle in menu");
-	g_hDualsValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_duals", "30", "Price of the duals in menu");
-	g_hFivesevenValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_fiveseven", "30", "Price of the fiveseven in menu");
-	g_hTecValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_tec9", "35", "Price of the tec9 in menu");
-	g_hCzValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_cz", "35", "Price of the cz in menu");
+	g_hUspValue = AutoExecConfig_CreateConVar("rpg_usp", "100", "Price of the usp in menu");
+	g_hP2000Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_p2000", "100", "Price of the p2000 in menu");
+	g_hGlockValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_glock", "200", "Price of the glock in menu");
+	g_hP250Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_p250", "250", "Price of the p250 in menu");
+	g_hDeagleValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_deagle", "250", "Price of the deagle in menu");
+	g_hDualsValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_duals", "300", "Price of the duals in menu");
+	g_hFivesevenValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_fiveseven", "300", "Price of the fiveseven in menu");
+	g_hTecValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_tec9", "350", "Price of the tec9 in menu");
+	g_hCzValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_cz", "350", "Price of the cz in menu");
 	
-	g_hMac10Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_mac10", "30", "Price of the Mac10 in menu");
-	g_hMp7Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_mp7", "35", "Price of the Mp7 in menu");
-	g_hMp9Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_mp9", "35", "Price of the Mp9 in menu");
-	g_hUmp45Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_ump45", "35", "Price of the Ump45 in menu");
-	g_hBizonValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_bizon", "40", "Price of the Bizon in menu");
-	g_hP90Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_p90", "50", "Price of the P90 in menu");
+	g_hMac10Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_mac10", "300", "Price of the Mac10 in menu");
+	g_hMp7Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_mp7", "350", "Price of the Mp7 in menu");
+	g_hMp9Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_mp9", "350", "Price of the Mp9 in menu");
+	g_hUmp45Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_ump45", "350", "Price of the Ump45 in menu");
+	g_hBizonValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_bizon", "400", "Price of the Bizon in menu");
+	g_hP90Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_p90", "500", "Price of the P90 in menu");
 	
-	g_hNovaValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_nova", "50", "Price of the nova in menu");
-	g_hXM1014Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_xm1014", "60", "Price of the XM1014 in menu");
-	g_hSawedValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_sawed", "55", "Price of the Sawed in menu");
-	g_hMag7Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_mag7", "65", "Price of the Mag7 in menu");
+	g_hNovaValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_nova", "500", "Price of the nova in menu");
+	g_hXM1014Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_xm1014", "600", "Price of the XM1014 in menu");
+	g_hSawedValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_sawed", "550", "Price of the Sawed in menu");
+	g_hMag7Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_mag7", "650", "Price of the Mag7 in menu");
 	
-	g_hGalilValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_galil", "60", "Price of the Galil in menu");
-	g_hFamasValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_famas", "65", "Price of the Famas in menu");
-	g_hSg553Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_sg553", "100", "Price of the Sg553 in menu");
-	g_hAUGValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_aug", "100", "Price of the Aug in menu");
-	g_hM4A4Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_m4a4", "125", "Price of the M4a4 in menu");
-	g_hM4A1SValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_m4a1s", "150", "Price of the M4a1s in menu");
-	g_hAk47Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_ak47", "150", "Price of the Ak47 in menu");
+	g_hGalilValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_galil", "600", "Price of the Galil in menu");
+	g_hFamasValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_famas", "650", "Price of the Famas in menu");
+	g_hSg553Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_sg553", "1000", "Price of the Sg553 in menu");
+	g_hAUGValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_aug", "1000", "Price of the Aug in menu");
+	g_hM4A4Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_m4a4", "1250", "Price of the M4a4 in menu");
+	g_hM4A1SValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_m4a1s", "1500", "Price of the M4a1s in menu");
+	g_hAk47Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_ak47", "1500", "Price of the Ak47 in menu");
 	
-	g_hAwpValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_awp", "200", "Price of the awp in menu");
-	g_hScoutValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_scout", "120", "Price of the scout in menu");
-	g_hG3SG1Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_g3sg1", "250", "Price of the g3sg1 in menu");
-	g_hScar20Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_scar", "250", "Price of the scar in menu");
-	g_hM249Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_m249", "200", "Price of the m249 in menu");
-	g_hNegevValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_negev", "225", "Price of the negev in menu");
+	g_hAwpValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_awp", "2000", "Price of the awp in menu");
+	g_hScoutValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_scout", "1200", "Price of the scout in menu");
+	g_hG3SG1Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_g3sg1", "2500", "Price of the g3sg1 in menu");
+	g_hScar20Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_scar", "2500", "Price of the scar in menu");
+	g_hM249Value = AutoExecConfig_CreateConVar("rpg_weaponhandler_m249", "2000", "Price of the m249 in menu");
+	g_hNegevValue = AutoExecConfig_CreateConVar("rpg_weaponhandler_negev", "2250", "Price of the negev in menu");
 	
 	AutoExecConfig_CleanFile();
 	AutoExecConfig_ExecuteFile();

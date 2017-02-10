@@ -321,7 +321,11 @@ public bool spawnFurniture(int id, char playerid[20], float pos[3], float angles
 	SetEntityModel(furnitureEnt, modelPath);
 	DispatchKeyValue(furnitureEnt, "Solid", "6");
 	SetEntProp(furnitureEnt, Prop_Send, "m_nSolidType", 6);
-	SetEntProp(furnitureEnt, Prop_Data, "m_CollisionGroup", COLLISION_GROUP_PUSHAWAY);
+	if (StrContains(LoadedFurnitureItems[id][lfFlags], "p") != -1)
+		SetEntProp(furnitureEnt, Prop_Data, "m_CollisionGroup", COLLISION_GROUP_PUSHAWAY);
+	else
+		SetEntProp(furnitureEnt, Prop_Data, "m_CollisionGroup", COLLISION_GROUP_NONE);
+	SetEntPropFloat(furnitureEnt, Prop_Send, "m_flModelScale", LoadedFurnitureItems[id][lfSize]);
 	
 	SetEntPropString(furnitureEnt, Prop_Data, "m_iName", uniqueId);
 	DispatchSpawn(furnitureEnt);

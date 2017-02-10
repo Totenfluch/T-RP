@@ -104,6 +104,10 @@ public void OnPluginStart()
 	RegAdminCmd("sm_postloadaps", postloadaps, ADMFLAG_ROOT, "postloads aps");
 	HookEvent("round_start", onRoundStart);
 	RegConsoleCmd("say", chatHook);
+	resetAps();
+}
+
+public void resetAps() {
 	for (int i = 0; i < MAX_APARTMENTS; i++) {
 		ownedApartments[i][oaId] = -1;
 		existingApartments[i][eaId] = -1;
@@ -778,6 +782,7 @@ public void deleteApartment(char[] apartmentId) {
 }
 
 public void loadApartments() {
+	resetAps();
 	char mapName[128];
 	GetCurrentMap(mapName, sizeof(mapName));
 	
@@ -803,26 +808,27 @@ public void SQLLoadApartmentsQueryCallback(Handle owner, Handle hndl, const char
 
 public void SQLLoadOwnedApartmentsQueryCallback(Handle owner, Handle hndl, const char[] error, any data) {
 	while (SQL_FetchRow(hndl)) {
-		ownedApartments[g_iOwnedApartmentsCount][oaId] = g_iOwnedApartmentsCount;
-		SQL_FetchStringByName(hndl, "time_of_purchase", ownedApartments[g_iOwnedApartmentsCount][oaTime_of_purchase], 64);
-		ownedApartments[g_iOwnedApartmentsCount][oaPrice_of_purchase] = SQL_FetchIntByName(hndl, "price_of_purchase");
-		SQL_FetchStringByName(hndl, "apartment_id", ownedApartments[g_iOwnedApartmentsCount][oaApartment_Id], 128);
-		SQL_FetchStringByName(hndl, "playerid", ownedApartments[g_iOwnedApartmentsCount][oaPlayerid], 20);
-		SQL_FetchStringByName(hndl, "playername", ownedApartments[g_iOwnedApartmentsCount][oaPlayername], 48);
-		SQL_FetchStringByName(hndl, "apartment_name", ownedApartments[g_iOwnedApartmentsCount][oaApartmentName], 255);
-		SQL_FetchStringByName(hndl, "allowed_players", ownedApartments[g_iOwnedApartmentsCount][oaAllowed_players], 550);
-		ownedApartments[g_iOwnedApartmentsCount][oaDoor_locked] = SQL_FetchBoolByName(hndl, "door_locked");
+		int slot = getFirstFreeOwnedApartmentSlot();
+		ownedApartments[slot][oaId] = slot;
+		SQL_FetchStringByName(hndl, "time_of_purchase", ownedApartments[slot][oaTime_of_purchase], 64);
+		ownedApartments[slot][oaPrice_of_purchase] = SQL_FetchIntByName(hndl, "price_of_purchase");
+		SQL_FetchStringByName(hndl, "apartment_id", ownedApartments[slot][oaApartment_Id], 128);
+		SQL_FetchStringByName(hndl, "playerid", ownedApartments[slot][oaPlayerid], 20);
+		SQL_FetchStringByName(hndl, "playername", ownedApartments[slot][oaPlayername], 48);
+		SQL_FetchStringByName(hndl, "apartment_name", ownedApartments[slot][oaApartmentName], 255);
+		SQL_FetchStringByName(hndl, "allowed_players", ownedApartments[slot][oaAllowed_players], 550);
+		ownedApartments[slot][oaDoor_locked] = SQL_FetchBoolByName(hndl, "door_locked");
 		
 		
 		char aptName[128];
-		strcopy(aptName, sizeof(aptName), ownedApartments[g_iOwnedApartmentsCount][oaApartment_Id]);
+		strcopy(aptName, sizeof(aptName), ownedApartments[slot][oaApartment_Id]);
 		ReplaceString(aptName, sizeof(aptName), "apartment_", "", false);
 		int entity = -1;
 		while ((entity = FindEntityByClassname(entity, "prop_door_rotating")) != INVALID_ENT_REFERENCE) {
 			char uniqueId[64];
 			GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
 			if (StrEqual(aptName, uniqueId)) {
-				if (ownedApartments[g_iOwnedApartmentsCount][oaDoor_locked])
+				if (ownedApartments[slot][oaDoor_locked])
 					AcceptEntityInput(entity, "lock", -1);
 				else
 					AcceptEntityInput(entity, "unlock", -1);
@@ -833,13 +839,14 @@ public void SQLLoadOwnedApartmentsQueryCallback(Handle owner, Handle hndl, const
 			char uniqueId[64];
 			GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
 			if (StrEqual(aptName, uniqueId)) {
-				if (ownedApartments[g_iOwnedApartmentsCount][oaDoor_locked])
+				if (ownedApartments[slot][oaDoor_locked])
 					AcceptEntityInput(entity, "lock", -1);
 				else
 					AcceptEntityInput(entity, "unlock", -1);
 			}
 		}
-		g_iOwnedApartmentsCount++;
+		if (slot == g_iOwnedApartmentsCount)
+			g_iOwnedApartmentsCount++;
 	}
 }
 
@@ -1007,7 +1014,7 @@ public Action Timer_Repeat(Handle timer, any client) {
 	return Plugin_Continue;
 }
 
-public int getOwnedApartments(int client){
+public int getOwnedApartments(int client) {
 	int owned = 0;
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));

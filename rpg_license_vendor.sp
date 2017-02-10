@@ -104,7 +104,7 @@ public void showTopPanelToClient(int client) {
 	else
 		AddMenuItem(licenseMenu, "-smg", displayText, ITEMDRAW_DISABLED);
 	
-	Format(displayText, sizeof(displayText), "SMG License (%i)", g_iShotgunLicense);
+	Format(displayText, sizeof(displayText), "Shotgun License (%i)", g_iShotgunLicense);
 	if (tConomy_getCurrency(client) >= g_iShotgunLicense)
 		AddMenuItem(licenseMenu, "shotgun", displayText);
 	else

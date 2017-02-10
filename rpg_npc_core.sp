@@ -582,7 +582,7 @@ public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error,
 		LogError(error);
 }
 
-public void onRoundStart(Handle event, const char[] name, bool dontBroadcast){
+public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 	g_iNpcId = 0;
 	loadNpcs();
 }

@@ -69,7 +69,7 @@ public void OnPluginStart()
 	SQL_SetCharset(g_DB, "utf8");
 	
 	char createTableQuery[4096];
-	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS `t_rpg_jobs` ( `Id` BIGINT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP on update CURRENT_TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `playername` VARCHAR(36) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `jobname` VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `level` INT NOT NULL , `experience` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , `special_flags` VARCHAR(64) NOT NULL , PRIMARY KEY (`Id`), UNIQUE (`playerid`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
+	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS `t_rpg_jobs` ( `Id` BIGINT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP on update CURRENT_TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `playername` VARCHAR(36) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `jobname` VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `level` INT NOT NULL , `experience` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , `special_flags` VARCHAR(64) NOT NULL , PRIMARY KEY (`Id`), UNIQUE (`playerid`, `jobname`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
 }
 
@@ -439,7 +439,7 @@ public void loadClientJob(int client) {
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
 	char loadJobQuery[512];
-	Format(loadJobQuery, sizeof(loadJobQuery), "SELECT jobname,level,experience,flags,special_flags FROM t_rpg_jobs WHERE playerid = '%s';", playerid);
+	Format(loadJobQuery, sizeof(loadJobQuery), "SELECT jobname,level,experience,flags,special_flags FROM t_rpg_jobs WHERE playerid = '%s' AND flags != 'i';", playerid);
 	SQL_TQuery(g_DB, SQLLoadJobQueryCallback, loadJobQuery, client);
 }
 
@@ -461,7 +461,8 @@ public void leaveJob(int client) {
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	char leaveJobQuery[1024];
-	Format(leaveJobQuery, sizeof(leaveJobQuery), "DELETE FROM t_rpg_jobs WHERE playerid = '%s';", playerid);
+	//Format(leaveJobQuery, sizeof(leaveJobQuery), "DELETE FROM t_rpg_jobs WHERE playerid = '%s';", playerid);
+	Format(leaveJobQuery, sizeof(leaveJobQuery), "UPDATE t_rpg_jobs SET flags = 'i' WHERE playerid = '%s' AND jobname = '%s';", playerid, g_ePlayerJob[client][pjJobname]);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, leaveJobQuery);
 	
 	Call_StartForward(g_hOnJobQuit);
@@ -494,6 +495,10 @@ public void acceptJob(int client, char jobname[128]) {
 	Format(acceptJobQuery, sizeof(acceptJobQuery), "INSERT INTO `t_rpg_jobs` (`Id`, `timestamp`, `playerid`, `playername`, `jobname`, `level`, `experience`, `flags`, `special_flags`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '1', '0', '', '');", playerid, clean_playername, jobname);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, acceptJobQuery);
 	
+	Format(acceptJobQuery, sizeof(acceptJobQuery), "UPDATE t_rpg_jobs SET flags = '' WHERE playerid = '%s' AND jobname = '%s';", playerid, jobname);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, acceptJobQuery);
+	
+	
 	int jobId = findLoadedJobIdByName(jobname);
 	if (jobId == -1)
 		return;
@@ -506,6 +511,8 @@ public void acceptJob(int client, char jobname[128]) {
 	Call_PushCell(client);
 	Call_PushString(g_ePlayerJob[client][pjJobname]);
 	Call_Finish();
+	
+	loadClientJob(client);
 }
 
 public void increaseExperience(int client, int amount, char jobname[128]) {
@@ -534,11 +541,11 @@ public void increaseExperience(int client, int amount, char jobname[128]) {
 	CPrintToChat(client, "{olive}[%s] {green}Gained {olive}%i{green} experience!", g_ePlayerJob[client][pjJobname], amount);
 	
 	char updateLevelQuery[512];
-	Format(updateLevelQuery, sizeof(updateLevelQuery), "UPDATE t_rpg_jobs SET level = %i WHERE playerid = '%s'", g_ePlayerJob[client][pjJobLevel], playerid);
+	Format(updateLevelQuery, sizeof(updateLevelQuery), "UPDATE t_rpg_jobs SET level = %i WHERE playerid = '%s' AND jobname = '%s';", g_ePlayerJob[client][pjJobLevel], playerid, g_ePlayerJob[client][pjJobname]);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateLevelQuery);
 	
 	char updateExperienceQuery[512];
-	Format(updateExperienceQuery, sizeof(updateExperienceQuery), "UPDATE t_rpg_jobs SET experience = %i WHERE playerid = '%s'", g_ePlayerJob[client][pjJobExperience], playerid);
+	Format(updateExperienceQuery, sizeof(updateExperienceQuery), "UPDATE t_rpg_jobs SET experience = %i WHERE playerid = '%s' AND jobname = '%s';", g_ePlayerJob[client][pjJobExperience], playerid, g_ePlayerJob[client][pjJobname]);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateExperienceQuery);
 }
 
@@ -552,7 +559,7 @@ public void decreaseExperience(int client, int amount, char jobname[128]) {
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
 	char updateExperienceQuery[512];
-	Format(updateExperienceQuery, sizeof(updateExperienceQuery), "UPDATE t_rpg_jobs SET experience = %i WHERE playerid = '%s'", g_ePlayerJob[client][pjJobExperience], playerid);
+	Format(updateExperienceQuery, sizeof(updateExperienceQuery), "UPDATE t_rpg_jobs SET experience = %i WHERE playerid = '%s' AND jobname = '%s';", g_ePlayerJob[client][pjJobExperience], playerid, g_ePlayerJob[client][pjJobname]);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateExperienceQuery);
 }
 

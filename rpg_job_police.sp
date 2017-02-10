@@ -1055,6 +1055,8 @@ public int searchMenuHandler(Handle menu, MenuAction action, int client, int ite
 
 public void putInJail(int initiator, int target) {
 	FreeEm(target, initiator);
+	int amount = RoundToNearest(tCrime_getCrime(target) / 10.0);
+	jobs_addExperience(initiator, amount, "Police");
 	jail_putInJail(initiator, target);
 }
 
@@ -1071,7 +1073,6 @@ public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &dam
 	if (!jobs_isActiveJob(attacker, "Police") || !IsValidEdict(weapon))
 		return Plugin_Continue;
 	
-	
 	if (!StrEqual(sWeapon, "weapon_taser"))
 		return Plugin_Continue;
 	
@@ -1081,8 +1082,10 @@ public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &dam
 	if (g_bCuffed[victim])
 		FreeEm(victim, attacker);
 	else
-		if (!jobs_getActiveJob(victim, "Police"))
+		if (!jobs_isActiveJob(victim, "Police"))
 		CuffsEm(victim, attacker);
+	
+	
 	
 	return Plugin_Handled;
 }
@@ -1139,7 +1142,7 @@ public Action CuffsEm(int client, int attacker)
 		SetEntityRenderColor(client, 0, 190, 0, 255);
 		//StripAllPlayerWeapons(client);
 		//GivePlayerItem(client, "weapon_knife");
-		EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, 3));
+		EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, 2));
 		g_bCuffed[client] = true;
 		ShowOverlay(client, g_sOverlayCuffsPath, 0.0);
 		g_iPlayerHandCuffs[attacker]--;

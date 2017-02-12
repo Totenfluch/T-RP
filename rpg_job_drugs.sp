@@ -262,7 +262,7 @@ public Action cmdPlantCommand(int client, int args) {
 		return Plugin_Handled;
 	}
 	
-	if(jail_isInJail(client)){
+	if (jail_isInJail(client)) {
 		CPrintToChat(client, "[-T-]{red} You can't plant drugs in jail...'");
 		return Plugin_Handled;
 	}
@@ -340,8 +340,8 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					float pos[3];
 					GetEntPropVector(ent, Prop_Data, "m_vecOrigin", pos);
 					float ppos[3];
-					GetClientAbsOrigin(client, pos);
-					if (GetVectorDistance(pos, ppos) < 300.0) {
+					GetClientAbsOrigin(client, ppos);
+					if (GetVectorDistance(ppos, pos) < 100.0) {
 						if (jobs_isActiveJob(client, "Police")) {
 							jobs_startProgressBar(client, 5, "Confiscate Plant");
 							g_iHarvestIndex[client] = ent;
@@ -350,7 +350,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 							g_iHarvestIndex[client] = ent;
 						}
 					} else {
-						PrintToChat(client, "This Drug plant is too far away");
+						PrintToChat(client, "This Drug plant is too far away (%.2f/300.0)", GetVectorDistance(ppos, pos));
 						g_iPlayerPrevButtons[client] = iButtons;
 						return;
 					}
@@ -381,16 +381,11 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 		
 		jobs_addExperience(client, 50, "Police");
 		tConomy_addBankCurrency(client, 50, "Confiscated Plant");
-		deletePlant(plantId);
+		deletePlant(g_iHarvestIndex[client], plantId);
 	}
 }
 
 public void harvestPlant(int client, int ent, int plantId, int state) {
-	char deletePlantsQuery[512];
-	Format(deletePlantsQuery, sizeof(deletePlantsQuery), "DELETE FROM t_rpg_drugs WHERE flags = '%s';", g_ePlayerPlants[plantId][pFlags]);
-	SQL_TQuery(g_DB, SQLErrorCheckCallback, deletePlantsQuery);
-	
-	AcceptEntityInput(ent, "kill");
 	//tConomy_addCurrency(client, 200, "Harvest of Drug Plant");
 	
 	if (state == 1) {
@@ -412,7 +407,7 @@ public void harvestPlant(int client, int ent, int plantId, int state) {
 	else
 		tCrime_addCrime(client, 10);
 	
-	deletePlant(plantId);
+	deletePlant(ent, plantId);
 	
 	int jobLevel = jobs_getLevel(client);
 	int diff;
@@ -427,7 +422,13 @@ public void harvestPlant(int client, int ent, int plantId, int state) {
 	}
 }
 
-public void deletePlant(int plantId) {
+public void deletePlant(int ent, int plantId) {
+	char deletePlantsQuery[512];
+	Format(deletePlantsQuery, sizeof(deletePlantsQuery), "DELETE FROM t_rpg_drugs WHERE flags = '%s';", plantId);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, deletePlantsQuery);
+	
+	AcceptEntityInput(ent, "kill");
+	
 	int owner;
 	char playerid[20];
 	strcopy(playerid, sizeof(playerid), g_ePlayerPlants[plantId][pOwner]);

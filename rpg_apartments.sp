@@ -111,6 +111,8 @@ public void resetAps() {
 	for (int i = 0; i < MAX_APARTMENTS; i++) {
 		ownedApartments[i][oaId] = -1;
 		existingApartments[i][eaId] = -1;
+		g_iLoadedApartments = 0;
+		g_iOwnedApartmentsCount = 0;
 	}
 }
 
@@ -694,6 +696,11 @@ public Action chatHook(int client, int args) {
 		strcopy(rFlags, sizeof(rFlags), text);
 		changeApartmentFlags(playerProperties[client][ppZone], rFlags);
 		PrintToChat(client, "Changed Flags of: %s to %s (max 8 length)", playerProperties[client][ppZone], rFlags);
+		playerProperties[client][ppInEdit] = -1;
+		strcopy(playerProperties[client][ppZone], 128, "");
+		return Plugin_Handled;
+	} else if (playerProperties[client][ppInEdit] > 0 && StrContains(text, "abort") != -1) {
+		PrintToChat(client, "Aborted [%i]", playerProperties[client][ppInEdit]);
 		playerProperties[client][ppInEdit] = -1;
 		strcopy(playerProperties[client][ppZone], 128, "");
 		return Plugin_Handled;

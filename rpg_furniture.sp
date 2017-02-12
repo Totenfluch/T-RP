@@ -14,8 +14,8 @@
 
 #pragma newdecls required
 
-
 #define MAX_FURNITURE 1024
+#define MAX_SPAWNABLE 400
 
 enum LoadedFurniture {
 	lfId, 
@@ -25,11 +25,25 @@ enum LoadedFurniture {
 	String:lfBuff[64], 
 	Float:lfSize, 
 	lfPrice, 
-	String:lfFlags[8]
+	String:lfFlags[8], 
+	lfBaseDurability
 }
 
 int LoadedFurnitureItems[MAX_FURNITURE][LoadedFurniture];
 int g_iLoadedFurniture;
+
+enum spawnedFurniture {
+	sfId, 
+	sfLoadedId, 
+	sfRef, 
+	bool:sfIsActive, 
+	String:sfApartment[128], 
+	String:sfOwner[20], 
+	sfDurability
+}
+
+int SpawnedFurnitureItems[MAX_SPAWNABLE][spawnedFurniture];
+int g_iSpawnedFurniture;
 
 int g_iPlayerPrevButtons[MAXPLAYERS + 1];
 char activeZone[MAXPLAYERS + 1][128];
@@ -39,6 +53,8 @@ char dbconfig[] = "gsxh_multiroot";
 Database g_DB;
 
 char npctype[128] = "Furniture Vendor";
+
+Handle g_hOnFurnitureInteract;
 
 enum EditItem {
 	eiRef, 
@@ -72,8 +88,89 @@ public void OnPluginStart() {
 	SQL_SetCharset(g_DB, "utf8");
 	
 	char createTableQuery[4096];
-	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_furniture ( `Id` BIGINT NOT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playername` VARCHAR(40) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `playerid` VARCHAR(20) NOT NULL, `uniqueId` VARCHAR(64) NOT NULL, `map` VARCHAR(64) NOT NULL , `name` VARCHAR(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `model` VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `price` INT NOT NULL , `pos_x` FLOAT NOT NULL , `pos_y` FLOAT NOT NULL , `pos_z` FLOAT NOT NULL , `angle_x` FLOAT NOT NULL , `angle_y` FLOAT NOT NULL , `angle_z` FLOAT NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
+	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_furniture ( `Id` BIGINT NOT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playername` VARCHAR(40) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `playerid` VARCHAR(20) NOT NULL, `uniqueId` VARCHAR(64) NOT NULL, `map` VARCHAR(64) NOT NULL , `name` VARCHAR(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `model` VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `price` INT NOT NULL , `pos_x` FLOAT NOT NULL , `pos_y` FLOAT NOT NULL , `pos_z` FLOAT NOT NULL , `angle_x` FLOAT NOT NULL , `angle_y` FLOAT NOT NULL , `angle_z` FLOAT NOT NULL , `apartmentId` varchar(128) COLLATE utf8_bin NOT NULL , `durability` int(11) NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
+}
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
+	/*
+		@Param1 -> int entity
+		@Param2 -> char buffs[64] (buffer)
+		
+		return true on success false if not
+	*/
+	CreateNative("furniture_getBuffs", Native_getBuffs);
+	
+	/*
+		@Param1 -> int entity
+		@Param2 -> char flags[8] (buffer)
+		
+		return true on success false if not
+	*/
+	CreateNative("furniture_getFlags", Native_getFlags);
+	
+	/*
+		@Param1 -> int entity
+		
+		return int durability // -1 if failed
+	*/
+	CreateNative("furniture_getDurability", Native_getDurability);
+	
+	/*
+		@Param1 -> int entity
+		@Param2 -> int amount
+		
+		return int durability // -1 if failed
+	*/
+	CreateNative("furniture_setDurability", Native_setDurability);
+	
+	
+	/*
+		Forward when a Player interacts with a furniture Item
+		
+		@Param1 -> int entity
+		@Param2 -> int client
+		@Param3 -> char name[64]
+		@Param4 -> char lfBuf[64]
+		@Param5 -> char flags[8]
+		@Param6 -> char ownerId[20]
+		@Param7 -> int durability
+	*/
+	g_hOnFurnitureInteract = CreateGlobalForward("furniture_OnFurnitureInteract", ET_Ignore, Param_Cell, Param_Cell, Param_String, Param_String, Param_String, Param_String, Param_Cell);
+}
+
+public int Native_getBuffs(Handle plugin, int numParams) {
+	int entity = GetNativeCell(1);
+	int index;
+	if ((index = findSpawnedEntByRef(EntIndexToEntRef(entity))) == -1)
+		return 0;
+	SetNativeString(2, LoadedFurnitureItems[SpawnedFurnitureItems[index][sfLoadedId]][lfBuff], 64);
+	return 1;
+}
+
+public int Native_getFlags(Handle plugin, int numParams) {
+	int entity = GetNativeCell(1);
+	int index;
+	if ((index = findSpawnedEntByRef(EntIndexToEntRef(entity))) == -1)
+		return 0;
+	SetNativeString(2, LoadedFurnitureItems[SpawnedFurnitureItems[index][sfLoadedId]][lfFlags], 8);
+	return 1;
+}
+
+public int Native_getDurability(Handle plugin, int numParams) {
+	int entity = GetNativeCell(1);
+	int index;
+	if ((index = findSpawnedEntByRef(EntIndexToEntRef(entity))) == -1)
+		return -1;
+	return SpawnedFurnitureItems[index][sfDurability];
+}
+
+public int Native_setDurability(Handle plugin, int numParams) {
+	int entity = GetNativeCell(1);
+	int index;
+	if ((index = findSpawnedEntByRef(EntIndexToEntRef(entity))) == -1)
+		return -1;
+	return (SpawnedFurnitureItems[index][sfDurability] = GetNativeCell(2));
 }
 
 public void OnMapStart() {
@@ -98,6 +195,30 @@ public void clearLoadedFurniture(int id) {
 	LoadedFurnitureItems[id][lfSize] = -1.0;
 	LoadedFurnitureItems[id][lfPrice] = -1;
 	LoadedFurnitureItems[id][lfId] = -1;
+	LoadedFurnitureItems[id][lfBaseDurability] = -1;
+}
+
+public void clearAllSpawnedFurniture() {
+	g_iSpawnedFurniture = 0;
+	for (int i = 0; i < MAX_SPAWNABLE; i++)
+	clearSpawnedFurniture(i);
+}
+
+public void clearSpawnedFurniture(int id) {
+	SpawnedFurnitureItems[id][sfId] = -1;
+	SpawnedFurnitureItems[id][sfLoadedId] = -1;
+	SpawnedFurnitureItems[id][sfRef] = -1;
+	SpawnedFurnitureItems[id][sfIsActive] = false;
+	SpawnedFurnitureItems[id][sfDurability] = -1;
+	strcopy(SpawnedFurnitureItems[id][sfApartment], 64, "");
+	strcopy(SpawnedFurnitureItems[id][sfOwner], 20, "");
+}
+
+public int getFirstFreeSpawnedSlot() {
+	for (int i = 0; i < MAX_SPAWNABLE; i++)
+	if (SpawnedFurnitureItems[i][sfId] == -1 && !SpawnedFurnitureItems[i][sfIsActive])
+		return i;
+	return -1;
 }
 
 public bool loadFurniture() {
@@ -117,24 +238,27 @@ public bool loadFurniture() {
 		strcopy(LoadedFurnitureItems[g_iLoadedFurniture][lfName], 64, buffer);
 		
 		char tempVars[64];
-		kv.GetString("model", tempVars, 64);
+		kv.GetString("model", tempVars, 64, "models/props/coop_cementplant/coop_military_crate/coop_military_crate.mdl");
 		strcopy(LoadedFurnitureItems[g_iLoadedFurniture][lfModelPath], 128, tempVars);
 		PrecacheModel(tempVars, true);
 		
-		kv.GetString("size", tempVars, 64);
+		kv.GetString("size", tempVars, 64, "1.0");
 		LoadedFurnitureItems[g_iLoadedFurniture][lfSize] = StringToFloat(tempVars);
 		
-		kv.GetString("price", tempVars, 64);
+		kv.GetString("price", tempVars, 64, "1337");
 		LoadedFurnitureItems[g_iLoadedFurniture][lfPrice] = StringToInt(tempVars);
 		
-		kv.GetString("flags", tempVars, 64);
+		kv.GetString("flags", tempVars, 64, "");
 		strcopy(LoadedFurnitureItems[g_iLoadedFurniture][lfFlags], 8, tempVars);
 		
-		kv.GetString("buff", tempVars, 64);
+		kv.GetString("buff", tempVars, 64, "");
 		strcopy(LoadedFurnitureItems[g_iLoadedFurniture][lfBuff], 64, tempVars);
 		
-		LoadedFurnitureItems[g_iLoadedFurniture][lfActive] = true;
+		kv.GetString("durability", tempVars, 64, "1337");
+		LoadedFurnitureItems[g_iLoadedFurniture][lfBaseDurability] = StringToInt(tempVars);
 		
+		
+		LoadedFurnitureItems[g_iLoadedFurniture][lfActive] = true;
 		LoadedFurnitureItems[g_iLoadedFurniture][lfId] = g_iLoadedFurniture;
 		g_iLoadedFurniture++;
 		
@@ -192,6 +316,8 @@ public int furnitureMenuHandler(Handle menu, MenuAction action, int client, int 
 		AddMenuItem(menu2, "x", display, ITEMDRAW_DISABLED);
 		Format(display, sizeof(display), "Flags: %s", LoadedFurnitureItems[id][lfBuff]);
 		AddMenuItem(menu2, "x", display, ITEMDRAW_DISABLED);
+		Format(display, sizeof(display), "Durability: %i", LoadedFurnitureItems[id][lfBaseDurability]);
+		AddMenuItem(menu2, "x", display, ITEMDRAW_DISABLED);
 		AddMenuItem(menu2, info, "Buy");
 		DisplayMenu(menu2, client, 60);
 	}
@@ -215,7 +341,6 @@ public int furnitureItemMenuHandler(Handle menu, MenuAction action, int client, 
 			tConomy_removeCurrency(client, LoadedFurnitureItems[id][lfPrice], reason);
 			inventory_givePlayerItem(client, itemName, 100, "", "Furniture", "Apartment Stuff", 0, reason);
 		}
-		
 	}
 }
 
@@ -277,11 +402,11 @@ public void firstSpawnFurniture(int client, int id) {
 	char mapName[128];
 	GetCurrentMap(mapName, sizeof(mapName));
 	
-	if (!spawnFurniture(id, playerid, pos, angles, uniqueId))
+	if (!spawnFurniture(id, playerid, pos, angles, uniqueId, activeZone[client], LoadedFurnitureItems[id][lfBaseDurability]))
 		return;
 	
 	char addFurnitureQuery[2048];
-	Format(addFurnitureQuery, sizeof(addFurnitureQuery), "INSERT IGNORE INTO `t_rpg_furniture`(`Id`, `timestamp`, `playername`, `playerid`, `uniqueId`, `map`, `name`, `model`, `price`, `pos_x`, `pos_y`, `pos_z`, `angle_x`, `angle_y`, `angle_z`)VALUES(NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s', '%i', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f');", clean_playername, playerid, uniqueId, mapName, LoadedFurnitureItems[id][lfName], LoadedFurnitureItems[id][lfModelPath], LoadedFurnitureItems[id][lfPrice], pos[0], pos[1], pos[2], angles[0], angles[1], angles[2]);
+	Format(addFurnitureQuery, sizeof(addFurnitureQuery), "INSERT IGNORE INTO `t_rpg_furniture`(`Id`, `timestamp`, `playername`, `playerid`, `uniqueId`, `map`, `name`, `model`, `price`, `pos_x`, `pos_y`, `pos_z`, `angle_x`, `angle_y`, `angle_z`, `apartmentId`, `durability`)VALUES(NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s', '%i', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%s', '%i');", clean_playername, playerid, uniqueId, mapName, LoadedFurnitureItems[id][lfName], LoadedFurnitureItems[id][lfModelPath], LoadedFurnitureItems[id][lfPrice], pos[0], pos[1], pos[2], angles[0], angles[1], angles[2], activeZone[client], LoadedFurnitureItems[id][lfBaseDurability]);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, addFurnitureQuery);
 	
 	char itemName2[128];
@@ -312,7 +437,11 @@ public Action removeItemDelayed(Handle Timer, any data) {
 	inventory_removePlayerItems(client, itemName, amount, reason);
 }
 
-public bool spawnFurniture(int id, char playerid[20], float pos[3], float angles[3], char uniqueId[64]) {
+public bool spawnFurniture(int id, char playerid[20], float pos[3], float angles[3], char uniqueId[64], char apartmentId[128], int durability) {
+	int spawnedId;
+	if ((spawnedId = getFirstFreeSpawnedSlot()) == -1)
+		return false;
+	
 	int furnitureEnt = CreateEntityByName("prop_dynamic_override");
 	if (furnitureEnt == -1)
 		return false;
@@ -332,6 +461,15 @@ public bool spawnFurniture(int id, char playerid[20], float pos[3], float angles
 	
 	TeleportEntity(furnitureEnt, pos, angles, NULL_VECTOR);
 	Entity_SetGlobalName(furnitureEnt, LoadedFurnitureItems[id][lfName]);
+	
+	SpawnedFurnitureItems[spawnedId][sfId] = g_iSpawnedFurniture++;
+	SpawnedFurnitureItems[spawnedId][sfLoadedId] = id;
+	SpawnedFurnitureItems[spawnedId][sfRef] = EntIndexToEntRef(furnitureEnt);
+	SpawnedFurnitureItems[spawnedId][sfRef] = durability;
+	SpawnedFurnitureItems[spawnedId][sfIsActive] = true;
+	strcopy(SpawnedFurnitureItems[spawnedId][sfApartment], 64, apartmentId);
+	strcopy(SpawnedFurnitureItems[spawnedId][sfOwner], 20, playerid);
+	
 	return true;
 }
 
@@ -538,8 +676,8 @@ public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int
 
 public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
 	if (IsClientInGame(client) && IsPlayerAlive(client)) {
-		if (IsValidEntity(EntRefToEntIndex(PlayerEditItems[client][eiRef]))) {
-			if (PlayerEditItems[client][eiEditing]) {
+		if (PlayerEditItems[client][eiEditing]) {
+			if (IsValidEntity(EntRefToEntIndex(PlayerEditItems[client][eiRef]))) {
 				if (!(g_iPlayerPrevButtons[client] & IN_USE) && iButtons & IN_USE) {
 					char uId[64];
 					strcopy(uId, sizeof(uId), PlayerEditItems[client][eiUniqueId]);
@@ -651,10 +789,75 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					return Plugin_Changed;
 				}
 			}
+		} else {
+			if (!(g_iPlayerPrevButtons[client] & IN_USE) && iButtons & IN_USE) {
+				int target = GetClientAimTarget(client, false);
+				if (!isValidClient(target)) {
+					if (IsValidEntity(target)) {
+						float pos[3];
+						float playerPos[3];
+						GetClientAbsOrigin(client, playerPos);
+						GetEntPropVector(target, Prop_Data, "m_vecOrigin", pos);
+						if (GetVectorDistance(playerPos, pos) <= 100.0) {
+							
+							int index;
+							if ((index = findSpawnedEntByRef(EntIndexToEntRef(target))) != -1) {
+								PrintToConsole(client, "[-T-]: sfId: %i | sfLoadedId: %i | sfRef: %i | sfActive: %d | sfApartment: %s | sfOwner: %s", 
+									SpawnedFurnitureItems[index][sfId], 
+									SpawnedFurnitureItems[index][sfLoadedId], 
+									SpawnedFurnitureItems[index][sfRef], 
+									SpawnedFurnitureItems[index][sfIsActive], 
+									SpawnedFurnitureItems[index][sfApartment], 
+									SpawnedFurnitureItems[index][sfOwner]);
+								
+								
+								int loadedIndex = SpawnedFurnitureItems[index][sfLoadedId];
+								PrintToConsole(client, "[-T-]: lfActive %d | lfName: %s | lfModePath: %s | lfFlags: %s | lfBuff: %s | lfSize: %.2f | lfPrice: %i | lfId: %i", 
+									LoadedFurnitureItems[loadedIndex][lfActive], 
+									LoadedFurnitureItems[loadedIndex][lfName], 
+									LoadedFurnitureItems[loadedIndex][lfModelPath], 
+									LoadedFurnitureItems[loadedIndex][lfFlags], 
+									LoadedFurnitureItems[loadedIndex][lfBuff], 
+									LoadedFurnitureItems[loadedIndex][lfSize], 
+									LoadedFurnitureItems[loadedIndex][lfPrice], 
+									LoadedFurnitureItems[loadedIndex][lfId]);
+								
+								PrintToChat(client, "Check your Console - Hit: %s", LoadedFurnitureItems[loadedIndex][lfName]);
+								/*
+									@Param1 -> int entity
+									@Param2 -> int client
+									@Param3 -> char name[64]
+									@Param4 -> char lfBuf[64]
+									@Param5 -> char flags[8]
+									@Param6 -> char ownerId[20]
+									@Param7 -> int durability
+								*/
+								Call_StartForward(g_hOnFurnitureInteract);
+								Call_PushCell(EntRefToEntIndex(SpawnedFurnitureItems[index][sfRef]));
+								Call_PushCell(client);
+								Call_PushString(LoadedFurnitureItems[loadedIndex][lfName]);
+								Call_PushString(LoadedFurnitureItems[loadedIndex][lfBuff]);
+								Call_PushString(LoadedFurnitureItems[loadedIndex][lfFlags]);
+								Call_PushString(SpawnedFurnitureItems[index][sfOwner]);
+								Call_PushCell(SpawnedFurnitureItems[index][sfDurability]);
+								Call_Finish();
+								
+							}
+						}
+					}
+				}
+			}
 		}
 		g_iPlayerPrevButtons[client] = iButtons;
 	}
 	return Plugin_Continue;
+}
+
+int findSpawnedEntByRef(int ref) {
+	for (int i = 0; i < g_iSpawnedFurniture; i++)
+	if (SpawnedFurnitureItems[i][sfRef] == ref)
+		return i;
+	return -1;
 }
 
 public void updateFurnitureToMySQL(int index, char uniqueId[64]) {
@@ -713,6 +916,7 @@ public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error,
 }
 
 public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
+	clearAllSpawnedFurniture();
 	loadFurnitureFromDatabase();
 }
 
@@ -737,6 +941,10 @@ public void loadFurnitureQueryCallback(Handle owner, Handle hndl, const char[] e
 		char playername[40];
 		char playerid[20];
 		
+		char apartmentId[128];
+		
+		int durability;
+		
 		SQL_FetchStringByName(hndl, "uniqueId", uniqueId, sizeof(uniqueId));
 		SQL_FetchStringByName(hndl, "name", name, sizeof(name));
 		SQL_FetchStringByName(hndl, "model", model, sizeof(model));
@@ -750,11 +958,13 @@ public void loadFurnitureQueryCallback(Handle owner, Handle hndl, const char[] e
 		
 		SQL_FetchStringByName(hndl, "playername", playername, sizeof(playername));
 		SQL_FetchStringByName(hndl, "playerid", playerid, sizeof(playerid));
+		SQL_FetchStringByName(hndl, "apartmentId", apartmentId, sizeof(apartmentId));
+		
+		durability = SQL_FetchIntByName(hndl, "durability");
 		
 		int theId;
 		if ((theId = getLoadedIdByName(name)) != -1)
-			spawnFurniture(theId, playerid, pos, angles, uniqueId);
-		
+			spawnFurniture(theId, playerid, pos, angles, uniqueId, apartmentId, durability);
 	}
 }
 

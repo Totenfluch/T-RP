@@ -41,8 +41,8 @@ public void OnClientPutInServer(int client) {
 public void OnClientDisconnect(int client) {
 	g_bConnected[client] = false;
 }
-public Action Transmit(int client, int ent) {
-	if( g_bConnected[ent] == false )
+public Action Transmit(int ent, int client) {
+	if( g_bConnected[client] == false )
 		return Plugin_Handled;
 	return Plugin_Continue;
 }

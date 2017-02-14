@@ -10,7 +10,6 @@
 #include <tCrime>
 #include <tConomy>
 #include <rpg_inventory_core>
-#include <playtime>
 #include <autoexecconfig>
 #include <smlib>
 #include <sdkhooks>
@@ -351,10 +350,10 @@ public void OnNpcInteract(int client, char npcType[64], char uniqueId[128], int 
 	if (StrEqual(npcType, "Police Recruiter")) {
 		Menu m = CreateMenu(policeRecruiterHandler);
 		SetMenuTitle(m, "Become a Police Officer TODAY!");
-		if (PT_GetPlayTime(client) > g_iPlayTimeNeededForPolice || CheckCommandAccess(client, "sm_pedo", ADMFLAG_CUSTOM6, true))
+		if (CheckCommandAccess(client, "sm_pedo", ADMFLAG_CUSTOM5, true))
 			AddMenuItem(m, "join", "Join the Police (Leaves old job)");
 		else
-			AddMenuItem(m, "x", "You need more Playtime to join", ITEMDRAW_DISABLED);
+			AddMenuItem(m, "x", "You are not whitelisted", ITEMDRAW_DISABLED);
 		DisplayMenu(m, client, 60);
 	} else if (StrEqual(npcType, "Police Weapon Vendor")) {
 		showTopPanelToClient(client);

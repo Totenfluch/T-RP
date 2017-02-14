@@ -235,7 +235,7 @@ public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error,
 			SetEntProp(client, Prop_Data, "m_ArmorValue", Armor, 1);
 		SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", Speed);
 		SetEntityGravity(client, Gravity);
-		if(!(Position[0] == 0.0 && Position[1] == 0.0 && Position[2] == 0.0))
+		if(Position[0] != 0.0 && Position[1] != 0.0)
 			TeleportEntity(client, Position, Angles, NULL_VECTOR);
 		int weaponIndex;
 		if (!StrEqual(primaryWeapon, "")) {

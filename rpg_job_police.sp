@@ -148,6 +148,16 @@ int g_iM249Value;
 Handle g_hNegevValue;
 int g_iNegevValue;
 
+/* Skins */
+Handle g_hSkin1Value;
+int g_iSkin1Value;
+
+Handle g_hSkin2Value;
+int g_iSkin2Value;
+
+Handle g_hSkin3Value;
+int g_iSkin3Value;
+
 
 int g_iHaloSprite;
 int g_iFire;
@@ -256,6 +266,10 @@ public void OnPluginStart() {
 	
 	gc_bSounds = AutoExecConfig_CreateConVar("rpg_sounds_enable", "1", "0 - disabled, 1 - enable sounds ", _, true, 0.1, true, 1.0);
 	
+	g_hSkin1Value = AutoExecConfig_CreateConVar("rpg_police_skin_1_cost", "250", "Cost of 'Police 1' Skin");
+	g_hSkin2Value = AutoExecConfig_CreateConVar("rpg_police_skin_2_cost", "250", "Cost of 'Police 2' Skin");
+	g_hSkin3Value = AutoExecConfig_CreateConVar("rpg_police_skin_3_cost", "250", "Cost of 'Police 3' Skin");
+	
 	/*
 		Return is the Player is cuffed or not
 		@Param1-> int client
@@ -320,6 +334,10 @@ public void OnConfigsExecuted() {
 	g_iScar20Value = GetConVarInt(g_hScar20Value);
 	g_iM249Value = GetConVarInt(g_hM249Value);
 	g_iNegevValue = GetConVarInt(g_hNegevValue);
+	
+	g_iSkin1Value = GetConVarInt(g_hSkin1Value);
+	g_iSkin2Value = GetConVarInt(g_hSkin2Value);
+	g_iSkin3Value = GetConVarInt(g_hSkin3Value);
 	
 	GetConVarString(gc_sOverlayCuffsPath, g_sSoundCuffsPath, sizeof(g_sSoundCuffsPath));
 	GetConVarString(gc_sSoundCuffsPath, g_sSoundCuffsPath, sizeof(g_sSoundCuffsPath));
@@ -750,6 +768,27 @@ public void showArmorHpPanelToClient(int client) {
 	else
 		AddMenuItem(rpgPanel, "6", smokegrenadeItem, ITEMDRAW_DISABLED);
 	
+	char skin1Item[64];
+	Format(skin1Item, sizeof(skin1Item), "Skin: Police 1 - %i Money", g_iSkin1Value);
+	if (Money >= g_iSkin1Value)
+		AddMenuItem(rpgPanel, "7", skin1Item);
+	else
+		AddMenuItem(rpgPanel, "7", skin1Item, ITEMDRAW_DISABLED);
+	
+	char skin2Item[64];
+	Format(skin2Item, sizeof(skin2Item), "Skin: Police 2 - %i Money", g_iSkin2Value);
+	if (Money >= g_iSkin2Value)
+		AddMenuItem(rpgPanel, "8", skin2Item);
+	else
+		AddMenuItem(rpgPanel, "8", skin2Item, ITEMDRAW_DISABLED);
+	
+	char skin3Item[64];
+	Format(skin3Item, sizeof(skin3Item), "Skin: Police 3 - %i Money", g_iSkin3Value);
+	if (Money >= g_iSkin3Value)
+		AddMenuItem(rpgPanel, "9", skin3Item);
+	else
+		AddMenuItem(rpgPanel, "9", skin3Item, ITEMDRAW_DISABLED);
+	
 	DisplayMenu(rpgPanel, client, 60);
 }
 
@@ -776,6 +815,15 @@ public int ArmorAndHPPanelHandler(Handle menu, MenuAction action, int client, in
 		} else if (id == 6) {
 			if (tConomy_removeCurrency(client, g_iSmokegrenadePrice, "Bought Item from Police Weapon Vendor") >= 0)
 				t_GiveClientItem(client, "weapon_smokegrenade");
+		} else if (id == 7) {
+			if (tConomy_removeCurrency(client, g_iSmokegrenadePrice, "Bought Item from Police Weapon Vendor") >= 0)
+				inventory_givePlayerItem(client, "Police 1", 0, "", "Skin", "Skin", 1, "Bought from Police Vendor");
+		} else if (id == 8) {
+			if (tConomy_removeCurrency(client, g_iSmokegrenadePrice, "Bought Item from Police Weapon Vendor") >= 0)
+				inventory_givePlayerItem(client, "Police 2", 0, "", "Skin", "Skin", 1, "Bought from Police Vendor");
+		} else if (id == 9) {
+			if (tConomy_removeCurrency(client, g_iSmokegrenadePrice, "Bought Item from Police Weapon Vendor") >= 0)
+				inventory_givePlayerItem(client, "Police 3", 0, "", "Skin", "Skin", 1, "Bought from Police Vendor");
 		}
 	} else if (action == MenuAction_Cancel) {
 		showTopPanelToClient(client);

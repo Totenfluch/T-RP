@@ -1,5 +1,5 @@
 #if defined _rpg_furniture_included_
-  #endinput
+#endinput
 #endif
 #define _rpg_furniture_included_
 
@@ -10,7 +10,7 @@
 	return true on success false if not
 */
 native bool furniture_getBuffs(int entity, char buffer[64]);
-	
+
 /*
 	@Param1 -> int entity
 	@Param2 -> char flags[8] (buffer)
@@ -18,14 +18,14 @@ native bool furniture_getBuffs(int entity, char buffer[64]);
 	return true on success false if not
 */
 native bool furniture_getFlags(int entity, char buffer[8]);
-	
+
 /*
 	@Param1 -> int entity
 		
 	return int durability // -1 if failed
 */
 native int furniture_getDurability(int entity);
-	
+
 /*
 	@Param1 -> int entity
 	@Param2 -> int amount
@@ -33,8 +33,8 @@ native int furniture_getDurability(int entity);
 	return int durability // -1 if failed
 */
 native int furniture_setDurability(int entity, int amount);
-	
-	
+
+
 /*
 	Forward when a Player interacts with a furniture Item
 		
@@ -46,4 +46,4 @@ native int furniture_setDurability(int entity, int amount);
 	@Param6 -> char ownerId[20]
 	@Param7 -> int durability
 */
-forward void furniture_OnFurnitureInteract(int entity, int client, char name[64], char lfBuf[64], char flags[8], char ownerId[20], int durability);
+forward void furniture_OnFurnitureInteract(int entity, int client, char name[64], char lfBuf[64], char flags[8], char ownerId[20], int durability); 

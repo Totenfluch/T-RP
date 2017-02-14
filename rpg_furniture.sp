@@ -80,6 +80,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_reloadfurniture", cmdReloadFurniture, ADMFLAG_ROOT, "Reload the Furniture");
 	RegConsoleCmd("sm_builder", cmdBuild, "Edits Furniture");
 	RegAdminCmd("sm_abuilder", cmdAdminBuilder, ADMFLAG_ROOT, "Opens the Admin Builder Menu");
+	RegAdminCmd("sm_listfurniture", cmdListFurniture, ADMFLAG_ROOT, "Lists all furniture Items");
 	
 	HookEvent("round_start", onRoundStart);
 	
@@ -465,7 +466,7 @@ public bool spawnFurniture(int id, char playerid[20], float pos[3], float angles
 	SpawnedFurnitureItems[spawnedId][sfId] = g_iSpawnedFurniture++;
 	SpawnedFurnitureItems[spawnedId][sfLoadedId] = id;
 	SpawnedFurnitureItems[spawnedId][sfRef] = EntIndexToEntRef(furnitureEnt);
-	SpawnedFurnitureItems[spawnedId][sfRef] = durability;
+	SpawnedFurnitureItems[spawnedId][sfDurability] = durability;
 	SpawnedFurnitureItems[spawnedId][sfIsActive] = true;
 	strcopy(SpawnedFurnitureItems[spawnedId][sfApartment], 64, apartmentId);
 	strcopy(SpawnedFurnitureItems[spawnedId][sfOwner], 20, playerid);
@@ -842,9 +843,17 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 								Call_PushCell(SpawnedFurnitureItems[index][sfDurability]);
 								Call_Finish();
 								
+							} else {
+								PrintToChat(client, "Not loaded");
 							}
+						} else {
+							PrintToChat(client, "Distance");
 						}
+					} else {
+						PrintToChat(client, "Invalid Ent");
 					}
+				} else {
+					PrintToChat(client, "valid target");
 				}
 			}
 		}
@@ -985,4 +994,18 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		return;
 	g_iLastInteractedWith[client] = entIndex;
 	openFurnitureMenu(client);
+}
+
+public Action cmdListFurniture(int client, int args) {
+	for (int i = 0; i < g_iSpawnedFurniture; i++) {
+		PrintToConsole(client, "%i %i %i %i %d %s %s", 
+			SpawnedFurnitureItems[i][sfId], 
+			SpawnedFurnitureItems[i][sfLoadedId], 
+			SpawnedFurnitureItems[i][sfRef], 
+			SpawnedFurnitureItems[i][sfDurability], 
+			SpawnedFurnitureItems[i][sfIsActive], 
+			SpawnedFurnitureItems[i][sfApartment], 
+			SpawnedFurnitureItems[i][sfOwner]);
+	}
+	return Plugin_Handled;
 } 

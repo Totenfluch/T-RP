@@ -356,6 +356,11 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 			Format(sellAll, sizeof(sellAll), "Recycle %i Garbage", itemamount);
 			AddMenuItem(panel, "recycleAll", sellAll);
 		}
+		
+		if (tConomy_getCurrency(client) >= 250)
+			AddMenuItem(panel, "skin", "Buy Ellis Skin (250)");
+		else
+			AddMenuItem(panel, "skin", "Buy Ellis Skin (250)", ITEMDRAW_DISABLED);
 	}
 	DisplayMenu(panel, client, 60);
 }
@@ -379,6 +384,9 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 				tConomy_addCurrency(client, 65 * itemamount, "Recycled Garbage");
 				jobs_addExperience(client, 50 * itemamount, "Garbage Collector");
 			}
+		} else if (StrEqual(cValue, "skin")) {
+			tConomy_removeCurrency(client, 250, "Bought Skin");
+			inventory_givePlayerItem(client, "Ellis", 0, "", "Skin", "Skin", 1, "Bought from Garbage Collector");
 		}
 	}
 }

@@ -537,16 +537,24 @@ public void showInventoryOfClientToOtherClient(int client1, int client2) {
 }
 
 public void showInventoryOfClientToOtherClientByCategory(int client1, int client2, char category[64]) {
-	Handle menu = CreateMenu(showInventoryHandler);
+	Handle menu;
+	if (client1 != client2)
+		menu = CreateMenu(showInventoryHandler);
+	else
+		menu = CreateMenu(inventoryMenuHandler);
+	
 	char menuTitle[512];
-	Format(menuTitle, sizeof(menuTitle), "%Ns Licenses", client1);
+	Format(menuTitle, sizeof(menuTitle), "%Ns %ss", client1, category);
 	SetMenuTitle(menu, menuTitle);
 	for (int i = 0; i < MAX_ITEMS; i++) {
 		if (g_ePlayerInventory[client1][i][iIsActive]) {
 			if ((StrEqual(g_ePlayerInventory[client1][i][iCategory], category)) || (StrEqual(g_ePlayerInventory[client1][i][iCategory2], category))) {
 				char id[8];
 				IntToString(i, id, sizeof(id));
-				AddMenuItem(menu, id, g_ePlayerInventory[client1][i][iItemname], ITEMDRAW_DISABLED);
+				if (client1 != client2)
+					AddMenuItem(menu, id, g_ePlayerInventory[client1][i][iItemname], ITEMDRAW_DISABLED);
+				else
+					AddMenuItem(menu, id, g_ePlayerInventory[client1][i][iItemname]);
 			}
 		}
 	}

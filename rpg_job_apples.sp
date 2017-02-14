@@ -180,6 +180,11 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 			AddMenuItem(panel, "sellAllApples", sellAll);
 		}
 		
+		if (tConomy_getCurrency(client) >= 250)
+			AddMenuItem(panel, "skin", "Buy Zoey Skin (250)");
+		else
+			AddMenuItem(panel, "skin", "Buy Zoey Skin (250)", ITEMDRAW_DISABLED);
+		
 	}
 	DisplayMenu(panel, client, 60);
 }
@@ -200,6 +205,9 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			int itemamount = inventory_getPlayerItemAmount(client, "Apple");
 			if (inventory_removePlayerItems(client, "Apple", itemamount, "Sold to Vendor (Mass Sell)"))
 				tConomy_addCurrency(client, (5 + jobs_getLevel(client)) * itemamount, "Sold Apple to Vendor");
+		} else if (StrEqual(cValue, "skin")) {
+			tConomy_removeCurrency(client, 250, "Bought Skin");
+			inventory_givePlayerItem(client, "Zoey", 0, "", "Skin", "Skin", 1, "Bought from Apple Harvester");
 		}
 	}
 }

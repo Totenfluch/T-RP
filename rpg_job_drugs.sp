@@ -142,6 +142,13 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		AddMenuItem(menu, "sellAllMarijuana", sellAll);
 	}
 	
+	if (jobs_isActiveJob(client, "Drug Planter") && jobs_getLevel(client) >= 1) {
+		if (tConomy_getCurrency(client) >= 250)
+			AddMenuItem(menu, "skin", "Buy Niko Skin (250)");
+		else
+			AddMenuItem(menu, "skin", "Buy Niko Skin (250)", ITEMDRAW_DISABLED);
+	}
+	
 	DisplayMenu(menu, client, 60);
 }
 
@@ -175,12 +182,14 @@ public int drugMenuHandler(Handle menu, MenuAction action, int client, int item)
 			int itemamount = inventory_getPlayerItemAmount(client, "Fresh Marijuana");
 			if (inventory_removePlayerItems(client, "Fresh Marijuana", itemamount, "Sold to Vendor (Mass Sell)"))
 				tConomy_addCurrency(client, 50 * itemamount, "Sold Fresh Marijuana to Vendor");
+		} else if (StrEqual(cValue, "skin")) {
+			tConomy_removeCurrency(client, 250, "Bought Skin");
+			inventory_givePlayerItem(client, "Niko", 0, "", "Skin", "Skin", 1, "Bought from Drug Vendor");
 		}
 	}
 }
 
-public void onRoundStart(Handle event, const char[] name, bool dontBroadcast)
-{
+public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 	for (int i = 0; i < MAX_PLANTS; i++)
 	g_ePlayerPlants[i][pActive] = false;
 	g_iPlantsActive = 0;

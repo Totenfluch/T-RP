@@ -180,6 +180,11 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 			Format(sellAll, sizeof(sellAll), "Sell %i Iron Bar%s", itemamount, itemamount > 2 ? "s":"");
 			AddMenuItem(panel, "SellBars", sellAll);
 		}
+		
+		if (tConomy_getCurrency(client) >= 250)
+			AddMenuItem(panel, "skin", "Buy Barryv Skin (250)");
+		else
+			AddMenuItem(panel, "skin", "Buy Barryv Skin (250)", ITEMDRAW_DISABLED);
 	}
 	DisplayMenu(panel, client, 60);
 }
@@ -206,6 +211,9 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			int itemamount = inventory_getPlayerItemAmount(client, "Iron Bar");
 			if (inventory_removePlayerItems(client, "Iron Bar", itemamount, "Sold to Vendor (Mass Sell)"))
 				tConomy_addCurrency(client, 50 * itemamount, "Sold Iron Bar to Vendor");
+		} else if (StrEqual(cValue, "skin")) {
+			tConomy_removeCurrency(client, 250, "Bought Skin");
+			inventory_givePlayerItem(client, "Barryv", 0, "", "Skin", "Skin", 1, "Bought from Mining Recruiter");
 		}
 	}
 }

@@ -844,16 +844,16 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 								Call_Finish();
 								
 							} else {
-								PrintToChat(client, "Not loaded");
+								//PrintToChat(client, "Not loaded");
 							}
 						} else {
-							PrintToChat(client, "Distance");
+							//PrintToChat(client, "Distance");
 						}
 					} else {
-						PrintToChat(client, "Invalid Ent");
+						//PrintToChat(client, "Invalid Ent");
 					}
 				} else {
-					PrintToChat(client, "valid target");
+					//PrintToChat(client, "valid target");
 				}
 			}
 		}

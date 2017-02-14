@@ -114,9 +114,9 @@ public void spawnGarbage(int id) {
 	char modelPath[128];
 	Format(modelPath, sizeof(modelPath), g_cTrash[GetRandomInt(0, 2)]);
 	SetEntityModel(trashEnt, modelPath);
-	DispatchKeyValue(trashEnt, "Solid", "6");
-	SetEntProp(trashEnt, Prop_Send, "m_nSolidType", 6);
-	SetEntProp(trashEnt, Prop_Data, "m_CollisionGroup", COLLISION_GROUP_PUSHAWAY);
+	DispatchKeyValue(trashEnt, "Solid", "2");
+	SetEntProp(trashEnt, Prop_Send, "m_nSolidType", 2);
+	SetEntProp(trashEnt, Prop_Data, "m_CollisionGroup", COLLISION_GROUP_NONE);
 	char cId[8];
 	IntToString(id, cId, sizeof(cId));
 	SetEntPropString(trashEnt, Prop_Data, "m_iName", cId);

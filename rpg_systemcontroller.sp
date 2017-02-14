@@ -190,6 +190,10 @@ public Action delayedLoad(Handle Timer, int client) {
 
 public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error, any data) {
 	int client = data;
+	if(!isValidClient(client))
+		return;
+	if(g_bIsPlayerLoaded[client])
+		return;
 	while (SQL_FetchRow(hndl)) {
 		int Hp = SQL_FetchIntByName(hndl, "hp");
 		int Armor = SQL_FetchIntByName(hndl, "armor");
@@ -231,7 +235,8 @@ public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error,
 			SetEntProp(client, Prop_Data, "m_ArmorValue", Armor, 1);
 		SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", Speed);
 		SetEntityGravity(client, Gravity);
-		TeleportEntity(client, Position, Angles, NULL_VECTOR);
+		if(!(Position[0] == 0.0 && Position[1] == 0.0 && Position[2] == 0.0))
+			TeleportEntity(client, Position, Angles, NULL_VECTOR);
 		int weaponIndex;
 		if (!StrEqual(primaryWeapon, "")) {
 			GivePlayerItem(client, primaryWeapon);

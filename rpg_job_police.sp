@@ -1078,6 +1078,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					AddMenuItem(m, "arrest", "Arrest Player");
 					AddMenuItem(m, "search", "Search Inventory");
 					AddMenuItem(m, "licenses", "Lookup Licenses");
+					AddMenuItem(m, "pardon", "Pardon Player");
 					DisplayMenu(m, client, 60);
 				}
 			}
@@ -1095,6 +1096,8 @@ public int searchMenuHandler(Handle menu, MenuAction action, int client, int ite
 			inventory_showInventoryOfClientToOtherClient(g_iOfficerTarget[client], client);
 		} else if (StrEqual(cValue, "licenses")) {
 			inventory_showInventoryOfClientToOtherClientByCategory(g_iOfficerTarget[client], client, "License");
+		} else if (StrEqual(cValue, "pardon")) {
+			tCrime_setCrime(g_iOfficerTarget[client], 0);
 		}
 		g_iOfficerTarget[client] = -1;
 	}

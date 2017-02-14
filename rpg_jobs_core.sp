@@ -271,11 +271,11 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		Forward on Client ProgressBarInterrupted
 		
 		@Param1 -> int client
-		@Param3 -> char info[64]
+		@Param2 -> char info[64]
 		
 		@return -
 	*/
-	g_hOnProgressBarInterrupted = CreateGlobalForward("jobs_OnProgressBarInterrupted ", ET_Ignore, Param_Cell, Param_String);
+	g_hOnProgressBarInterrupted = CreateGlobalForward("jobs_OnProgressBarInterrupted", ET_Ignore, Param_Cell, Param_String);
 	
 }
 

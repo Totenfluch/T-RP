@@ -179,7 +179,7 @@ forward void jobs_OnProgressBarFinished(int client, char info[64]);
 		Forward on Client ProgressBarInterrupted
 		
 		@Param1 -> int client
-		@Param3 -> char info[64]
+		@Param2 -> char info[64]
 		
 		@return -
 	*/

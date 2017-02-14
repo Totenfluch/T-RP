@@ -7,8 +7,15 @@
 #include <sdktools>
 #include <tCrime>
 #include <rpg_jobs_core>
+#include <autoexecconfig>
 
 #pragma newdecls required
+
+Handle g_hCrimeForKill;
+int g_iCrimeForKill;
+
+Handle g_hCrimeForDamage;
+float g_fCrimeForDamage;
 
 public Plugin myinfo = 
 {
@@ -22,6 +29,20 @@ public Plugin myinfo =
 public void OnPluginStart() {
 	HookEvent("player_death", onPlayerDeath);
 	HookEvent("player_hurt", onPlayerHurt);
+	
+	AutoExecConfig_SetFile("rpg_crimehandler");
+	AutoExecConfig_SetCreateFile(true);
+	
+	g_hCrimeForKill = AutoExecConfig_CreateConVar("rpg_crime_for_kill", "1000", "Crime you get for a Kill");
+	g_hCrimeForDamage = AutoExecConfig_CreateConVar("rpg_crime_for_damage", "0.25", "Damage done * Value = Crime");
+	
+	AutoExecConfig_CleanFile();
+	AutoExecConfig_ExecuteFile();
+}
+
+public void OnConfigsExecuted() {
+	g_iCrimeForKill = GetConVarInt(g_hCrimeForKill);
+	g_fCrimeForDamage = GetConVarFloat(g_hCrimeForDamage);
 }
 
 public void onPlayerHurt(Handle event, const char[] name, bool dontBroadcast) {
@@ -48,8 +69,8 @@ public void onPlayerHurt(Handle event, const char[] name, bool dontBroadcast) {
 		return;
 	}
 	
-	
-	tCrime_addCrime(attacker, hurtdmg / 4);
+	int crime = RoundToNearest(hurtdmg * g_fCrimeForDamage);
+	tCrime_addCrime(attacker, crime);
 }
 
 public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
@@ -84,7 +105,7 @@ public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 		}
 	}
 	if(witnessed)
-		tCrime_addCrime(client, 2000);
+		tCrime_addCrime(client, g_iCrimeForKill);
 }
 
 stock bool isValidClient(int client) {

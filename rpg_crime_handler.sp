@@ -71,15 +71,76 @@ public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 		return;
 	}
 	
-	
-	tCrime_addCrime(client, 2000);
+
+	bool witnessed = false;
+	for (int i = 1; i < MAXPLAYERS; i++){
+		if(!isValidClient(i))
+			continue;
+		if(i == client || i == victim)
+			continue;
+		if(isWitness(i, client)){
+			PrintToChat(i, "[-T-] You have witnessed %N killing %N - Auto Reported[BETA only]", client, victim);
+			witnessed = true;
+		}
+	}
+	if(witnessed)
+		tCrime_addCrime(client, 2000);
 }
 
 stock bool isValidClient(int client) {
 	return (1 <= client <= MaxClients && IsClientInGame(client));
 }
 
+public bool isWitness(int client, int target){
+	// Witness Position and Angles
+	float playerPos[3];
+	float playerAngles[3];
+	GetClientAbsOrigin(client, playerPos);
+	GetClientAbsAngles(client, playerAngles);
+	
+	
+	// Killer Position and Angles
+	float targetPos[3];
+	float targetAngles[3];
+	GetClientAbsOrigin(target, targetPos);
+	GetClientAbsAngles(target, targetAngles);
+	
+	// Vector between Witness and Killer
+	float vectorBetweenPlayers[3];
+	MakeVectorFromPoints(targetPos, playerPos, vectorBetweenPlayers);
+	
+	// Angles of the Vector between Witness and Killer
+	float beamAngles[3];
+	GetVectorAngles(vectorBetweenPlayers, beamAngles);
+	
+	// Trace Ray from Witness with the Angles between Witness and Killer
+	Handle trace = TR_TraceRayFilterEx(playerPos, beamAngles, MASK_SHOT, RayType_Infinite, TraceEntityFilterPlayer);
+	
+	// Check if there is something between Killer and Witness
+	if (TR_DidHit(trace)){
+		// Vector of the Hit Vector if something is between them
+		float hOrigin[3];
+		float beam2Vector[3];
+		TR_GetEndPosition(hOrigin, trace);
+		MakeVectorFromPoints(targetPos, hOrigin, beam2Vector);
+		CloseHandle(trace);
+		
+		// Check if the Vector hit after the Killer or before
+		// before? -> Couldn't have witnessed crime
+		// after? -> Could have wtinessed crime
+		if(GetVectorLength(vectorBetweenPlayers, true) < GetVectorLength(beam2Vector, true))
+			// after
+			return true;
+		else
+			// before
+			return false;
+	}
+	
+	CloseHandle(trace);
+	// Didn't hit at all - Distance is clear between both - could have witnessed
+	return true;
+}
 
-
-
-
+public bool TraceEntityFilterPlayer(int entity, int contentsMask) {
+	return (entity > GetMaxClients());
+}

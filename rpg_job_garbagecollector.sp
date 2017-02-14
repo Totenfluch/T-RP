@@ -37,6 +37,8 @@ ArrayList randomNumbers;
 
 int g_iPlayerPrevButtons[MAXPLAYERS + 1];
 
+char g_cTrash[3][64];
+
 public Plugin myinfo = 
 {
 	name = "Garbage Collector Job for T-RP", 
@@ -55,7 +57,14 @@ public void OnPluginStart() {
 }
 
 public void OnMapStart() {
-	PrecacheModel("models/props_junk/trashcluster01a_corner.mdl", true);
+ 	PrecacheModel("models/props_junk/trashcluster01a_corner.mdl", true);
+	PrecacheModel("models/props/de_train/hr_t/trash_c/hr_clothes_pile.mdl", true);
+	PrecacheModel("models/props/de_train/hr_t/trash_b/hr_food_pile_02.mdl", true);
+	
+	strcopy(g_cTrash[0], 64, "models/props_junk/trashcluster01a_corner.mdl");
+	strcopy(g_cTrash[1], 64, "models/props/de_train/hr_t/trash_c/hr_clothes_pile.mdl");
+	strcopy(g_cTrash[2], 64, "models/props/de_train/hr_t/trash_b/hr_food_pile_02.mdl");
+	
 	CreateTimer(1.0, refreshTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	for (int i = 0; i < MAX_GARBAGE; i++) {
 		g_eGarbageSpawnPoints[g_iLoadedGarbage][gXPos] = -1.0;
@@ -103,7 +112,7 @@ public void spawnGarbage(int id) {
 	if (trashEnt == -1)
 		return;
 	char modelPath[128];
-	Format(modelPath, sizeof(modelPath), "models/props_junk/trashcluster01a_corner.mdl");
+	Format(modelPath, sizeof(modelPath), g_cTrash[GetRandomInt(0, 2)]);
 	SetEntityModel(trashEnt, modelPath);
 	DispatchKeyValue(trashEnt, "Solid", "6");
 	SetEntProp(trashEnt, Prop_Send, "m_nSolidType", 6);

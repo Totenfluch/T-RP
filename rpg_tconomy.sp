@@ -318,6 +318,8 @@ public int getCurrency(int client, bool isBank) {
 }
 
 public Action loadMoney(Handle Timer, int client) {
+	if(!IsClientConnected(client))
+		return;
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	char loadMoneyQuery[512];

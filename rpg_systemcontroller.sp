@@ -170,6 +170,8 @@ public void loadPlayer(int client) {
 }
 
 public Action delayedLoad(Handle Timer, int client) {
+	if(!IsClientConnected(client))
+		return;
 	if (!g_bIsStarted)
 		return;
 	if (!IsPlayerAlive(client) || (GetClientTeam(client) != 3 && GetClientTeam(client) != 2))
@@ -190,9 +192,9 @@ public Action delayedLoad(Handle Timer, int client) {
 
 public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error, any data) {
 	int client = data;
-	if(!isValidClient(client))
+	if (!isValidClient(client))
 		return;
-	if(g_bIsPlayerLoaded[client])
+	if (g_bIsPlayerLoaded[client])
 		return;
 	while (SQL_FetchRow(hndl)) {
 		int Hp = SQL_FetchIntByName(hndl, "hp");
@@ -235,7 +237,7 @@ public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error,
 			SetEntProp(client, Prop_Data, "m_ArmorValue", Armor, 1);
 		SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", Speed);
 		SetEntityGravity(client, Gravity);
-		if(Position[0] != 0.0 && Position[1] != 0.0)
+		if (Position[0] != 0.0 && Position[1] != 0.0)
 			TeleportEntity(client, Position, Angles, NULL_VECTOR);
 		int weaponIndex;
 		if (!StrEqual(primaryWeapon, "")) {

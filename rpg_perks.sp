@@ -277,13 +277,13 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 				// Mining Boost 1
 				
 				if (!hasPerk(client, "Mining Boost1")) {
-					Format(display, sizeof(display), "Mining spped boost 1 [4](%i)", g_iPerk_mining_boost1);
+					Format(display, sizeof(display), "Mining Speed Boost 1 [4](%i)", g_iPerk_mining_boost1);
 					if (tConomy_getCurrency(client) >= g_iPerk_mining_boost1 && jobs_getLevel(client) >= 4)
 						AddMenuItem(nextMenu, "mining_boost1", display);
 					else
 						AddMenuItem(nextMenu, "mining_boost1", display, ITEMDRAW_DISABLED);
 				} else {
-					AddMenuItem(nextMenu, "x", "Mining Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
+					AddMenuItem(nextMenu, "x", "Mining Speed Boost 1 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
 				
 				
@@ -302,13 +302,13 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 				
 				// Mining Boost 2
 				if (!hasPerk(client, "Mining Boost2")) {
-					Format(display, sizeof(display), "Mining XP boost 2 [6](%i)", g_iPerk_mining_boost2);
+					Format(display, sizeof(display), "Mining XP Boost 2 [6](%i)", g_iPerk_mining_boost2);
 					if (tConomy_getCurrency(client) >= g_iPerk_mining_boost2 && jobs_getLevel(client) >= 6)
 						AddMenuItem(nextMenu, "mining_boost2", display);
 					else
 						AddMenuItem(nextMenu, "mining_boost2", display, ITEMDRAW_DISABLED);
 				} else {
-					AddMenuItem(nextMenu, "x", "Mining Boost2 | ^~Owned~^", ITEMDRAW_DISABLED);
+					AddMenuItem(nextMenu, "x", "Mining XP Boost 2 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
 				
 				
@@ -326,13 +326,13 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 				
 				// Mining Boost 3
 				if (!hasPerk(client, "Mining Boost3")) {
-					Format(display, sizeof(display), "Mining speed boost 3 [8](%i)", g_iPerk_mining_boost3);
+					Format(display, sizeof(display), "Mining Speed Boost 3 [8](%i)", g_iPerk_mining_boost3);
 					if (tConomy_getCurrency(client) >= g_iPerk_mining_boost3 && jobs_getLevel(client) >= 8)
 						AddMenuItem(nextMenu, "mining_boost3", display);
 					else
 						AddMenuItem(nextMenu, "mining_boost3", display, ITEMDRAW_DISABLED);
 				} else {
-					AddMenuItem(nextMenu, "x", "Mining Boost3 | ^~Owned~^", ITEMDRAW_DISABLED);
+					AddMenuItem(nextMenu, "x", "Mining Speed Boost 3 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
 				
 				
@@ -350,13 +350,13 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 				
 				// Mining Boost 4
 				if (!hasPerk(client, "Mining Boost4")) {
-					Format(display, sizeof(display), "Mining XP boost 4 [10](%i)", g_iPerk_mining_boost4);
+					Format(display, sizeof(display), "Mining XP Boost 4 [10](%i)", g_iPerk_mining_boost4);
 					if (tConomy_getCurrency(client) >= g_iPerk_mining_boost4 && jobs_getLevel(client) >= 10)
 						AddMenuItem(nextMenu, "mining_boost4", display);
 					else
 						AddMenuItem(nextMenu, "mining_boost4", display, ITEMDRAW_DISABLED);
 				} else {
-					AddMenuItem(nextMenu, "x", "Mining Boost4 | ^~Owned~^", ITEMDRAW_DISABLED);
+					AddMenuItem(nextMenu, "x", "Mining XP Boost 4 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
 				
 				

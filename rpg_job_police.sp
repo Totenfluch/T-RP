@@ -1221,14 +1221,16 @@ public Action CuffsEm(int client, int attacker)
 }
 
 
-public Action FreeEm(int client, int attacker)
-{
+public Action FreeEm(int client, int attacker){
+	g_bCuffed[client] = false;
+	g_iCuffed--;
+	if(!isValidClient(client))
+		return;
 	SetEntityMoveType(client, MOVETYPE_WALK);
 	SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 1.0);
 	SetEntityRenderColor(client, 255, 255, 255, 255);
-	g_bCuffed[client] = false;
+
 	CreateTimer(0.0, DeleteOverlay, client);
-	g_iCuffed--;
 	if (g_bSounds)StopSoundAny(client, SNDCHAN_AUTO, g_sSoundUnLockCuffsPath);
 	if ((attacker != 0) && (attacker != -1) && (g_iCuffed == 0) && (g_iPlayerHandCuffs[attacker] < 1))SetPlayerWeaponAmmo(attacker, Client_GetActiveWeapon(attacker), _, 0);
 	//if (attacker != 0)CPrintToChatAll("%t %t", "warden_tag", "warden_cuffsoff", attacker, client);

@@ -79,7 +79,8 @@ public int weaponMenuHandler(Handle menu, MenuAction action, int client, int ite
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		
 		if (StrEqual(cValue, "EquipAndStash")) {
-			stashWeapon(client, true, g_cLastItemUsed[client]);
+			int slot = getSlot(g_cLastItemUsed[client]);
+			stashWeaponSlot(client, slot);
 			takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);
 		} else if (StrEqual(cValue, "GiveWeapon")) {
 			takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);
@@ -105,14 +106,32 @@ public void stashWeapon(int client, bool useOverride, char[] weapon) {
 	}
 	if (StrEqual(item, ""))
 		return;
-	
+		
 	int slot = getSlot(item);
-	
+
 	if (slot != -1) {
 		int weaponIndex = GetPlayerWeaponSlot(client, slot);
 		if (weaponIndex != -1) {
 			int primaryWeaponClip = Weapon_GetPrimaryClip(weaponIndex);
 			int primaryWeaponAmmo = GetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount");
+			RemovePlayerItem(client, weaponIndex);
+			RemoveEdict(weaponIndex);
+			inventory_givePlayerItem(client, item, primaryWeaponClip * 100 + primaryWeaponAmmo, "", "Weapon", "Weapon", 2, "Stashed Weapon");
+		}
+	}
+	
+	if (GetPlayerWeaponSlot(client, 2) != -1)
+		EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, 2));
+}
+
+public void stashWeaponSlot(int client, int slot){
+	if (slot != -1) {
+		int weaponIndex = GetPlayerWeaponSlot(client, slot);
+		if (weaponIndex != -1) {
+			int primaryWeaponClip = Weapon_GetPrimaryClip(weaponIndex);
+			int primaryWeaponAmmo = GetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount");
+			char item[128];
+			Entity_GetClassName(weaponIndex, item, sizeof(item));
 			RemovePlayerItem(client, weaponIndex);
 			RemoveEdict(weaponIndex);
 			inventory_givePlayerItem(client, item, primaryWeaponClip * 100 + primaryWeaponAmmo, "", "Weapon", "Weapon", 2, "Stashed Weapon");

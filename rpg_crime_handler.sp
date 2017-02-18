@@ -56,14 +56,14 @@ public void onPlayerHurt(Handle event, const char[] name, bool dontBroadcast) {
 	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
 	int hurtdmg = GetEventInt(event, "dmg_health");
 	
-	char weapon[64];
-	GetClientWeapon(attacker, weapon, sizeof(weapon));
-	
 	if (victim == attacker)
 		return;
 	
 	if (!isValidClient(attacker))
 		return;
+		
+	char weapon[64];
+	GetClientWeapon(attacker, weapon, sizeof(weapon));
 	
 	if (jobs_isActiveJob(attacker, "Police")) {
 		if (!StrEqual(weapon, "weapon_taser"))

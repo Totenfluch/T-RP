@@ -110,6 +110,15 @@ public void OnPluginStart()
 public void resetAps() {
 	for (int i = 0; i < MAX_APARTMENTS; i++) {
 		ownedApartments[i][oaId] = -1;
+		strcopy(ownedApartments[i][oaTime_of_purchase], 64, "");
+		ownedApartments[i][oaPrice_of_purchase] = -1;
+		strcopy(ownedApartments[i][oaApartment_Id], 128, "");
+		strcopy(ownedApartments[i][oaPlayerid], 20, "");
+		strcopy(ownedApartments[i][oaPlayername], 48, "");
+		strcopy(ownedApartments[i][oaApartmentName], 255, "");
+		strcopy(ownedApartments[i][oaAllowed_players], 550, "");
+		ownedApartments[i][oaDoor_locked] = false;
+		
 		existingApartments[i][eaId] = -1;
 		g_iLoadedApartments = 0;
 		g_iOwnedApartmentsCount = 0;
@@ -356,7 +365,7 @@ public void raidAction(int client, char zone[128]) {
 	char menuTitle[128];
 	Format(menuTitle, sizeof(menuTitle), "Raid Apartment");
 	SetMenuTitle(apartmentMenu, menuTitle);
-	AddMenuItem(apartmentMenu, "raid", ">> RAID <<", ITEMDRAW_DISABLED);
+	AddMenuItem(apartmentMenu, "raid", ">> RAID <<");
 	DisplayMenu(apartmentMenu, client, 60);
 	strcopy(playerProperties[client][ppZone], 128, zone);
 }
@@ -498,7 +507,7 @@ public void buyApartment(int client, int id) {
 		char apartment_name[255];
 		Format(apartment_name, sizeof(apartment_name), "%ss Apartment", clean_playername);
 		
-		Format(buyApartmentQuery, sizeof(buyApartmentQuery), "INSERT INTO `t_rpg_boughtApartments` (`Id`, `time_of_purchase`, `price_of_purchase`, `apartment_id`, `playerid`, `playername`, `apartment_name`, `allowed_players`, `door_locked`, `map`) VALUES (NULL, CURRENT_TIMESTAMP, '%i', '%s', '%s', '%s', '%s', '', '0', '%s');", existingApartments[id][eaApartment_Price], activeZone[client], playerid, clean_playername, apartment_name, mapName);
+		Format(buyApartmentQuery, sizeof(buyApartmentQuery), "INSERT IGNORE INTO `t_rpg_boughtApartments` (`Id`, `time_of_purchase`, `price_of_purchase`, `apartment_id`, `playerid`, `playername`, `apartment_name`, `allowed_players`, `door_locked`, `map`) VALUES (NULL, CURRENT_TIMESTAMP, '%i', '%s', '%s', '%s', '%s', '', '0', '%s');", existingApartments[id][eaApartment_Price], activeZone[client], playerid, clean_playername, apartment_name, mapName);
 		SQL_TQuery(g_DB, SQLErrorCheckCallback, buyApartmentQuery);
 		
 		int firstFree = getFirstFreeOwnedApartmentSlot();

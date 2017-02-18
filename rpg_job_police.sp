@@ -1170,12 +1170,22 @@ public void OnMapEnd()
 public void OnMapStart()
 {
 	CreateTimer(1.0, refreshTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(120.0, incomeTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	g_iHaloSprite = PrecacheModel("materials/sprites/halo01.vmt");
 	g_iFire = PrecacheModel("materials/sprites/fire2.vmt");
 	PrecacheSoundAnyDownload(g_sSoundCuffsPath);
 	PrecacheSoundAnyDownload(g_sSoundBreakCuffsPath);
 	PrecacheSoundAnyDownload(g_sSoundUnLockCuffsPath);
 	PrecacheDecalAnyDownload(g_sOverlayCuffsPath);
+}
+
+public Action incomeTimer(Handle Timer){
+	for (int i = 1; i < MAXPLAYERS; i++){
+		if(!isValidClient(i))
+			continue;
+		if(jobs_isActiveJob(i, "Police"))
+			tConomy_addBankCurrency(i, jobs_getLevel(i) * 10 + 10, "Police Salary");
+	}
 }
 
 public void OnClientPutInServer(int client)

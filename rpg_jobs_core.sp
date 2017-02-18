@@ -672,7 +672,7 @@ public Action cmdGiveXp(int client, int args) {
 	GetCmdArg(2, tempExperienceString, sizeof(tempExperienceString));
 	
 	int tempexperience = StringToInt(tempExperienceString);
-	if (tempexperience < -100000 || tempexperience > 100000){
+	if (tempexperience < -100000 || tempexperience > 100000) {
 		ReplyToCommand(client, "Invalid Amount | < -100000 || > 100000");
 		return Plugin_Handled;
 	}

@@ -359,7 +359,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 							g_iHarvestIndex[client] = ent;
 						}
 					} else {
-						PrintToChat(client, "This Drug plant is too far away (%.2f/300.0)", GetVectorDistance(ppos, pos));
+						PrintToChat(client, "This Drug plant is too far away (%.2f/100.0)", GetVectorDistance(ppos, pos));
 						g_iPlayerPrevButtons[client] = iButtons;
 						return;
 					}
@@ -388,8 +388,8 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 		if ((plantId = findPlantLoadedIdByIndex(g_iHarvestIndex[client])) == -1)
 			return;
 		
-		jobs_addExperience(client, 50, "Police");
-		tConomy_addBankCurrency(client, 50, "Confiscated Plant");
+		jobs_addExperience(client, 250, "Police");
+		tConomy_addBankCurrency(client, 150, "Confiscated Plant");
 		deletePlant(g_iHarvestIndex[client], plantId);
 	}
 }
@@ -433,7 +433,7 @@ public void harvestPlant(int client, int ent, int plantId, int state) {
 
 public void deletePlant(int ent, int plantId) {
 	char deletePlantsQuery[512];
-	Format(deletePlantsQuery, sizeof(deletePlantsQuery), "DELETE FROM t_rpg_drugs WHERE flags = '%s';", plantId);
+	Format(deletePlantsQuery, sizeof(deletePlantsQuery), "DELETE FROM t_rpg_drugs WHERE flags = '%s';", g_ePlayerPlants[plantId][pFlags]);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, deletePlantsQuery);
 	
 	AcceptEntityInput(ent, "kill");

@@ -11,6 +11,7 @@
 #include <multicolors>
 #include <tConomy>
 #include <rpg_inventory_core>
+#include <rpg_perks>
 
 #pragma newdecls required
 
@@ -25,8 +26,8 @@ char g_cInAppleZones[MAX_ZONES][PLATFORM_MAX_PATH];
 int g_iAppleZoneCooldown[MAXPLAYERS + 1][MAX_ZONES];
 int g_iLoadedZones = 0;
 
-int g_iZoneCooldown = 100;
-int MAX_COLLECT = 5;
+int g_iZoneCooldown = 220;
+int MAX_COLLECT = 3;
 
 char activeZone[MAXPLAYERS + 1][128];
 
@@ -106,8 +107,28 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 		g_iAppleZoneCooldown[client][g_iPlayerZoneId[client]] = g_iZoneCooldown + GetRandomInt(0, 50);
 	char addCurrencyReason[256];
 	Format(addCurrencyReason, sizeof(addCurrencyReason), "Apple Harvesting (Level %i)", jobs_getLevel(client));
-	inventory_givePlayerItem(client, "Apple", 20, "", "Crafting Materials", "Apple Harvesting", 1, addCurrencyReason);
-	jobs_addExperience(client, 10, "Apple Harvester");
+	
+	if (perks_hasPerk(client, "Apple:Avocado"))
+		inventory_givePlayerItem(client, "Avocado", 50, "", "Crafting Materials", "Apple Harvesting", 1, addCurrencyReason);
+	else if (perks_hasPerk(client, "Apple:Walnuts"))
+		inventory_givePlayerItem(client, "Walnut", 40, "", "Crafting Materials", "Apple Harvesting", 1, addCurrencyReason);
+	else if (perks_hasPerk(client, "Apple:Nuts"))
+		inventory_givePlayerItem(client, "Nut", 30, "", "Crafting Materials", "Apple Harvesting", 1, addCurrencyReason);
+	else if (perks_hasPerk(client, "Apple:Pears"))
+		inventory_givePlayerItem(client, "Pear", 20, "", "Crafting Materials", "Apple Harvesting", 1, addCurrencyReason);
+	else
+		inventory_givePlayerItem(client, "Apple", 10, "", "Crafting Materials", "Apple Harvesting", 1, addCurrencyReason);
+	
+	if (perks_hasPerk(client, "Apples Boost4"))
+		jobs_addExperience(client, 40, "Apple Harvester");
+	else if (perks_hasPerk(client, "Apples Boost3"))
+		jobs_addExperience(client, 30, "Apple Harvester");
+	else if (perks_hasPerk(client, "Apples Boost2"))
+		jobs_addExperience(client, 20, "Apple Harvester");
+	else if (perks_hasPerk(client, "Apples Boost1"))
+		jobs_addExperience(client, 15, "Apple Harvester");
+	else
+		jobs_addExperience(client, 10, "Apple Harvester");
 	setInfo(client);
 }
 
@@ -161,9 +182,9 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 	jobs_getActiveJob(client, activeJob);
 	Menu panel = CreateMenu(JobPanelHandler);
 	if (StrEqual(activeJob, "") || !jobs_isActiveJob(client, "Apple Harvester")) {
-		SetMenuTitle(panel, "You already have a job! Want to quit it and becoma a Apple Harvester?");
-		AddMenuItem(panel, "x", "No Miner is cooler");
-		AddMenuItem(panel, "x", "Do I look like a vegetarian?");
+		SetMenuTitle(panel, "Do you want to become a Harvester?");
+		AddMenuItem(panel, "x", "Nope, harvest yourself :)");
+		AddMenuItem(panel, "x", "Perhaps later");
 		AddMenuItem(panel, "givejob", "Yes, please!");
 	} else if (jobs_isActiveJob(client, "Apple Harvester")) {
 		SetMenuTitle(panel, "Welcome Harvester!");
@@ -178,6 +199,54 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 			int itemamount = inventory_getPlayerItemAmount(client, "Apple");
 			Format(sellAll, sizeof(sellAll), "Sell %i Apples", itemamount);
 			AddMenuItem(panel, "sellAllApples", sellAll);
+		}
+		
+		if (inventory_hasPlayerItem(client, "Pear"))
+			AddMenuItem(panel, "sellPear", "Sell Pear");
+		else
+			AddMenuItem(panel, "x", "Sell Pear", ITEMDRAW_DISABLED);
+		
+		if (inventory_hasPlayerItem(client, "Pear")) {
+			char sellAll[256];
+			int itemamount = inventory_getPlayerItemAmount(client, "Pear");
+			Format(sellAll, sizeof(sellAll), "Sell %i Pears", itemamount);
+			AddMenuItem(panel, "sellAllPears", sellAll);
+		}
+		
+		if (inventory_hasPlayerItem(client, "Nut"))
+			AddMenuItem(panel, "sellNut", "Sell Nut");
+		else
+			AddMenuItem(panel, "x", "Sell Nut", ITEMDRAW_DISABLED);
+		
+		if (inventory_hasPlayerItem(client, "Nut")) {
+			char sellAll[256];
+			int itemamount = inventory_getPlayerItemAmount(client, "Nut");
+			Format(sellAll, sizeof(sellAll), "Sell %i Nuts", itemamount);
+			AddMenuItem(panel, "sellAllNuts", sellAll);
+		}
+		
+		if (inventory_hasPlayerItem(client, "Walnut"))
+			AddMenuItem(panel, "sellWalnut", "Sell Walnut");
+		else
+			AddMenuItem(panel, "x", "Sell Walnut", ITEMDRAW_DISABLED);
+		
+		if (inventory_hasPlayerItem(client, "Walnut")) {
+			char sellAll[256];
+			int itemamount = inventory_getPlayerItemAmount(client, "Walnut");
+			Format(sellAll, sizeof(sellAll), "Sell %i Walnuts", itemamount);
+			AddMenuItem(panel, "sellAllWalnuts", sellAll);
+		}
+		
+		if (inventory_hasPlayerItem(client, "Avocado"))
+			AddMenuItem(panel, "sellAvocado", "Sell Avocado");
+		else
+			AddMenuItem(panel, "x", "Sell Avocado", ITEMDRAW_DISABLED);
+		
+		if (inventory_hasPlayerItem(client, "Avocado")) {
+			char sellAll[256];
+			int itemamount = inventory_getPlayerItemAmount(client, "Avocado");
+			Format(sellAll, sizeof(sellAll), "Sell %i Avocados", itemamount);
+			AddMenuItem(panel, "sellAllAvocados", sellAll);
 		}
 		
 		if (tConomy_getCurrency(client) >= 250)
@@ -205,10 +274,46 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			int itemamount = inventory_getPlayerItemAmount(client, "Apple");
 			if (inventory_removePlayerItems(client, "Apple", itemamount, "Sold to Vendor (Mass Sell)"))
 				tConomy_addCurrency(client, (5 + jobs_getLevel(client)) * itemamount, "Sold Apple to Vendor");
+		} else if (StrEqual(cValue, "sellPear")) {
+			if (inventory_hasPlayerItem(client, "Pear")) {
+				tConomy_addCurrency(client, 7 + jobs_getLevel(client), "Sold Pear to Vendor");
+				inventory_removePlayerItems(client, "Pear", 1, "Sold to Vendor");
+			}
+		} else if (StrEqual(cValue, "sellAllPears")) {
+			int itemamount = inventory_getPlayerItemAmount(client, "Pear");
+			if (inventory_removePlayerItems(client, "Pear", itemamount, "Sold to Vendor (Mass Sell)"))
+				tConomy_addCurrency(client, (7 + jobs_getLevel(client)) * itemamount, "Sold Pear to Vendor");
+		} else if (StrEqual(cValue, "sellNut")) {
+			if (inventory_hasPlayerItem(client, "Nut")) {
+				tConomy_addCurrency(client, 10 + jobs_getLevel(client), "Sold Nut to Vendor");
+				inventory_removePlayerItems(client, "Nut", 1, "Sold to Vendor");
+			}
+		} else if (StrEqual(cValue, "sellAllNuts")) {
+			int itemamount = inventory_getPlayerItemAmount(client, "Nut");
+			if (inventory_removePlayerItems(client, "Nut", itemamount, "Sold to Vendor (Mass Sell)"))
+				tConomy_addCurrency(client, (10 + jobs_getLevel(client)) * itemamount, "Sold Nut to Vendor");
+		} else if (StrEqual(cValue, "sellWalnut")) {
+			if (inventory_hasPlayerItem(client, "Walnut")) {
+				tConomy_addCurrency(client, 12 + jobs_getLevel(client), "Sold Walnut to Vendor");
+				inventory_removePlayerItems(client, "Walnut", 1, "Sold to Vendor");
+			}
+		} else if (StrEqual(cValue, "sellAllWalnuts")) {
+			int itemamount = inventory_getPlayerItemAmount(client, "Walnut");
+			if (inventory_removePlayerItems(client, "Walnut", itemamount, "Sold to Vendor (Mass Sell)"))
+				tConomy_addCurrency(client, (12 + jobs_getLevel(client)) * itemamount, "Sold Walnut to Vendor");
+		}else if (StrEqual(cValue, "sellAvocado")) {
+			if (inventory_hasPlayerItem(client, "Avocado")) {
+				tConomy_addCurrency(client, 15 + jobs_getLevel(client), "Sold Avocado to Vendor");
+				inventory_removePlayerItems(client, "Avocado", 1, "Sold to Vendor");
+			}
+		} else if (StrEqual(cValue, "sellAllAvocados")) {
+			int itemamount = inventory_getPlayerItemAmount(client, "Avocado");
+			if (inventory_removePlayerItems(client, "Avocado", itemamount, "Sold to Vendor (Mass Sell)"))
+				tConomy_addCurrency(client, (15 + jobs_getLevel(client)) * itemamount, "Sold Avocado to Vendor");
 		} else if (StrEqual(cValue, "skin")) {
 			tConomy_removeCurrency(client, 250, "Bought Skin");
 			inventory_givePlayerItem(client, "Zoey", 0, "", "Skin", "Skin", 1, "Bought from Apple Harvester");
-		}
+		} 
 	}
 }
 

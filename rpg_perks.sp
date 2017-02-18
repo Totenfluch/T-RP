@@ -27,6 +27,7 @@ char my_npcType[128] = "Perk Shop";
 
 int g_iLastInteractedWith[MAXPLAYERS + 1];
 
+/* MINING */
 Handle g_hPerk_mining_copper;
 int g_iPerk_mining_copper;
 
@@ -51,6 +52,8 @@ int g_iPerk_mining_boost3;
 Handle g_hPerk_mining_boost4;
 int g_iPerk_mining_boost4;
 
+
+/* APPLE HARVESTER */
 Handle g_hPerk_apples_boost1;
 int g_iPerk_apples_boost1;
 
@@ -62,6 +65,18 @@ int g_iPerk_apples_boost3;
 
 Handle g_hPerk_apples_boost4;
 int g_iPerk_apples_boost4;
+
+Handle g_hPerk_apples_pears;
+int g_iPerk_apples_pears;
+
+Handle g_hPerk_apples_nuts;
+int g_iPerk_apples_nuts;
+
+Handle g_hPerk_apples_walnut;
+int g_iPerk_apples_walnut;
+
+Handle g_hPerk_apples_avocado;
+int g_iPerk_apples_avocado;
 
 public Plugin myinfo = 
 {
@@ -80,6 +95,7 @@ public void OnPluginStart() {
 	AutoExecConfig_SetFile("rpg_perks");
 	AutoExecConfig_SetCreateFile(true);
 	
+	/* MINING */
 	g_hPerk_mining_copper = AutoExecConfig_CreateConVar("perk_mining_copper", "2500", "Price of the Mining Copper Perk");
 	g_hPerk_mining_fosil = AutoExecConfig_CreateConVar("perk_mining_fosil", "3500", "Price of the Mining Fosil Perk");
 	g_hPerk_mining_iron = AutoExecConfig_CreateConVar("perk_mining_iron", "4500", "Price of the Mining Iron Perk");
@@ -90,10 +106,16 @@ public void OnPluginStart() {
 	g_hPerk_mining_boost3 = AutoExecConfig_CreateConVar("perk_mining_boost3", "3000", "Price of the Mining Boost3 Perk");
 	g_hPerk_mining_boost4 = AutoExecConfig_CreateConVar("perk_mining_boost4", "4000", "Price of the Mining Boost4 Perk");
 	
+	/* APPLES */
 	g_hPerk_apples_boost1 = AutoExecConfig_CreateConVar("perk_apples_boost1", "1000", "Price of the Apples Boost1 Perk");
 	g_hPerk_apples_boost2 = AutoExecConfig_CreateConVar("perk_apples_boost2", "2000", "Price of the Apples Boost2 Perk");
 	g_hPerk_apples_boost3 = AutoExecConfig_CreateConVar("perk_apples_boost3", "3000", "Price of the Apples Boost3 Perk");
 	g_hPerk_apples_boost4 = AutoExecConfig_CreateConVar("perk_apples_boost4", "4000", "Price of the Apples Boost4 Perk");
+	
+	g_hPerk_apples_pears = AutoExecConfig_CreateConVar("perk_apples_pears", "2500", "Apples:Upgrade to Pears");
+	g_hPerk_apples_nuts = AutoExecConfig_CreateConVar("perk_apples_pears", "5000", "Apples:Upgrade to Nuts");
+	g_hPerk_apples_walnut = AutoExecConfig_CreateConVar("perk_apples_pears", "7500", "Apples:Upgrade to Walnuts");
+	g_hPerk_apples_avocado = AutoExecConfig_CreateConVar("perk_apples_pears", "10000", "Apples:Upgrade to Avocado");
 	
 	AutoExecConfig_CleanFile();
 	AutoExecConfig_ExecuteFile();
@@ -127,6 +149,11 @@ public void OnConfigsExecuted() {
 	g_iPerk_apples_boost2 = GetConVarInt(g_hPerk_apples_boost2);
 	g_iPerk_apples_boost3 = GetConVarInt(g_hPerk_apples_boost3);
 	g_iPerk_apples_boost4 = GetConVarInt(g_hPerk_apples_boost4);
+	
+	g_iPerk_apples_pears = GetConVarInt(g_hPerk_apples_pears);
+	g_iPerk_apples_nuts = GetConVarInt(g_hPerk_apples_nuts);
+	g_iPerk_apples_walnut = GetConVarInt(g_hPerk_apples_walnut);
+	g_iPerk_apples_avocado = GetConVarInt(g_hPerk_apples_avocado);
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
@@ -353,6 +380,16 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 					AddMenuItem(nextMenu, "x", "Apples Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
 				
+				// Upgrade:Pears
+				if (!hasPerk(client, "Apple:Pears")) {
+					Format(display, sizeof(display), "Upgrade to Pears [5](%i)", g_iPerk_apples_pears);
+					if (tConomy_getCurrency(client) >= g_iPerk_apples_pears && jobs_getLevel(client) >= 5)
+						AddMenuItem(nextMenu, "apples_pears", display);
+					else
+						AddMenuItem(nextMenu, "apples_pears", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Upgrade to Pears | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
 				
 				// Apples Boost 2
 				if (!hasPerk(client, "Apples Boost2")) {
@@ -365,6 +402,16 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 					AddMenuItem(nextMenu, "x", "Apples Boost2 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
 				
+				// Upgrade:Nuts
+				if (!hasPerk(client, "Apple:Nuts")) {
+					Format(display, sizeof(display), "Upgrade to Nuts [7](%i)", g_iPerk_apples_nuts);
+					if (tConomy_getCurrency(client) >= g_iPerk_apples_nuts && jobs_getLevel(client) >= 7)
+						AddMenuItem(nextMenu, "apples_nuts", display);
+					else
+						AddMenuItem(nextMenu, "apples_nuts", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Upgrade to Nuts | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
 				
 				// Apples Boost 3
 				if (!hasPerk(client, "Apples Boost3")) {
@@ -377,6 +424,16 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 					AddMenuItem(nextMenu, "x", "Apples Boost3 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
 				
+				// Upgrade:Walnuts
+				if (!hasPerk(client, "Apple:Walnuts")) {
+					Format(display, sizeof(display), "Upgrade to Walnuts [9](%i)", g_iPerk_apples_walnut);
+					if (tConomy_getCurrency(client) >= g_iPerk_apples_walnut && jobs_getLevel(client) >= 9)
+						AddMenuItem(nextMenu, "apples_walnuts", display);
+					else
+						AddMenuItem(nextMenu, "apples_walnuts", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Upgrade to Walnuts | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
 				
 				// Apples Boost 4
 				if (!hasPerk(client, "Apples Boost4")) {
@@ -387,6 +444,17 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 						AddMenuItem(nextMenu, "apples_boost4", display, ITEMDRAW_DISABLED);
 				} else {
 					AddMenuItem(nextMenu, "x", "Apples Boost4 | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
+				
+				// Upgrade:Avocado
+				if (!hasPerk(client, "Apple:Avocado")) {
+					Format(display, sizeof(display), "Upgrade to Avocado [10](%i)", g_iPerk_apples_avocado);
+					if (tConomy_getCurrency(client) >= g_iPerk_apples_avocado && jobs_getLevel(client) >= 10)
+						AddMenuItem(nextMenu, "apples_avocado", display);
+					else
+						AddMenuItem(nextMenu, "apples_avocado", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Upgrade to Avocado | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
 				
 			} else {
@@ -475,6 +543,26 @@ public int nextMenuHandler(Handle menu, MenuAction action, int client, int item)
 			if (tConomy_getCurrency(client) >= g_iPerk_apples_boost4) {
 				tConomy_removeCurrency(client, g_iPerk_apples_boost4, "Bought Apples Boost4 Perk");
 				addPerk(client, "Apples Boost4");
+			}
+		} else if (StrEqual(cValue, "apples_avocado")) {
+			if (tConomy_getCurrency(client) >= g_iPerk_apples_avocado) {
+				tConomy_removeCurrency(client, g_iPerk_apples_avocado, "Bought Apples Avocado Upgrade");
+				addPerk(client, "Apple:Avocado");
+			}
+		} else if (StrEqual(cValue, "apples_walnuts")) {
+			if (tConomy_getCurrency(client) >= g_iPerk_apples_walnut) {
+				tConomy_removeCurrency(client, g_iPerk_apples_walnut, "Bought Apples Walnuts Upgrade");
+				addPerk(client, "Apple:Walnuts");
+			}
+		} else if (StrEqual(cValue, "apples_nuts")) {
+			if (tConomy_getCurrency(client) >= g_iPerk_apples_nuts) {
+				tConomy_removeCurrency(client, g_iPerk_apples_nuts, "Bought Apples Nuts Upgrade");
+				addPerk(client, "Apple:Nuts");
+			}
+		} else if (StrEqual(cValue, "apples_pears")) {
+			if (tConomy_getCurrency(client) >= g_iPerk_apples_pears) {
+				tConomy_removeCurrency(client, g_iPerk_apples_pears, "Bought Apples Pears Upgrade");
+				addPerk(client, "Apple:Pears");
 			}
 		}
 	}

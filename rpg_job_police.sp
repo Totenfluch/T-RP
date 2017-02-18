@@ -194,7 +194,7 @@ public Plugin myinfo =
 };
 
 public void OnPluginStart() {
-	jobs_registerJob("Police", "Stop the criminals from beeing criminal", 3, 5000, 12.0);
+	jobs_registerJob("Police", "Stop the criminals from beeing criminal", 3, 100, 12.0);
 	npc_registerNpcType("Police Recruiter");
 	npc_registerNpcType("Police Weapon Vendor");
 	
@@ -934,8 +934,8 @@ public Action cmdHelpCallback(int client, int args) {
 	float origin[3];
 	GetClientAbsOrigin(client, origin);
 	
-	int color[4] =  { 188, 220, 255, 255 };
-	TE_SetupBeamRingPoint(origin, 10.0, 750.0, g_iFire, g_iHaloSprite, 0, 66, 2.0, 64.0, 0.2, color, 25, 0);
+	int color[4] =  { 50, 50, 255, 255 };
+	TE_SetupBeamRingPoint(origin, 10.0, 1150.0, g_iFire, g_iHaloSprite, 0, 66, 5.0, 64.0, 0.5, color, 15, 0);
 	TE_SendToAll();
 	
 	for (int i = 1; i < MAXPLAYERS; i++) {

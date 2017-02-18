@@ -57,7 +57,7 @@ public void OnPluginStart() {
 }
 
 public void OnMapStart() {
- 	PrecacheModel("models/props_junk/trashcluster01a_corner.mdl", true);
+	PrecacheModel("models/props_junk/trashcluster01a_corner.mdl", true);
 	PrecacheModel("models/props/de_train/hr_t/trash_c/hr_clothes_pile.mdl", true);
 	PrecacheModel("models/props/de_train/hr_t/trash_b/hr_food_pile_02.mdl", true);
 	

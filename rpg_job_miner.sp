@@ -11,6 +11,7 @@
 #include <multicolors>
 #include <tConomy>
 #include <rpg_inventory_core>
+#include <rpg_perks>
 
 #pragma newdecls required
 
@@ -43,7 +44,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	jobs_registerJob("Mining", "Mine Stones and Ores, melt them and sell them for money", 10, 50, 2.0);
+	jobs_registerJob("Mining", "Mine Stones and Ores, melt them and sell them for money", 20, 50, 2.0);
 	npc_registerNpcType(npctype);
 	RegConsoleCmd("sm_mstats", cmdOnMStats, "shows Mining stats");
 }
@@ -84,7 +85,12 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					return;
 				char infoString[64];
 				Format(infoString, sizeof(infoString), "Mining (%i)", jobs_getLevel(client));
-				jobs_startProgressBar(client, 5, infoString);
+				if (perks_hasPerk(client, "Mining Boost3"))
+					jobs_startProgressBar(client, 3, infoString);
+				else if (perks_hasPerk(client, "Mining Boost1"))
+					jobs_startProgressBar(client, 4, infoString);
+				else
+					jobs_startProgressBar(client, 5, infoString);
 				setInfo(client);
 			}
 		}
@@ -103,8 +109,24 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 	char addCurrencyReason[256];
 	Format(addCurrencyReason, sizeof(addCurrencyReason), "Mining Ore (Level %i)", jobs_getLevel(client));
 	//tConomy_addCurrency(client, 10 * jobs_getLevel(client), addCurrencyReason);
+	
+	if (perks_hasPerk(client, "Mining Gold") && GetRandomInt(0, 10) == 2)
+		inventory_givePlayerItem(client, "Gold ore", 20, "", "Crafting Materials", "Mining", 1, addCurrencyReason);
+	else if (perks_hasPerk(client, "Mining Iron") && GetRandomInt(0, 10) == 2)
+		inventory_givePlayerItem(client, "Iron ore", 20, "", "Crafting Materials", "Mining", 1, addCurrencyReason);
+	else if (perks_hasPerk(client, "Mining Fosil") && GetRandomInt(0, 10) == 2)
+		inventory_givePlayerItem(client, "Fosil", 20, "", "Crafting Materials", "Mining", 1, addCurrencyReason);
+	else if (perks_hasPerk(client, "Mining Copper") && GetRandomInt(0, 10) == 2)
+		inventory_givePlayerItem(client, "Copper ore", 20, "", "Crafting Materials", "Mining", 1, addCurrencyReason);
+	
 	inventory_givePlayerItem(client, "Iron ore", 20, "", "Crafting Materials", "Mining", 1, addCurrencyReason);
-	jobs_addExperience(client, 10, "Mining");
+	
+	if (perks_hasPerk(client, "Mining Boost4"))
+		jobs_addExperience(client, 20, "Mining");
+	else if (perks_hasPerk(client, "Mining Boost2"))
+		jobs_addExperience(client, 15, "Mining");
+	else
+		jobs_addExperience(client, 10, "Mining");
 	setInfo(client);
 }
 

@@ -101,6 +101,15 @@ public void OnPluginStart() {
 	char createTableQuery[4096];
 	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_perks ( `Id` BIGINT NOT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `perk` VARCHAR(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , PRIMARY KEY (`Id`), UNIQUE (`playerid`, `perk`)) ENGINE = InnoDB;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
+	
+	RegConsoleCmd("sm_cperks", cmdCheckPerks);
+}
+
+public Action cmdCheckPerks(int client, int args) {
+	PrintToConsole(client, ">> %i Perks <<", g_iOwnedPerks[client]);
+	for (int i = 0; i < g_iOwnedPerks[client]; i++)
+	PrintToConsole(client, "|-> %s", g_cOwnedPerks[client][i]);
+	return Plugin_Handled;
 }
 
 public void OnConfigsExecuted() {
@@ -167,7 +176,7 @@ public void SQLLoadPerksQuery(Handle owner, Handle hndl, const char[] error, any
 	while (SQL_FetchRow(hndl)) {
 		char cPerk[64];
 		SQL_FetchString(hndl, 0, cPerk, sizeof(cPerk));
-		strcopy(g_cOwnedPerks[client][g_iOwnedPerks[client++]], 64, cPerk);
+		strcopy(g_cOwnedPerks[client][g_iOwnedPerks[client]++], 64, cPerk);
 	}
 }
 
@@ -178,6 +187,8 @@ public void addPerk(int client, char perk[64]) {
 	char addPerkQuery[1024];
 	Format(addPerkQuery, sizeof(addPerkQuery), "INSERT IGNORE INTO `t_rpg_perks` (`Id`, `timestamp`, `playerid`, `perk`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s');", playerid, perk);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, addPerkQuery);
+	
+	strcopy(g_cOwnedPerks[client][g_iOwnedPerks[client]++], 64, perk);
 }
 
 public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error, any data) {
@@ -221,174 +232,168 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 		char display[64];
 		Menu nextMenu = CreateMenu(nextMenuHandler);
 		if (StrEqual(cValue, "miner")) {
-			if (jobs_isActiveJob(client, "Miner")) {
+			SetMenuTitle(nextMenu, "> Mining Perks <");
+			if (jobs_isActiveJob(client, "Mining")) {
 				
 				// Mining Copper
-				if (jobs_getLevel(client) >= 3) {
-					if (!hasPerk(client, "Mining Copper")) {
-						Format(display, sizeof(display), "Mine Copper [3](%i)", g_iPerk_mining_copper);
-						if (tConomy_getCurrency(client) >= g_iPerk_mining_copper)
-							AddMenuItem(nextMenu, "mining_copper", display);
-						else
-							AddMenuItem(nextMenu, "mining_copper", display, ITEMDRAW_DISABLED);
-					} else {
-						AddMenuItem(nextMenu, "x", "Mine Copper ^~Owned~^", ITEMDRAW_DISABLED);
-					}
+				if (!hasPerk(client, "Mining Copper")) {
+					Format(display, sizeof(display), "Mine Copper [3](%i)", g_iPerk_mining_copper);
+					if (tConomy_getCurrency(client) >= g_iPerk_mining_copper && jobs_getLevel(client) >= 3)
+						AddMenuItem(nextMenu, "mining_copper", display);
+					else
+						AddMenuItem(nextMenu, "mining_copper", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Mine Copper | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
+				
 				
 				// Mining Boost 1
+				
 				if (!hasPerk(client, "Mining Boost1")) {
-					if (jobs_getLevel(client) >= 4) {
-						Format(display, sizeof(display), "Mining boost 1 [4](%i)", g_iPerk_mining_boost1);
-						if (tConomy_getCurrency(client) >= g_iPerk_mining_boost1)
-							AddMenuItem(nextMenu, "mining_boost1", display);
-						else
-							AddMenuItem(nextMenu, "mining_boost1", display, ITEMDRAW_DISABLED);
-					} else {
-						AddMenuItem(nextMenu, "x", "Mining Boost1 ^~Owned~^", ITEMDRAW_DISABLED);
-					}
+					Format(display, sizeof(display), "Mining spped boost 1 [4](%i)", g_iPerk_mining_boost1);
+					if (tConomy_getCurrency(client) >= g_iPerk_mining_boost1 && jobs_getLevel(client) >= 4)
+						AddMenuItem(nextMenu, "mining_boost1", display);
+					else
+						AddMenuItem(nextMenu, "mining_boost1", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Mining Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
 				
+				
 				// Mining Fossil
+				
 				if (!hasPerk(client, "Mining Fosil")) {
-					if (jobs_getLevel(client) >= 5) {
-						Format(display, sizeof(display), "Mine Fosil [5](%i)", g_iPerk_mining_fosil);
-						if (tConomy_getCurrency(client) >= g_iPerk_mining_fosil)
-							AddMenuItem(nextMenu, "mining_fosil", display);
-						else
-							AddMenuItem(nextMenu, "mining_fosil", display, ITEMDRAW_DISABLED);
-					} else {
-						AddMenuItem(nextMenu, "x", "Mine Fosil ^~Owned~^", ITEMDRAW_DISABLED);
-					}
+					Format(display, sizeof(display), "Mine Fosil [5](%i)", g_iPerk_mining_fosil);
+					if (tConomy_getCurrency(client) >= g_iPerk_mining_fosil && jobs_getLevel(client) >= 5)
+						AddMenuItem(nextMenu, "mining_fosil", display);
+					else
+						AddMenuItem(nextMenu, "mining_fosil", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Mine Fosil | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
+				
 				
 				// Mining Boost 2
 				if (!hasPerk(client, "Mining Boost2")) {
-					if (jobs_getLevel(client) >= 6) {
-						Format(display, sizeof(display), "Mining boost 2 [6](%i)", g_iPerk_mining_boost2);
-						if (tConomy_getCurrency(client) >= g_iPerk_mining_boost2)
-							AddMenuItem(nextMenu, "mining_boost2", display);
-						else
-							AddMenuItem(nextMenu, "mining_boost2", display, ITEMDRAW_DISABLED);
-					} else {
-						AddMenuItem(nextMenu, "x", "Mining Boost2 ^~Owned~^", ITEMDRAW_DISABLED);
-					}
+					Format(display, sizeof(display), "Mining XP boost 2 [6](%i)", g_iPerk_mining_boost2);
+					if (tConomy_getCurrency(client) >= g_iPerk_mining_boost2 && jobs_getLevel(client) >= 6)
+						AddMenuItem(nextMenu, "mining_boost2", display);
+					else
+						AddMenuItem(nextMenu, "mining_boost2", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Mining Boost2 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
+				
 				
 				// Mining Iron
 				if (!hasPerk(client, "Mining Iron")) {
-					if (jobs_getLevel(client) >= 7) {
-						Format(display, sizeof(display), "Mine Iron [7](%i)", g_iPerk_mining_iron);
-						if (tConomy_getCurrency(client) >= g_iPerk_mining_iron)
-							AddMenuItem(nextMenu, "mining_iron", display);
-						else
-							AddMenuItem(nextMenu, "mining_iron", display, ITEMDRAW_DISABLED);
-					} else {
-						AddMenuItem(nextMenu, "x", "Mining Iron ^~Owned~^", ITEMDRAW_DISABLED);
-					}
+					Format(display, sizeof(display), "Mine Iron [7](%i)", g_iPerk_mining_iron);
+					if (tConomy_getCurrency(client) >= g_iPerk_mining_iron && jobs_getLevel(client) >= 7)
+						AddMenuItem(nextMenu, "mining_iron", display);
+					else
+						AddMenuItem(nextMenu, "mining_iron", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Mining Iron | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
+				
 				
 				// Mining Boost 3
 				if (!hasPerk(client, "Mining Boost3")) {
-					if (jobs_getLevel(client) >= 8) {
-						Format(display, sizeof(display), "Mining boost 3 [8](%i)", g_iPerk_mining_boost3);
-						if (tConomy_getCurrency(client) >= g_iPerk_mining_boost3)
-							AddMenuItem(nextMenu, "mining_boost3", display);
-						else
-							AddMenuItem(nextMenu, "mining_boost3", display, ITEMDRAW_DISABLED);
-					} else {
-						AddMenuItem(nextMenu, "x", "Mining Boost3 ^~Owned~^", ITEMDRAW_DISABLED);
-					}
+					Format(display, sizeof(display), "Mining speed boost 3 [8](%i)", g_iPerk_mining_boost3);
+					if (tConomy_getCurrency(client) >= g_iPerk_mining_boost3 && jobs_getLevel(client) >= 8)
+						AddMenuItem(nextMenu, "mining_boost3", display);
+					else
+						AddMenuItem(nextMenu, "mining_boost3", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Mining Boost3 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
+				
 				
 				// Mining Gold
 				if (!hasPerk(client, "Mining Gold")) {
-					if (jobs_getLevel(client) >= 9) {
-						Format(display, sizeof(display), "Mine Gold [9](%i)", g_iPerk_mining_gold);
-						if (tConomy_getCurrency(client) >= g_iPerk_mining_gold)
-							AddMenuItem(nextMenu, "mining_gold", display);
-						else
-							AddMenuItem(nextMenu, "mining_gold", display, ITEMDRAW_DISABLED);
-					} else {
-						AddMenuItem(nextMenu, "x", "Mining Gold ^~Owned~^", ITEMDRAW_DISABLED);
-					}
+					Format(display, sizeof(display), "Mine Gold [9](%i)", g_iPerk_mining_gold);
+					if (tConomy_getCurrency(client) >= g_iPerk_mining_gold && jobs_getLevel(client) >= 9)
+						AddMenuItem(nextMenu, "mining_gold", display);
+					else
+						AddMenuItem(nextMenu, "mining_gold", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Mining Gold | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
+				
 				
 				// Mining Boost 4
 				if (!hasPerk(client, "Mining Boost4")) {
-					if (jobs_getLevel(client) >= 10) {
-						Format(display, sizeof(display), "Mining boost 4 [10](%i)", g_iPerk_mining_boost4);
-						if (tConomy_getCurrency(client) >= g_iPerk_mining_boost4)
-							AddMenuItem(nextMenu, "mining_boost4", display);
-						else
-							AddMenuItem(nextMenu, "mining_boost4", display, ITEMDRAW_DISABLED);
-					} else {
-						AddMenuItem(nextMenu, "x", "Mining Boost4 ^~Owned~^", ITEMDRAW_DISABLED);
-					}
+					Format(display, sizeof(display), "Mining XP boost 4 [10](%i)", g_iPerk_mining_boost4);
+					if (tConomy_getCurrency(client) >= g_iPerk_mining_boost4 && jobs_getLevel(client) >= 10)
+						AddMenuItem(nextMenu, "mining_boost4", display);
+					else
+						AddMenuItem(nextMenu, "mining_boost4", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Mining Boost4 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
+				
 				
 			} else {
 				AddMenuItem(nextMenu, "x", "- You are not a Miner -", ITEMDRAW_DISABLED);
 			}
 		} else if (StrEqual(cValue, "garbage")) {
+			SetMenuTitle(nextMenu, "> Garbage Collector Perks <");
 			AddMenuItem(nextMenu, "x", "- There are no Perks for Garbage Collector -", ITEMDRAW_DISABLED);
 		} else if (StrEqual(cValue, "apple")) {
+			SetMenuTitle(nextMenu, "> Apple Harvester Perks <");
 			if (jobs_isActiveJob(client, "Apple Harvester")) {
 				// Apples Boost 1
 				if (!hasPerk(client, "Apples Boost1")) {
-					if (jobs_getLevel(client) >= 4) {
-						Format(display, sizeof(display), "Apples boost [4](%i)", g_iPerk_apples_boost1);
-						if (tConomy_getCurrency(client) >= g_iPerk_apples_boost1)
-							AddMenuItem(nextMenu, "apples_boost1", display);
-						else
-							AddMenuItem(nextMenu, "apples_boost1", display, ITEMDRAW_DISABLED);
-					} else {
-						AddMenuItem(nextMenu, "x", "Apples Boost1 ^~Owned~^", ITEMDRAW_DISABLED);
-					}
+					Format(display, sizeof(display), "Apples boost [4](%i)", g_iPerk_apples_boost1);
+					if (tConomy_getCurrency(client) >= g_iPerk_apples_boost1 && jobs_getLevel(client) >= 4)
+						AddMenuItem(nextMenu, "apples_boost1", display);
+					else
+						AddMenuItem(nextMenu, "apples_boost1", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Apples Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
+				
 				
 				// Apples Boost 2
 				if (!hasPerk(client, "Apples Boost2")) {
-					if (jobs_getLevel(client) >= 6) {
-						Format(display, sizeof(display), "Apples boost [6](%i)", g_iPerk_apples_boost2);
-						if (tConomy_getCurrency(client) >= g_iPerk_apples_boost2)
-							AddMenuItem(nextMenu, "apples_boost2", display);
-						else
-							AddMenuItem(nextMenu, "apples_boost2", display, ITEMDRAW_DISABLED);
-					} else {
-						AddMenuItem(nextMenu, "x", "Apples Boost2 ^~Owned~^", ITEMDRAW_DISABLED);
-					}
+					Format(display, sizeof(display), "Apples boost [6](%i)", g_iPerk_apples_boost2);
+					if (tConomy_getCurrency(client) >= g_iPerk_apples_boost2 && jobs_getLevel(client) >= 6)
+						AddMenuItem(nextMenu, "apples_boost2", display);
+					else
+						AddMenuItem(nextMenu, "apples_boost2", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Apples Boost2 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
+				
 				
 				// Apples Boost 3
 				if (!hasPerk(client, "Apples Boost3")) {
-					if (jobs_getLevel(client) >= 8) {
-						Format(display, sizeof(display), "Apples boost [8](%i)", g_iPerk_apples_boost3);
-						if (tConomy_getCurrency(client) >= g_iPerk_apples_boost3)
-							AddMenuItem(nextMenu, "apples_boost3", display);
-						else
-							AddMenuItem(nextMenu, "apples_boost3", display, ITEMDRAW_DISABLED);
-					} else {
-						AddMenuItem(nextMenu, "x", "Apples Boost3 ^~Owned~^", ITEMDRAW_DISABLED);
-					}
+					Format(display, sizeof(display), "Apples boost [8](%i)", g_iPerk_apples_boost3);
+					if (tConomy_getCurrency(client) >= g_iPerk_apples_boost3 && jobs_getLevel(client) >= 8)
+						AddMenuItem(nextMenu, "apples_boost3", display);
+					else
+						AddMenuItem(nextMenu, "apples_boost3", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Apples Boost3 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
+				
 				
 				// Apples Boost 4
 				if (!hasPerk(client, "Apples Boost4")) {
-					if (jobs_getLevel(client) >= 10) {
-						Format(display, sizeof(display), "Apples boost [10](%i)", g_iPerk_apples_boost4);
-						if (tConomy_getCurrency(client) >= g_iPerk_apples_boost4)
-							AddMenuItem(nextMenu, "apples_boost4", display);
-						else
-							AddMenuItem(nextMenu, "apples_boost4", display, ITEMDRAW_DISABLED);
-					} else {
-						AddMenuItem(nextMenu, "x", "Apples Boost4 ^~Owned~^", ITEMDRAW_DISABLED);
-					}
+					Format(display, sizeof(display), "Apples boost [10](%i)", g_iPerk_apples_boost4);
+					if (tConomy_getCurrency(client) >= g_iPerk_apples_boost4 && jobs_getLevel(client) >= 10)
+						AddMenuItem(nextMenu, "apples_boost4", display);
+					else
+						AddMenuItem(nextMenu, "apples_boost4", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Apples Boost4 | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
+				
 			} else {
 				AddMenuItem(nextMenu, "x", "- You are not a Apple Harvester -", ITEMDRAW_DISABLED);
 			}
 		} else if (StrEqual(cValue, "drugs")) {
+			SetMenuTitle(nextMenu, "> Drug Harvester Perks <");
 			AddMenuItem(nextMenu, "x", "- There are no Perks for Drug Harvester -", ITEMDRAW_DISABLED);
 		}
 		DisplayMenu(nextMenu, client, 60);

@@ -17,6 +17,8 @@ int g_iCrimeForKill;
 Handle g_hCrimeForDamage;
 float g_fCrimeForDamage;
 
+int g_iSprite;
+
 public Plugin myinfo = 
 {
 	name = "Crime Handler for T-RP", 
@@ -43,6 +45,10 @@ public void OnPluginStart() {
 public void OnConfigsExecuted() {
 	g_iCrimeForKill = GetConVarInt(g_hCrimeForKill);
 	g_fCrimeForDamage = GetConVarFloat(g_hCrimeForDamage);
+}
+
+public void OnMapStart() {
+	g_iSprite = PrecacheModel("materials/sprites/laser.vmt");
 }
 
 public void onPlayerHurt(Handle event, const char[] name, bool dontBroadcast) {
@@ -92,19 +98,19 @@ public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 		return;
 	}
 	
-
+	
 	bool witnessed = false;
-	for (int i = 1; i < MAXPLAYERS; i++){
-		if(!isValidClient(i))
+	for (int i = 1; i < MAXPLAYERS; i++) {
+		if (!isValidClient(i))
 			continue;
-		if(i == client || i == victim)
+		if (i == client || i == victim)
 			continue;
-		if(isWitness(i, client)){
+		if (isWitness(i, client)) {
 			PrintToChat(i, "[-T-] You have witnessed %N killing %N - Auto Reported[BETA only]", client, victim);
 			witnessed = true;
 		}
 	}
-	if(witnessed)
+	if (witnessed)
 		tCrime_addCrime(client, g_iCrimeForKill);
 }
 
@@ -112,18 +118,18 @@ stock bool isValidClient(int client) {
 	return (1 <= client <= MaxClients && IsClientInGame(client));
 }
 
-public bool isWitness(int client, int target){
+public bool isWitness(int client, int target) {
 	// Witness Position and Angles
 	float playerPos[3];
 	float playerAngles[3];
-	GetClientAbsOrigin(client, playerPos);
+	GetClientEyePosition(client, playerPos);
 	GetClientAbsAngles(client, playerAngles);
 	
 	
 	// Killer Position and Angles
 	float targetPos[3];
 	float targetAngles[3];
-	GetClientAbsOrigin(target, targetPos);
+	GetClientEyePosition(target, targetPos);
 	GetClientAbsAngles(target, targetAngles);
 	
 	// Vector between Witness and Killer
@@ -135,33 +141,50 @@ public bool isWitness(int client, int target){
 	GetVectorAngles(vectorBetweenPlayers, beamAngles);
 	
 	// Trace Ray from Witness with the Angles between Witness and Killer
-	Handle trace = TR_TraceRayFilterEx(playerPos, beamAngles, MASK_SHOT, RayType_Infinite, TraceEntityFilterPlayer);
+	Handle trace = TR_TraceRayFilterEx(targetPos, beamAngles, MASK_VISIBLE, RayType_Infinite, TraceRayNoPlayers, client);
 	
 	// Check if there is something between Killer and Witness
-	if (TR_DidHit(trace)){
+	if (TR_DidHit(trace)) {
 		// Vector of the Hit Vector if something is between them
 		float hOrigin[3];
 		float beam2Vector[3];
 		TR_GetEndPosition(hOrigin, trace);
 		MakeVectorFromPoints(targetPos, hOrigin, beam2Vector);
 		CloseHandle(trace);
-		
 		// Check if the Vector hit after the Killer or before
 		// before? -> Couldn't have witnessed crime
 		// after? -> Could have wtinessed crime
-		if(GetVectorLength(vectorBetweenPlayers, true) < GetVectorLength(beam2Vector, true))
+		/*int color[4];
+		color[0] = 255;
+		color[1] = 0;
+		color[2] = 0;
+		color[3] = 255;
+		TE_SetupBeamPoints(targetPos, hOrigin, g_iSprite, 0, 0, 0, 5.0, 10.0, 10.0, 1, 0.0, color, 0);
+		TE_SendToAll();
+		color[0] = 0;
+		color[1] = 255;
+		targetPos[2] += 10;
+		playerPos[2] += 10;
+		TE_SetupBeamPoints(targetPos, playerPos, g_iSprite, 0, 0, 0, 5.0, 10.0, 10.0, 1, 0.0, color, 0);
+		TE_SendToAll();*/
+		if (GetVectorLength(vectorBetweenPlayers, true) < GetVectorLength(beam2Vector, true)) {
 			// after
+			//PrintToChatAll("Did hit (after) %.2f --- %.2f", GetVectorLength(vectorBetweenPlayers, true), GetVectorLength(beam2Vector, true));
 			return true;
-		else
+		} else {
 			// before
+			//PrintToChatAll("Did hit (before) %.2f --- %.2f", GetVectorLength(vectorBetweenPlayers, true), GetVectorLength(beam2Vector, true));
 			return false;
+		}
 	}
-	
+	PrintToChatAll("Did not hit");
 	CloseHandle(trace);
 	// Didn't hit at all - Distance is clear between both - could have witnessed
 	return true;
 }
 
-public bool TraceEntityFilterPlayer(int entity, int contentsMask) {
-	return (entity > GetMaxClients());
-}
+public bool TraceRayNoPlayers(int entity, int mask, any data) {
+	if (entity == data || (entity >= 1 && entity <= MaxClients))
+		return false;
+	return true;
+} 

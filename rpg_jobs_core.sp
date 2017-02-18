@@ -71,6 +71,8 @@ public void OnPluginStart()
 	char createTableQuery[4096];
 	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS `t_rpg_jobs` ( `Id` BIGINT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP on update CURRENT_TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `playername` VARCHAR(36) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `jobname` VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `level` INT NOT NULL , `experience` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , `special_flags` VARCHAR(64) NOT NULL , PRIMARY KEY (`Id`), UNIQUE (`playerid`, `jobname`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
+	
+	RegAdminCmd("sm_givexp", cmdGiveXp, ADMFLAG_ROOT, "Gives XP for the currently Active Job");
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
@@ -492,7 +494,7 @@ public void acceptJob(int client, char jobname[128]) {
 	SQL_EscapeString(g_DB, playername, clean_playername, sizeof(clean_playername));
 	
 	char acceptJobQuery[1024];
-	Format(acceptJobQuery, sizeof(acceptJobQuery), "INSERT INTO `t_rpg_jobs` (`Id`, `timestamp`, `playerid`, `playername`, `jobname`, `level`, `experience`, `flags`, `special_flags`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '1', '0', '', '');", playerid, clean_playername, jobname);
+	Format(acceptJobQuery, sizeof(acceptJobQuery), "INSERT IGNORE INTO `t_rpg_jobs` (`Id`, `timestamp`, `playerid`, `playername`, `jobname`, `level`, `experience`, `flags`, `special_flags`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '1', '0', '', '');", playerid, clean_playername, jobname);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, acceptJobQuery);
 	
 	Format(acceptJobQuery, sizeof(acceptJobQuery), "UPDATE t_rpg_jobs SET flags = '' WHERE playerid = '%s' AND jobname = '%s';", playerid, jobname);
@@ -660,4 +662,42 @@ stock bool isValidClient(int client) {
 	return true;
 }
 
-
+public Action cmdGiveXp(int client, int args) {
+	if (args < 2) {
+		ReplyToCommand(client, "[-T-] Usage: sm_givexp <target> <amount>");
+		return Plugin_Handled;
+	}
+	
+	char tempExperienceString[64];
+	GetCmdArg(2, tempExperienceString, sizeof(tempExperienceString));
+	
+	int tempexperience = StringToInt(tempExperienceString);
+	if (tempexperience < -100000 || tempexperience > 100000){
+		ReplyToCommand(client, "Invalid Amount | < -100000 || > 100000");
+		return Plugin_Handled;
+	}
+	
+	char pattern[MAX_NAME_LENGTH + 8];
+	char buffer[MAX_NAME_LENGTH + 8];
+	GetCmdArg(1, pattern, sizeof(pattern));
+	int targets[64];
+	bool ml = false;
+	
+	int count = ProcessTargetString(pattern, client, targets, sizeof(targets), COMMAND_FILTER_ALIVE, buffer, sizeof(buffer), ml);
+	
+	if (count <= 0)
+		ReplyToCommand(client, "Invalid or Bad Target");
+	else {
+		for (int i = 0; i < count; i++) {
+			int target = targets[i];
+			char job[128];
+			strcopy(job, sizeof(job), g_ePlayerJob[target][pjJobname]);
+			if (tempexperience >= 0)
+				increaseExperience(target, tempexperience, job);
+			else
+				decreaseExperience(target, tempexperience, job);
+		}
+	}
+	
+	return Plugin_Handled;
+} 

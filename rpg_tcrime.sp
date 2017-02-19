@@ -38,6 +38,11 @@ public void OnPluginStart()
 	char CreateCrimeTableQuery[512];
 	Format(CreateCrimeTableQuery, sizeof(CreateCrimeTableQuery), "CREATE TABLE IF NOT EXISTS `t_rpg_tcrime` ( `Id` BIGINT NULL DEFAULT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP on update CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playername` VARCHAR(40) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `playerid` VARCHAR(20) NOT NULL , `crime` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , PRIMARY KEY (`Id`, `playerid`), UNIQUE KEY `playerid` (`playerid`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, CreateCrimeTableQuery);
+	
+	char createTableQuery2[4096];
+	Format(createTableQuery2, sizeof(createTableQuery2), "CREATE TABLE IF NOT EXISTS `t_rpg_tcrime_log` ( `Id` INT NULL DEFAULT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `amount` INT NOT NULL, PRIMARY KEY (`Id`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery2);
+	
 	RegAdminCmd("sm_resetCrime", cmdResetCrime, ADMFLAG_ROOT, "resets the crime");
 }
 
@@ -248,6 +253,9 @@ public void increaseCrime(int client, int amount) {
 	char updateCrimeQuery[512];
 	Format(updateCrimeQuery, sizeof(updateCrimeQuery), "UPDATE t_rpg_tcrime SET crime = %i WHERE playerid = '%s'", g_ePlayerCrime[client][cCrime], playerid);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateCrimeQuery);
+	
+	Format(updateCrimeQuery, sizeof(updateCrimeQuery), "INSERT INTO `t_rpg_tcrime_log` (`Id`, `timestamp`, `playerid`, `amount`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%i');", playerid, amount);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateCrimeQuery);
 }
 
 public void decreaseCrime(int client, int amount) {
@@ -259,6 +267,11 @@ public void decreaseCrime(int client, int amount) {
 	char updateCrimeQuery[512];
 	Format(updateCrimeQuery, sizeof(updateCrimeQuery), "UPDATE t_rpg_tcrime SET crime = %i WHERE playerid = '%s'", g_ePlayerCrime[client][cCrime], playerid);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateCrimeQuery);
+	
+	if(amount > 1){
+		Format(updateCrimeQuery, sizeof(updateCrimeQuery), "INSERT INTO `t_rpg_tcrime_log` (`Id`, `timestamp`, `playerid`, `amount`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%i');", playerid, -amount);
+		SQL_TQuery(g_DB, SQLErrorCheckCallback, updateCrimeQuery);
+	}
 }
 
 public void setCrime(int client, int amount) {

@@ -1079,6 +1079,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					AddMenuItem(m, "search", "Search Inventory");
 					AddMenuItem(m, "licenses", "Lookup Licenses");
 					AddMenuItem(m, "pardon", "Pardon Player");
+					AddMenuItem(m, "punish", "Punish Player");
 					DisplayMenu(m, client, 60);
 				}
 			}
@@ -1098,6 +1099,37 @@ public int searchMenuHandler(Handle menu, MenuAction action, int client, int ite
 			inventory_showInventoryOfClientToOtherClientByCategory(g_iOfficerTarget[client], client, "License");
 		} else if (StrEqual(cValue, "pardon")) {
 			tCrime_setCrime(g_iOfficerTarget[client], 0);
+		} else if (StrEqual(cValue, "punish")) {
+			openPunishMenu(client, g_iOfficerTarget[client]);
+		}
+		g_iOfficerTarget[client] = -1;
+	}
+}
+
+public void openPunishMenu(int officer, int target) {
+	Menu punishMenu = CreateMenu(punishMenuHandler);
+	SetMenuTitle(punishMenu, "Add Crime to the Player");
+	AddMenuItem(punishMenu, "small", "100 : (illegal Drugs)");
+	AddMenuItem(punishMenu, "medium", "200 : (frags Players)");
+	AddMenuItem(punishMenu, "high", "300 : (no Weapon License)");
+	AddMenuItem(punishMenu, "take", "Take Weapons away");
+	DisplayMenu(punishMenu, officer, 60);
+	g_iOfficerTarget[officer] = target;
+}
+
+public int punishMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "small")) {
+			tCrime_addCrime(g_iOfficerTarget[client], 100);
+		} else if (StrEqual(cValue, "medium")) {
+			tCrime_addCrime(g_iOfficerTarget[client], 200);
+		} else if (StrEqual(cValue, "high")) {
+			tCrime_addCrime(g_iOfficerTarget[client], 300);
+		} else if (StrEqual(cValue, "take")) {
+			StripAllPlayerWeapons(g_iOfficerTarget[client]);
+			GivePlayerItem(client, "weapon_knife");
 		}
 		g_iOfficerTarget[client] = -1;
 	}
@@ -1179,11 +1211,11 @@ public void OnMapStart()
 	PrecacheDecalAnyDownload(g_sOverlayCuffsPath);
 }
 
-public Action incomeTimer(Handle Timer){
-	for (int i = 1; i < MAXPLAYERS; i++){
-		if(!isValidClient(i))
+public Action incomeTimer(Handle Timer) {
+	for (int i = 1; i < MAXPLAYERS; i++) {
+		if (!isValidClient(i))
 			continue;
-		if(jobs_isActiveJob(i, "Police"))
+		if (jobs_isActiveJob(i, "Police"))
 			tConomy_addBankCurrency(i, jobs_getLevel(i) * 10 + 10, "Police Salary");
 	}
 }
@@ -1221,15 +1253,15 @@ public Action CuffsEm(int client, int attacker)
 }
 
 
-public Action FreeEm(int client, int attacker){
+public Action FreeEm(int client, int attacker) {
 	g_bCuffed[client] = false;
 	g_iCuffed--;
-	if(!isValidClient(client))
+	if (!isValidClient(client))
 		return;
 	SetEntityMoveType(client, MOVETYPE_WALK);
 	SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 1.0);
 	SetEntityRenderColor(client, 255, 255, 255, 255);
-
+	
 	CreateTimer(0.0, DeleteOverlay, client);
 	if (g_bSounds)StopSoundAny(client, SNDCHAN_AUTO, g_sSoundUnLockCuffsPath);
 	if ((attacker != 0) && (attacker != -1) && (g_iCuffed == 0) && (g_iPlayerHandCuffs[attacker] < 1))SetPlayerWeaponAmmo(attacker, Client_GetActiveWeapon(attacker), _, 0);

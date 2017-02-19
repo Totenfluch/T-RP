@@ -77,6 +77,9 @@ public void OnPluginStart() {
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
 	
+	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_inventory_log ( `Id` BIGINT NOT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `item` VARCHAR(64) NOT NULL , `category` VARCHAR(64) NOT NULL , `category2` VARCHAR(64) NOT NULL , `reason` VARCHAR(128) NOT NULL , `type` VARCHAR(20) NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB;");
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
+	
 	RegConsoleCmd("sm_sinv", cmdSInvCallback, "Inventory by category");
 	
 	if (g_aHandledItems == INVALID_HANDLE) {
@@ -413,6 +416,10 @@ public bool givePlayerItem(int client, char itemname[128], int weight, char flag
 	char addItemQuery[512];
 	Format(addItemQuery, sizeof(addItemQuery), "INSERT INTO `t_rpg_items` (`Id`, `timestamp`, `playerid`, `playername`, `itemname`, `itemid`, `weight`, `flags`, `category`, `category2`, `rarity`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%i', '%s', '%s', '%s', '%i');", playerid, clean_playername, itemname, itemid, weight, flags, category, category2, rarity);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, addItemQuery);
+	
+	Format(addItemQuery, sizeof(addItemQuery), "INSERT INTO `t_rpg_inventory_log` (`Id`, `timestamp`, `playerid`, `item`, `category`, `category2`, `reason`, `type`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s');", playerid, itemname, category, category2, reason, "GIVEN");
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, addItemQuery);
+	
 	char strict_playername[64];
 	strcopy(strict_playername, sizeof(strict_playername), playername);
 	CPrintToChat(client, "{lightgreen}You have recieved: {grey2}%s {blue}({grey2}%s{blue})", itemname, reason);
@@ -464,6 +471,9 @@ public bool takePlayerItem(int client, char itemname[128], int amount, char reas
 	
 	char removeItemQuery[1024];
 	Format(removeItemQuery, sizeof(removeItemQuery), "DELETE FROM t_rpg_items WHERE playerid = '%s' AND itemname = '%s' LIMIT %i;", playerid, itemname, amount);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, removeItemQuery);
+	
+	Format(removeItemQuery, sizeof(removeItemQuery), "INSERT INTO `t_rpg_inventory_log` (`Id`, `timestamp`, `playerid`, `item`, `category`, `category2`, `reason`, `type`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s');", playerid, itemname, "", "", reason, "TAKEN");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, removeItemQuery);
 	
 	return takeFromLocalInventory(client, itemname, amount);

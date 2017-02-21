@@ -14,6 +14,7 @@
 #include <smlib>
 #include <rpg_inventory_core>
 #include <rpg_jail>
+#include <rpg_perks>
 
 #pragma newdecls required
 
@@ -420,8 +421,9 @@ public void harvestPlant(int client, int ent, int plantId, int state) {
 	
 	int jobLevel = jobs_getLevel(client);
 	int diff;
-	if ((100 - jobLevel * 5) >= 10)
-		diff = 100 - jobLevel * 5;
+	int seedPerk = (perks_hasPerk(client, "Drug Seed Boost") ? 5 : 0);
+	if ((100 - jobLevel * 5 + seedPerk) >= 10)
+		diff = 100 - jobLevel * 5 + seedPerk;
 	else
 		diff = 10;
 	if (GetRandomInt(0, diff) <= 5) {

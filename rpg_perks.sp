@@ -103,6 +103,10 @@ int g_iGardener_xp_boost3;
 Handle g_hGardener_xp_boost4;
 int g_iGardener_xp_boost4;
 
+/* DRUG HARVESTER */
+Handle g_hDrug_seed_boost;
+int g_iDrug_seed_boost;
+
 public Plugin myinfo = 
 {
 	name = "Perks for T-RP", 
@@ -153,6 +157,9 @@ public void OnPluginStart() {
 	g_hGardener_xp_boost3 = AutoExecConfig_CreateConVar("perk_gardener_xp_boost3", "4500", "Price of the Gardener xp Boost3 Perk");
 	g_hGardener_xp_boost4 = AutoExecConfig_CreateConVar("perk_gardener_xp_boost4", "7500", "Price of the Gardener xp Boost4 Perk");
 	
+	/* DRUG HARVESTER */
+	g_hDrug_seed_boost = AutoExecConfig_CreateConVar("perk_drug_seed_boost", "3000", "Price of the Drug Seed Boost");
+	
 	AutoExecConfig_CleanFile();
 	AutoExecConfig_ExecuteFile();
 	
@@ -200,6 +207,8 @@ public void OnConfigsExecuted() {
 	g_iGardener_xp_boost2 = GetConVarInt(g_hGardener_xp_boost2);
 	g_iGardener_xp_boost3 = GetConVarInt(g_hGardener_xp_boost3);
 	g_iGardener_xp_boost4 = GetConVarInt(g_hGardener_xp_boost4);
+	
+	g_iDrug_seed_boost = GetConVarInt(g_hDrug_seed_boost);
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
@@ -509,7 +518,18 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 			}
 		} else if (StrEqual(cValue, "drugs")) {
 			SetMenuTitle(nextMenu, "> Drug Harvester Perks <");
-			AddMenuItem(nextMenu, "x", "- There are no Perks for Drug Harvester -", ITEMDRAW_DISABLED);
+			
+			// Drug Seed Boost
+			if (!hasPerk(client, "Drug Seed Boost")) {
+				Format(display, sizeof(display), "Marijuana Seed Boost [4](%i)", g_iDrug_seed_boost);
+				if (tConomy_getCurrency(client) >= g_iDrug_seed_boost && jobs_getLevel(client) >= 4)
+					AddMenuItem(nextMenu, "drug_seed_boost", display);
+				else
+					AddMenuItem(nextMenu, "drug_seed_boost", display, ITEMDRAW_DISABLED);
+			} else {
+				AddMenuItem(nextMenu, "x", "Marijuana Seed Boost | ^~Owned~^", ITEMDRAW_DISABLED);
+			}
+			
 		} else if (StrEqual(cValue, "gardener")) {
 			SetMenuTitle(nextMenu, "> Gardener Perks <");
 			
@@ -741,6 +761,12 @@ public int nextMenuHandler(Handle menu, MenuAction action, int client, int item)
 				tConomy_removeCurrency(client, g_iGardener_xp_boost4, "Bought Gardener XP 4 Upgrade");
 				addPerk(client, "Gardener XP Boost4");
 			}
+		} else if (StrEqual(cValue, "drug_seed_boost")) {
+			if (tConomy_getCurrency(client) >= g_iDrug_seed_boost) {
+				tConomy_removeCurrency(client, g_iDrug_seed_boost, "Bought Drug Seed Boost");
+				addPerk(client, "Drug Seed Boost");
+			}
 		}
+
 	}
 } 

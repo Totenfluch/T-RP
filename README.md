@@ -31,6 +31,7 @@ Usage:
       - sm_criminals
       - sm_jailcells
       - sm_jstats
+      - Zone name: JailExit (Escape from Jail)
   - Police Whitelist
       - sm_tpolice
       - sm_addpolice

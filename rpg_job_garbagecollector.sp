@@ -191,7 +191,8 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 }
 
 public void pickupGarbage(int client, int ent, int garbageId) {
-	AcceptEntityInput(ent, "kill");
+	if(IsValidEntity(ent))
+		AcceptEntityInput(ent, "kill");
 	PushArrayCell(randomNumbers, garbageId);
 	g_eGarbageSpawnPoints[garbageId][gIsActive] = false;
 	inventory_givePlayerItem(client, "Garbage", 10, "", "Junk", "Garbage Collector", 1, "Collected");

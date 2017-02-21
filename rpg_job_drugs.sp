@@ -436,7 +436,8 @@ public void deletePlant(int ent, int plantId) {
 	Format(deletePlantsQuery, sizeof(deletePlantsQuery), "DELETE FROM t_rpg_drugs WHERE flags = '%s';", g_ePlayerPlants[plantId][pFlags]);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, deletePlantsQuery);
 	
-	AcceptEntityInput(ent, "kill");
+	if(IsValidEntity(ent))
+		AcceptEntityInput(ent, "kill");
 	
 	int owner;
 	char playerid[20];

@@ -1328,7 +1328,8 @@ stock void StripZeus(int client)
 			GetEntityClassname(weapon, sWeapon, sizeof(sWeapon));
 			if (StrEqual(sWeapon, "weapon_taser")) {
 				SDKHooks_DropWeapon(client, weapon, NULL_VECTOR, NULL_VECTOR);
-				AcceptEntityInput(weapon, "Kill");
+				if(IsValidEdict(weapon))
+					AcceptEntityInput(weapon, "Kill");
 			}
 		}
 	}

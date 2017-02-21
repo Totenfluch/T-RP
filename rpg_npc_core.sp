@@ -210,8 +210,8 @@ public int editMenuHandler(Handle menu, MenuAction action, int client, int item)
 			char removeNpcQuery[512];
 			Format(removeNpcQuery, sizeof(removeNpcQuery), "DELETE FROM t_rpg_npcs WHERE uniqueId = '%s'", npcUniqueId);
 			SQL_TQuery(g_DB, SQLErrorCheckCallback, removeNpcQuery);
-			
-			AcceptEntityInput(g_eNpcEdit[client][nNpcId], "kill");
+			if(IsValidEntity(g_eNpcEdit[client][nNpcId]))
+				AcceptEntityInput(g_eNpcEdit[client][nNpcId], "kill");
 		} else if (StrEqual(cValue, "name")) {
 			g_eNpcEdit[client][nWaitingForName] = true;
 			PrintToChat(client, "Enter the new Name OR 'abort' to cancel");
@@ -414,8 +414,12 @@ public int editBasePropertyMenuHandler(Handle menu, MenuAction action, int clien
 
 public Action cmdSpawnNpc(int client, int args) {
 	int npc = CreateEntityByName("prop_dynamic");
-	if (npc != -1)
-		g_iNpcList[g_iNpcId][gRefId] = EntIndexToEntRef(npc);
+	if (npc == -1){
+		PrintToChat(client, "[-T-] Can not spawn Npc - report this?");
+		return Plugin_Handled;
+	}
+	
+	g_iNpcList[g_iNpcId][gRefId] = EntIndexToEntRef(npc);
 	float pos[3];
 	GetClientAbsOrigin(client, pos);
 	float angles[3];
@@ -643,10 +647,10 @@ public void CreateNpc(char uniqueId[128], char name[64], char model[256], char i
 	PrecacheModel(model, true);
 	
 	int npc = CreateEntityByName("prop_dynamic");
-	if (npc != -1)
-		g_iNpcList[g_iNpcId][gRefId] = EntIndexToEntRef(npc);
-	else
+	if (npc == -1)
 		return;
+		
+	g_iNpcList[g_iNpcId][gRefId] = EntIndexToEntRef(npc);
 	
 	DispatchKeyValue(npc, "disablebonefollowers", "1");
 	if (!DispatchKeyValue(npc, "solid", "2"))PrintToChatAll("Box Failed");

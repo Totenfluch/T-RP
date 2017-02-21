@@ -238,25 +238,26 @@ public bool loadFurniture() {
 		kv.GetSectionName(buffer, sizeof(buffer));
 		strcopy(LoadedFurnitureItems[g_iLoadedFurniture][lfName], 64, buffer);
 		
-		char tempVars[64];
-		kv.GetString("model", tempVars, 64, "models/props/coop_cementplant/coop_military_crate/coop_military_crate.mdl");
+		char tempVars[128];
+		kv.GetString("model", tempVars, 128, "models/props/coop_cementplant/coop_military_crate/coop_military_crate.mdl");
 		strcopy(LoadedFurnitureItems[g_iLoadedFurniture][lfModelPath], 128, tempVars);
 		PrecacheModel(tempVars, true);
 		
-		kv.GetString("size", tempVars, 64, "1.0");
-		LoadedFurnitureItems[g_iLoadedFurniture][lfSize] = StringToFloat(tempVars);
+		char tempVars2[64];
+		kv.GetString("size", tempVars2, 64, "1.0");
+		LoadedFurnitureItems[g_iLoadedFurniture][lfSize] = StringToFloat(tempVars2);
 		
-		kv.GetString("price", tempVars, 64, "1337");
-		LoadedFurnitureItems[g_iLoadedFurniture][lfPrice] = StringToInt(tempVars);
+		kv.GetString("price", tempVars2, 64, "1337");
+		LoadedFurnitureItems[g_iLoadedFurniture][lfPrice] = StringToInt(tempVars2);
 		
-		kv.GetString("flags", tempVars, 64, "");
-		strcopy(LoadedFurnitureItems[g_iLoadedFurniture][lfFlags], 8, tempVars);
+		kv.GetString("flags", tempVars2, 64, "");
+		strcopy(LoadedFurnitureItems[g_iLoadedFurniture][lfFlags], 8, tempVars2);
 		
-		kv.GetString("buff", tempVars, 64, "");
-		strcopy(LoadedFurnitureItems[g_iLoadedFurniture][lfBuff], 64, tempVars);
+		kv.GetString("buff", tempVars2, 64, "");
+		strcopy(LoadedFurnitureItems[g_iLoadedFurniture][lfBuff], 64, tempVars2);
 		
-		kv.GetString("durability", tempVars, 64, "1337");
-		LoadedFurnitureItems[g_iLoadedFurniture][lfBaseDurability] = StringToInt(tempVars);
+		kv.GetString("durability", tempVars2, 64, "1337");
+		LoadedFurnitureItems[g_iLoadedFurniture][lfBaseDurability] = StringToInt(tempVars2);
 		
 		
 		LoadedFurnitureItems[g_iLoadedFurniture][lfActive] = true;
@@ -576,7 +577,8 @@ public int buildMenuHandler(Handle menu, MenuAction action, int client, int item
 			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
 			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
 			
-			AcceptEntityInput(id, "kill");
+			if(IsValidEntity(id))
+				AcceptEntityInput(id, "kill");
 			inventory_givePlayerItem(client, globalName, 100, "", "Furniture", "Apartment Stuff", 1, "Stashed Furniture");
 		} else if (StrEqual(cValue, "delete")) {
 			char mapName[128];
@@ -586,7 +588,8 @@ public int buildMenuHandler(Handle menu, MenuAction action, int client, int item
 			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
 			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
 			
-			AcceptEntityInput(id, "kill");
+			if(IsValidEntity(id))
+				AcceptEntityInput(id, "kill");
 			PrintToChat(client, "[-T-] Deleted %s", globalName);
 		}
 	}
@@ -658,7 +661,8 @@ public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int
 			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
 			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
 			
-			AcceptEntityInput(id, "kill");
+			if(IsValidEntity(id))
+				AcceptEntityInput(id, "kill");
 			inventory_givePlayerItem(client, globalName, 100, "", "Furniture", "Apartment Stuff", 1, "Stashed Furniture");
 		} else if (StrEqual(cValue, "delete")) {
 			char mapName[128];
@@ -668,7 +672,8 @@ public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int
 			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
 			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
 			
-			AcceptEntityInput(id, "kill");
+			if(IsValidEntity(id))
+				AcceptEntityInput(id, "kill");
 			PrintToChat(client, "[-T-] Deleted %s", globalName);
 		}
 	}

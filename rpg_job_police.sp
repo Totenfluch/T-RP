@@ -207,6 +207,7 @@ public void OnPluginStart() {
 	HookEvent("player_death", OnPlayerTeamDeath);
 	HookEvent("player_team", OnPlayerTeamDeath);
 	HookEvent("weapon_fire", Event_WeaponFire);
+	HookEvent("player_spawn", onPlayerSpawn);
 	
 	AutoExecConfig_SetFile("rpg_job_police");
 	AutoExecConfig_SetCreateFile(true);
@@ -370,7 +371,6 @@ public void showTopPanelToClient(int client) {
 			DrawPanelItem(wPanel, "SMGs");
 			DrawPanelItem(wPanel, "Shotguns");
 			DrawPanelItem(wPanel, "Rifles");
-			DrawPanelItem(wPanel, "Nades & Armour");
 			DrawPanelItem(wPanel, "Special Weapons");
 		} else {
 			DrawPanelItem(wPanel, "SMGs", ITEMDRAW_DISABLED);
@@ -1106,6 +1106,7 @@ public int searchMenuHandler(Handle menu, MenuAction action, int client, int ite
 	}
 }
 
+int overtake[MAXPLAYERS + 1];
 public void openPunishMenu(int officer, int target) {
 	Menu punishMenu = CreateMenu(punishMenuHandler);
 	SetMenuTitle(punishMenu, "Add Crime to the Player");
@@ -1114,23 +1115,26 @@ public void openPunishMenu(int officer, int target) {
 	AddMenuItem(punishMenu, "high", "300 : (no Weapon License)");
 	AddMenuItem(punishMenu, "take", "Take Weapons away");
 	DisplayMenu(punishMenu, officer, 60);
-	g_iOfficerTarget[officer] = target;
+	overtake[officer] = target;
+	PrintToChat(officer, "%i %i %i", g_iOfficerTarget[officer], target, overtake[officer]);
 }
 
 public int punishMenuHandler(Handle menu, MenuAction action, int client, int item) {
 	if (action == MenuAction_Select) {
 		char cValue[32];
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		PrintToChat(client, "o1: %i", overtake[client]);
 		if (StrEqual(cValue, "small")) {
-			tCrime_addCrime(g_iOfficerTarget[client], 100);
+			tCrime_addCrime(overtake[client], 100);
 		} else if (StrEqual(cValue, "medium")) {
-			tCrime_addCrime(g_iOfficerTarget[client], 200);
+			tCrime_addCrime(overtake[client], 200);
 		} else if (StrEqual(cValue, "high")) {
-			tCrime_addCrime(g_iOfficerTarget[client], 300);
+			tCrime_addCrime(overtake[client], 300);
 		} else if (StrEqual(cValue, "take")) {
-			StripAllPlayerWeapons(g_iOfficerTarget[client]);
-			GivePlayerItem(client, "weapon_knife");
+			StripAllPlayerWeapons(overtake[client]);
+			GivePlayerItem(overtake[client], "weapon_knife");
 		}
+		overtake[client] = -1;
 		g_iOfficerTarget[client] = -1;
 	}
 }
@@ -1142,9 +1146,9 @@ public void putInJail(int initiator, int target) {
 	jail_putInJail(initiator, target);
 }
 
-public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3], int damagecustom)
-{
-	if (!isValidClient(victim) || attacker == victim || !isValidClient(attacker))return Plugin_Continue;
+public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3], int damagecustom) {
+	if (!isValidClient(victim) || attacker == victim || !isValidClient(attacker))
+		return Plugin_Continue;
 	
 	char sWeapon[32];
 	if (IsValidEntity(weapon))GetEntityClassname(weapon, sWeapon, sizeof(sWeapon));
@@ -1165,22 +1169,24 @@ public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &dam
 		FreeEm(victim, attacker);
 	else
 		if (!jobs_isActiveJob(victim, "Police"))
-		CuffsEm(victim, attacker);
-	
-	
-	
+			CuffsEm(victim, attacker);
+			
 	return Plugin_Handled;
 }
 
 
 public void OnClientDisconnect(int client) {
-	for (int i = 0; i < MAXPLAYERS; i++)
-	if (g_iCuffedBy[i] != -1)
-		if (!isValidClient(g_iCuffedBy[i])) {
-		g_iCuffedBy[i] = -1;
-		FreeEm(i, 0);
+	for (int i = 0; i < MAXPLAYERS; i++) {
+		if (g_iCuffedBy[i] != -1)
+			if (!isValidClient(g_iCuffedBy[i])) {
+			g_iCuffedBy[i] = -1;
+			FreeEm(i, 0);
+		}
 	}
 	if (g_bCuffed[client])g_iCuffed--;
+	
+	if (isValidClient(client))
+		SDKUnhook(client, SDKHook_OnTakeDamage, OnTakedamage);
 }
 
 public void OnClientPostAdminCheck(int client) {
@@ -1195,7 +1201,8 @@ public void OnMapEnd()
 	for (int i = 1; i < MAXPLAYERS; i++) {
 		if (!isValidClient(i))
 			continue;
-		if (g_bCuffed[i])FreeEm(i, 0);
+		if (g_bCuffed[i])
+			FreeEm(i, 0);
 	}
 }
 
@@ -1220,28 +1227,30 @@ public Action incomeTimer(Handle Timer) {
 	}
 }
 
-public void OnClientPutInServer(int client)
-{
-	SDKHook(client, SDKHook_OnTakeDamage, OnTakedamage);
+public void OnClientPutInServer(int client) {
+	if (isValidClient(client))
+		SDKHook(client, SDKHook_OnTakeDamage, OnTakedamage);
 }
 
 public Action CuffsEm(int client, int attacker)
 {
-	if (g_iPlayerHandCuffs[attacker] > 0)
-	{
+	if (g_iPlayerHandCuffs[attacker] > 0){
 		SetEntityMoveType(client, MOVETYPE_NONE);
 		SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 0.0);
 		SetEntityRenderColor(client, 0, 190, 0, 255);
 		//StripAllPlayerWeapons(client);
 		//GivePlayerItem(client, "weapon_knife");
-		EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, 2));
+		//int slot;
+		//if((slot = GetPlayerWeaponSlot(client, 2) != -1))
+		//	EquipPlayerWeapon(client, slot);
 		g_bCuffed[client] = true;
 		ShowOverlay(client, g_sOverlayCuffsPath, 0.0);
 		g_iPlayerHandCuffs[attacker]--;
 		g_iCuffed++;
 		g_iCuffedBy[client] = attacker;
 		g_iCuffedTimeLeft[client] = MAX_CUFF_TIME;
-		if (g_bSounds)EmitSoundToAllAny(g_sSoundCuffsPath);
+		if (g_bSounds)
+			EmitSoundToAllAny(g_sSoundCuffsPath);
 		
 		//CPrintToChatAll("%t %t", "warden_tag", "warden_cuffson", attacker, client);
 		//CPrintToChat(attacker, "%t %t", "warden_tag", "warden_cuffsgot", g_iPlayerHandCuffs[attacker]);
@@ -1309,18 +1318,15 @@ public Action FreeEm(int client, int attacker) {
 	}
 }*/
 
-stock void StripZeus()
+stock void StripZeus(int client)
 {
-	LoopValidClients(client, true, false)if ((IsClientWarden(client) || (IsClientDeputy(client) && gc_bHandCuffDeputy.BoolValue)))
-	{
+	if (isValidClient(client)) {
 		char sWeapon[64];
 		FakeClientCommand(client, "use weapon_taser");
 		int weapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
-		if (weapon != -1)
-		{
+		if (weapon != -1) {
 			GetEntityClassname(weapon, sWeapon, sizeof(sWeapon));
-			if (StrEqual(sWeapon, "weapon_taser"))
-			{
+			if (StrEqual(sWeapon, "weapon_taser")) {
 				SDKHooks_DropWeapon(client, weapon, NULL_VECTOR, NULL_VECTOR);
 				AcceptEntityInput(weapon, "Kill");
 			}
@@ -1329,10 +1335,7 @@ stock void StripZeus()
 }
 
 stock bool isValidClient(int client) {
-	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
-		return false;
-	
-	return true;
+	return (1 <= client <= MaxClients && IsClientInGame(client));
 }
 
 stock void PrecacheModelAnyDownload(char[] sModel)
@@ -1360,8 +1363,7 @@ stock void PrecacheDecalAnyDownload(char[] sDecal)
 	AddFileToDownloadsTable(sBuffer);
 }
 
-stock void PrecacheSoundAnyDownload(char[] sSound)
-{
+stock void PrecacheSoundAnyDownload(char[] sSound) {
 	char sBuffer[256];
 	PrecacheSoundAny(sSound);
 	Format(sBuffer, sizeof(sBuffer), "sound/%s", sSound);
@@ -1409,31 +1411,38 @@ stock void ShowOverlay(int client, char[] path, float lifetime)
 	}
 }
 
-stock void StripAllPlayerWeapons(int client)
-{
+stock void StripAllPlayerWeapons(int client) {
+	if (!isValidClient(client))
+		return;
 	int weapon;
 	for (int i = 0; i <= 4; i++)
 	{
-		if ((weapon = GetPlayerWeaponSlot(client, i)) != -1)
-		{
+		if ((weapon = GetPlayerWeaponSlot(client, i)) != -1) {
 			SDKHooks_DropWeapon(client, weapon, NULL_VECTOR, NULL_VECTOR);
 			AcceptEntityInput(weapon, "Kill");
 		}
 	}
-	if ((weapon = GetPlayerWeaponSlot(client, CS_SLOT_KNIFE)) != -1) //strip knife slot 2 times for taser
-	{
+	if ((weapon = GetPlayerWeaponSlot(client, CS_SLOT_KNIFE)) != -1) {  //strip knife slot 2 times for taser{
 		SDKHooks_DropWeapon(client, weapon, NULL_VECTOR, NULL_VECTOR);
 		AcceptEntityInput(weapon, "Kill");
-	}
-}
+	} }
+
 
 stock bool CheckVipFlag(int client, const char[] flagsNeed)
 {
-	if ((GetUserFlagBits(client) & ReadFlagString(flagsNeed) == ReadFlagString(flagsNeed)) || (GetUserFlagBits(client) & ADMFLAG_ROOT))
-	{
+	if ((GetUserFlagBits(client) & ReadFlagString(flagsNeed) == ReadFlagString(flagsNeed)) || (GetUserFlagBits(client) & ADMFLAG_ROOT)) {
 		return true;
 	}
 	return false;
+}
+
+public Action onPlayerSpawn(Handle event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	if(!isValidClient(client))
+		return;
+	if(!IsPlayerAlive(client))
+		return;
+	SetEntityRenderColor(client, 255, 255, 255, 255);
 }
 
 public Action refreshTimer(Handle Timer) {

@@ -106,9 +106,9 @@ public void stashWeapon(int client, bool useOverride, char[] weapon) {
 	}
 	if (StrEqual(item, ""))
 		return;
-		
+	
 	int slot = getSlot(item);
-
+	
 	if (slot != -1) {
 		int weaponIndex = GetPlayerWeaponSlot(client, slot);
 		if (weaponIndex != -1) {
@@ -124,7 +124,7 @@ public void stashWeapon(int client, bool useOverride, char[] weapon) {
 		EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, 2));
 }
 
-public void stashWeaponSlot(int client, int slot){
+public void stashWeaponSlot(int client, int slot) {
 	if (slot != -1) {
 		int weaponIndex = GetPlayerWeaponSlot(client, slot);
 		if (weaponIndex != -1) {

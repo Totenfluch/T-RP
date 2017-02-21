@@ -103,7 +103,7 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 		return;
 	if (StrContains(info, "Mining", false) == -1)
 		return;
-	if(g_iPlayerZoneId[client] == -1)
+	if (g_iPlayerZoneId[client] == -1)
 		return;
 	
 	if (++g_iCollectedLoot[client][g_iPlayerZoneId[client]] >= MAX_COLLECT)

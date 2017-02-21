@@ -268,7 +268,7 @@ public void decreaseCrime(int client, int amount) {
 	Format(updateCrimeQuery, sizeof(updateCrimeQuery), "UPDATE t_rpg_tcrime SET crime = %i WHERE playerid = '%s'", g_ePlayerCrime[client][cCrime], playerid);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateCrimeQuery);
 	
-	if(amount > 1){
+	if (amount > 1) {
 		Format(updateCrimeQuery, sizeof(updateCrimeQuery), "INSERT INTO `t_rpg_tcrime_log` (`Id`, `timestamp`, `playerid`, `amount`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%i');", playerid, -amount);
 		SQL_TQuery(g_DB, SQLErrorCheckCallback, updateCrimeQuery);
 	}

@@ -301,7 +301,7 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			int itemamount = inventory_getPlayerItemAmount(client, "Walnut");
 			if (inventory_removePlayerItems(client, "Walnut", itemamount, "Sold to Vendor (Mass Sell)"))
 				tConomy_addCurrency(client, (12 + jobs_getLevel(client)) * itemamount, "Sold Walnut to Vendor");
-		}else if (StrEqual(cValue, "sellAvocado")) {
+		} else if (StrEqual(cValue, "sellAvocado")) {
 			if (inventory_hasPlayerItem(client, "Avocado")) {
 				tConomy_addCurrency(client, 15 + jobs_getLevel(client), "Sold Avocado to Vendor");
 				inventory_removePlayerItems(client, "Avocado", 1, "Sold to Vendor");
@@ -313,7 +313,7 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 		} else if (StrEqual(cValue, "skin")) {
 			tConomy_removeCurrency(client, 250, "Bought Skin");
 			inventory_givePlayerItem(client, "Zoey", 0, "", "Skin", "Skin", 1, "Bought from Apple Harvester");
-		} 
+		}
 	}
 }
 

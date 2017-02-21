@@ -26,15 +26,16 @@ public void OnPluginStart() {
 }
 
 public void OnClientPutInServer(int client) {
-	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
+	if (isValidClient(client))
+		SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
 }
 
 public void OnClientDisconnect(int client) {
-	SDKUnhook(client, SDKHook_OnTakeDamage, OnTakeDamage);
+	if (isValidClient(client))
+		SDKUnhook(client, SDKHook_OnTakeDamage, OnTakeDamage);
 }
 
-public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &bweapon, float damageForce[3], const float damagePosition[3])
-{
+public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &bweapon, float damageForce[3], const float damagePosition[3]) {
 	if (!isValidClient(victim))
 		return Plugin_Continue;
 	

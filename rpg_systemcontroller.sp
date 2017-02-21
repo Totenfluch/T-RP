@@ -170,7 +170,7 @@ public void loadPlayer(int client) {
 }
 
 public Action delayedLoad(Handle Timer, int client) {
-	if(!IsClientConnected(client))
+	if (!IsClientConnected(client))
 		return;
 	if (!g_bIsStarted)
 		return;

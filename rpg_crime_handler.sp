@@ -36,7 +36,7 @@ public void OnPluginStart() {
 	AutoExecConfig_SetCreateFile(true);
 	
 	g_hCrimeForKill = AutoExecConfig_CreateConVar("rpg_crime_for_kill", "1000", "Crime you get for a Kill");
-	g_hCrimeForDamage = AutoExecConfig_CreateConVar("rpg_crime_for_damage", "0.25", "Damage done * Value = Crime");
+	g_hCrimeForDamage = AutoExecConfig_CreateConVar("rpg_crime_for_damage", "4.0", "Damage done * Value = Crime");
 	
 	AutoExecConfig_CleanFile();
 	AutoExecConfig_ExecuteFile();
@@ -61,19 +61,9 @@ public void onPlayerHurt(Handle event, const char[] name, bool dontBroadcast) {
 	
 	if (!isValidClient(attacker))
 		return;
-		
+	
 	char weapon[64];
 	GetClientWeapon(attacker, weapon, sizeof(weapon));
-	
-	if (jobs_isActiveJob(attacker, "Police")) {
-		if (!StrEqual(weapon, "weapon_taser"))
-			if (isValidClient(victim))
-			if (attacker != victim)
-			if (tCrime_getCrime(victim) == 0)
-			KickClient(attacker, "RDM");
-		
-		return;
-	}
 	
 	int crime = RoundToNearest(hurtdmg * g_fCrimeForDamage);
 	tCrime_addCrime(attacker, crime);
@@ -88,16 +78,6 @@ public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 	
 	if (client == victim)
 		return;
-	
-	if (jobs_isActiveJob(client, "Police")) {
-		if (isValidClient(victim)) {
-			if (client != victim)
-				if (tCrime_getCrime(victim) == 0)
-				KickClient(client, "RDM");
-		}
-		return;
-	}
-	
 	
 	bool witnessed = false;
 	for (int i = 1; i < MAXPLAYERS; i++) {

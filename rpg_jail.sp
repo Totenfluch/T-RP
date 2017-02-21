@@ -227,7 +227,7 @@ public float getDistanceToJail(int client) {
 	GetClientAbsOrigin(client, clientPos);
 	
 	float jailpos[3];
-	if(g_ePlayerData[client][ppCell_number] == -1)
+	if (g_ePlayerData[client][ppCell_number] == -1)
 		return 0.0;
 	jailpos[0] = g_eJailSpawnPoints[g_ePlayerData[client][ppCell_number]][gXPos];
 	jailpos[1] = g_eJailSpawnPoints[g_ePlayerData[client][ppCell_number]][gYPos];

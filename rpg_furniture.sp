@@ -800,7 +800,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					}
 					
 					int degrees = RoundToNearest(angles[1]);
-					degrees %  = 360;
+					degrees = degrees % 360;
 					angles[1] = float(degrees);
 					TeleportEntity(ent, NULL_VECTOR, angles, NULL_VECTOR);
 					
@@ -837,7 +837,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					}
 					
 					int degrees = RoundToNearest(angles[1]);
-					degrees %  = 360;
+					degrees = degrees % 360;
 					angles[1] = float(degrees);
 					TeleportEntity(ent, NULL_VECTOR, angles, NULL_VECTOR);
 					

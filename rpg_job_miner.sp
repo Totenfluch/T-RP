@@ -86,11 +86,11 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				char infoString[64];
 				Format(infoString, sizeof(infoString), "Mining (%i)", jobs_getLevel(client));
 				if (perks_hasPerk(client, "Mining Boost3"))
-					jobs_startProgressBar(client, 3, infoString);
+					jobs_startProgressBar(client, 30, infoString);
 				else if (perks_hasPerk(client, "Mining Boost1"))
-					jobs_startProgressBar(client, 4, infoString);
+					jobs_startProgressBar(client, 40, infoString);
 				else
-					jobs_startProgressBar(client, 5, infoString);
+					jobs_startProgressBar(client, 50, infoString);
 				setInfo(client);
 			}
 		}

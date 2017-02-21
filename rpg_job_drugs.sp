@@ -352,10 +352,10 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					GetClientAbsOrigin(client, ppos);
 					if (GetVectorDistance(ppos, pos) < 100.0) {
 						if (jobs_isActiveJob(client, "Police")) {
-							jobs_startProgressBar(client, 5, "Confiscate Plant");
+							jobs_startProgressBar(client, 50, "Confiscate Plant");
 							g_iHarvestIndex[client] = ent;
 						} else {
-							jobs_startProgressBar(client, 10, "Harvest Plant");
+							jobs_startProgressBar(client, 100, "Harvest Plant");
 							g_iHarvestIndex[client] = ent;
 						}
 					} else {

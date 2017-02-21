@@ -35,7 +35,7 @@ public void furniture_OnFurnitureInteract(int entity, int client, char name[64],
 		return;
 	
 	g_bIsHealing[client] = true;
-	jobs_startProgressBar(client, 20, "Resting (to 60hp)");
+	jobs_startProgressBar(client, 200, "Resting (to 60hp)");
 }
 
 public void OnMapStart() {

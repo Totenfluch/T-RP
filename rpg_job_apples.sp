@@ -89,7 +89,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					return;
 				char infoString[64];
 				Format(infoString, sizeof(infoString), "Apple Harvesting (%i)", jobs_getLevel(client));
-				jobs_startProgressBar(client, 1, infoString);
+				jobs_startProgressBar(client, 10, infoString);
 				setInfo(client);
 			}
 		}

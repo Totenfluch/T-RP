@@ -249,6 +249,7 @@ public void showTopMenu(int client) {
 	AddMenuItem(topMenu, "garbage", "Garbage Collector Perks");
 	AddMenuItem(topMenu, "apple", "Apple Harvester Perks");
 	AddMenuItem(topMenu, "drugs", "Drug Planter Perks");
+	AddMenuItem(topMenu, "gardener", "Gardener Perks");
 	DisplayMenu(topMenu, client, 60);
 }
 
@@ -371,7 +372,7 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 			if (jobs_isActiveJob(client, "Apple Harvester")) {
 				// Apples Boost 1
 				if (!hasPerk(client, "Apples Boost1")) {
-					Format(display, sizeof(display), "Apples boost [4](%i)", g_iPerk_apples_boost1);
+					Format(display, sizeof(display), "Apples XP Boost1 [4](%i)", g_iPerk_apples_boost1);
 					if (tConomy_getCurrency(client) >= g_iPerk_apples_boost1 && jobs_getLevel(client) >= 4)
 						AddMenuItem(nextMenu, "apples_boost1", display);
 					else
@@ -393,7 +394,7 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 				
 				// Apples Boost 2
 				if (!hasPerk(client, "Apples Boost2")) {
-					Format(display, sizeof(display), "Apples boost [6](%i)", g_iPerk_apples_boost2);
+					Format(display, sizeof(display), "Apples XP Boost2 [6](%i)", g_iPerk_apples_boost2);
 					if (tConomy_getCurrency(client) >= g_iPerk_apples_boost2 && jobs_getLevel(client) >= 6)
 						AddMenuItem(nextMenu, "apples_boost2", display);
 					else
@@ -415,7 +416,7 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 				
 				// Apples Boost 3
 				if (!hasPerk(client, "Apples Boost3")) {
-					Format(display, sizeof(display), "Apples boost [8](%i)", g_iPerk_apples_boost3);
+					Format(display, sizeof(display), "Apples XP Boost3 [8](%i)", g_iPerk_apples_boost3);
 					if (tConomy_getCurrency(client) >= g_iPerk_apples_boost3 && jobs_getLevel(client) >= 8)
 						AddMenuItem(nextMenu, "apples_boost3", display);
 					else
@@ -437,7 +438,7 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 				
 				// Apples Boost 4
 				if (!hasPerk(client, "Apples Boost4")) {
-					Format(display, sizeof(display), "Apples boost [10](%i)", g_iPerk_apples_boost4);
+					Format(display, sizeof(display), "Apples XP Boost4 [10](%i)", g_iPerk_apples_boost4);
 					if (tConomy_getCurrency(client) >= g_iPerk_apples_boost4 && jobs_getLevel(client) >= 10)
 						AddMenuItem(nextMenu, "apples_boost4", display);
 					else
@@ -463,6 +464,9 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 		} else if (StrEqual(cValue, "drugs")) {
 			SetMenuTitle(nextMenu, "> Drug Harvester Perks <");
 			AddMenuItem(nextMenu, "x", "- There are no Perks for Drug Harvester -", ITEMDRAW_DISABLED);
+		} else if (StrEqual(cValue, "gardener")) {
+			SetMenuTitle(nextMenu, "> Gardener Perks <");
+			AddMenuItem(nextMenu, "x", "- There are no Perks for Gardener -", ITEMDRAW_DISABLED);
 		}
 		DisplayMenu(nextMenu, client, 60);
 	}

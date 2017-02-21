@@ -8,6 +8,8 @@
 #include <tCrime>
 #include <smlib>
 #include <map_workshop_functions>
+#include <autoexecconfig>
+#include <devzones>
 
 #pragma newdecls required
 
@@ -27,6 +29,17 @@ int g_eJailSpawnPoints[MAX_JAILS][jailProperties];
 int g_iLoadedJail = 0;
 //int g_iActiveJail = 0;
 
+Handle g_hJailExitX;
+float g_fJailExitX;
+
+Handle g_hJailExitY;
+float g_fJailExitY;
+
+Handle g_hJailExitZ;
+float g_fJailExitZ;
+
+Handle g_hMaxDistanceToJail;
+float g_fMaxDistanceToJail;
 
 enum playerProperties {
 	ppCell_number, 
@@ -58,9 +71,29 @@ public void OnPluginStart()
 	g_DB = SQL_Connect(dbconfig, true, error, sizeof(error));
 	SQL_SetCharset(g_DB, "utf8");
 	
-	char createTableQuery[8096];
+	AutoExecConfig_SetFile("rpg_jail");
+	AutoExecConfig_SetCreateFile(true);
+	
+	g_hJailExitX = AutoExecConfig_CreateConVar("jail_ExitPositionX", "-2920.29", "X-Position where the Players exit the Jail");
+	g_hJailExitY = AutoExecConfig_CreateConVar("jail_ExitPositionX", "-276.88", "X-Position where the Players exit the Jail");
+	g_hJailExitZ = AutoExecConfig_CreateConVar("jail_ExitPositionX", "-50.79", "X-Position where the Players exit the Jail");
+	g_hMaxDistanceToJail = AutoExecConfig_CreateConVar("jail_maxDistance", "300.0", "Max Distance Player can have to jail before getting teleported back");
+	
+	AutoExecConfig_CleanFile();
+	AutoExecConfig_ExecuteFile();
+	
+	char createTableQuery[4096];
 	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_jail (`Id`BIGINT NULL AUTO_INCREMENT, `playerid`VARCHAR(20)NOT NULL, `playername`VARCHAR(64)CHARACTER SET utf8 COLLATE utf8_bin NOT NULL, `cell_number`INT NOT NULL, `times_in_jail`INT NOT NULL, `time_spent_in_jail`INT NOT NULL, `flags`VARCHAR(255)NOT NULL, PRIMARY KEY(`Id`), UNIQUE KEY `playerid` (`playerid`))ENGINE = InnoDB CHARSET = utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
+}
+
+
+public void OnConfigsExecuted() {
+	g_fJailExitX = GetConVarFloat(g_hJailExitX);
+	g_fJailExitY = GetConVarFloat(g_hJailExitY);
+	g_fJailExitZ = GetConVarFloat(g_hJailExitZ);
+	
+	g_fMaxDistanceToJail = GetConVarFloat(g_hMaxDistanceToJail);
 }
 
 public Action getJailStats(int client, int args) {
@@ -182,6 +215,16 @@ public void putInCell(int client, int cellnumber) {
 }
 
 public void free(int client) {
+	escape(client);
+	
+	float pos[3];
+	pos[0] = g_fJailExitX;
+	pos[1] = g_fJailExitY;
+	pos[2] = g_fJailExitZ;
+	TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
+}
+
+public void escape(int client) {
 	g_bIsInJail[client] = false;
 	g_ePlayerData[client][ppCell_number] = -1;
 	
@@ -191,12 +234,6 @@ public void free(int client) {
 	char freeClientQuery[512];
 	Format(freeClientQuery, sizeof(freeClientQuery), "UPDATE t_rpg_jail SET cell_number = -1 WHERE playerid = '%s';", playerid);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, freeClientQuery);
-	
-	float pos[3];
-	pos[0] = -2950.29;
-	pos[1] = -276.88;
-	pos[2] = -50.79;
-	TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
 }
 
 public void OnMapStart() {
@@ -213,7 +250,7 @@ public Action refreshTimer(Handle Timer) {
 		if (g_bIsInJail[i] && g_ePlayerData[i][ppCell_number] != -1) {
 			if (tCrime_getCrime(i) <= 0)
 				free(i);
-			if (getDistanceToJail(i) > 300.0)
+			if (getDistanceToJail(i) > g_fMaxDistanceToJail)
 				putInCell(i, g_ePlayerData[i][ppCell_number]);
 			increaseJailTime(i);
 		}
@@ -407,8 +444,13 @@ public void ShowSpawns() {
 }
 
 stock bool isValidClient(int client) {
-	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
-		return false;
-	
-	return true;
+	return (1 <= client <= MaxClients && IsClientInGame(client));
+}
+
+public int Zone_OnClientEntry(int client, char[] zone) {
+	if (StrEqual(zone, "JailExit"))
+		if (g_bIsInJail[client] && g_ePlayerData[client][ppCell_number] == -1) {
+		tCrime_addCrime(client, tCrime_getCrime(client));
+		escape(client);
+	}
 } 

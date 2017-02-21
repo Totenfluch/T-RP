@@ -436,7 +436,7 @@ public void deletePlant(int ent, int plantId) {
 	Format(deletePlantsQuery, sizeof(deletePlantsQuery), "DELETE FROM t_rpg_drugs WHERE flags = '%s';", g_ePlayerPlants[plantId][pFlags]);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, deletePlantsQuery);
 	
-	if(IsValidEntity(ent))
+	if (IsValidEntity(ent))
 		AcceptEntityInput(ent, "kill");
 	
 	int owner;
@@ -475,10 +475,7 @@ public int findLowestUnusedPlantSlot() {
 
 
 stock bool isValidClient(int client) {
-	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
-		return false;
-	
-	return true;
+	return (1 <= client <= MaxClients && IsClientInGame(client));
 }
 
 public int getActivePlantsOfPlayerAmount(int client) {

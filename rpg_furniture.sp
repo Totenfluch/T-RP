@@ -577,7 +577,7 @@ public int buildMenuHandler(Handle menu, MenuAction action, int client, int item
 			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
 			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
 			
-			if(IsValidEntity(id))
+			if (IsValidEntity(id))
 				AcceptEntityInput(id, "kill");
 			inventory_givePlayerItem(client, globalName, 100, "", "Furniture", "Apartment Stuff", 1, "Stashed Furniture");
 		} else if (StrEqual(cValue, "delete")) {
@@ -588,7 +588,7 @@ public int buildMenuHandler(Handle menu, MenuAction action, int client, int item
 			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
 			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
 			
-			if(IsValidEntity(id))
+			if (IsValidEntity(id))
 				AcceptEntityInput(id, "kill");
 			PrintToChat(client, "[-T-] Deleted %s", globalName);
 		}
@@ -661,7 +661,7 @@ public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int
 			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
 			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
 			
-			if(IsValidEntity(id))
+			if (IsValidEntity(id))
 				AcceptEntityInput(id, "kill");
 			inventory_givePlayerItem(client, globalName, 100, "", "Furniture", "Apartment Stuff", 1, "Stashed Furniture");
 		} else if (StrEqual(cValue, "delete")) {
@@ -672,7 +672,7 @@ public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int
 			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
 			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
 			
-			if(IsValidEntity(id))
+			if (IsValidEntity(id))
 				AcceptEntityInput(id, "kill");
 			PrintToChat(client, "[-T-] Deleted %s", globalName);
 		}

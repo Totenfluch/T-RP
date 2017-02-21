@@ -1169,8 +1169,8 @@ public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &dam
 		FreeEm(victim, attacker);
 	else
 		if (!jobs_isActiveJob(victim, "Police"))
-			CuffsEm(victim, attacker);
-			
+		CuffsEm(victim, attacker);
+	
 	return Plugin_Handled;
 }
 
@@ -1234,7 +1234,7 @@ public void OnClientPutInServer(int client) {
 
 public Action CuffsEm(int client, int attacker)
 {
-	if (g_iPlayerHandCuffs[attacker] > 0){
+	if (g_iPlayerHandCuffs[attacker] > 0) {
 		SetEntityMoveType(client, MOVETYPE_NONE);
 		SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 0.0);
 		SetEntityRenderColor(client, 0, 190, 0, 255);
@@ -1328,7 +1328,7 @@ stock void StripZeus(int client)
 			GetEntityClassname(weapon, sWeapon, sizeof(sWeapon));
 			if (StrEqual(sWeapon, "weapon_taser")) {
 				SDKHooks_DropWeapon(client, weapon, NULL_VECTOR, NULL_VECTOR);
-				if(IsValidEdict(weapon))
+				if (IsValidEdict(weapon))
 					AcceptEntityInput(weapon, "Kill");
 			}
 		}
@@ -1439,9 +1439,9 @@ stock bool CheckVipFlag(int client, const char[] flagsNeed)
 
 public Action onPlayerSpawn(Handle event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(GetEventInt(event, "userid"));
-	if(!isValidClient(client))
+	if (!isValidClient(client))
 		return;
-	if(!IsPlayerAlive(client))
+	if (!IsPlayerAlive(client))
 		return;
 	SetEntityRenderColor(client, 255, 255, 255, 255);
 }

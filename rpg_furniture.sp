@@ -776,21 +776,21 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					GetEntPropVector(ent, Prop_Data, "m_angRotation", angles);
 					
 					if (!(g_iPlayerPrevButtons[client] & IN_DUCK) && iButtons & IN_DUCK) {
-						if(angles[1] >= 0.0 && angles[1] < 45.0)
+						if (angles[1] >= 0.0 && angles[1] < 45.0)
 							angles[1] = 45.0;
-						else if(angles[1] >= 45.0 && angles[1] < 90.0)
+						else if (angles[1] >= 45.0 && angles[1] < 90.0)
 							angles[1] = 90.0;
-						else if(angles[1] >= 90.0 && angles[1] < 135.0)
+						else if (angles[1] >= 90.0 && angles[1] < 135.0)
 							angles[1] = 135.0;
-						else if(angles[1] >= 135.0 && angles[1] < 180.0)
+						else if (angles[1] >= 135.0 && angles[1] < 180.0)
 							angles[1] = 180.0;
-						else if(angles[1] >= 180.0 && angles[1] < 225.0)
+						else if (angles[1] >= 180.0 && angles[1] < 225.0)
 							angles[1] = 225.0;
-						else if(angles[1] >= 225.0 && angles[1] < 270.0)
+						else if (angles[1] >= 225.0 && angles[1] < 270.0)
 							angles[1] = 270.0;
-						else if(angles[1] >= 270.0 && angles[1] < 315.0)
+						else if (angles[1] >= 270.0 && angles[1] < 315.0)
 							angles[1] = 315.0;
-						else if(angles[1] >= 315.0 && angles[1] < 360.0)
+						else if (angles[1] >= 315.0 && angles[1] < 360.0)
 							angles[1] = 0.0;
 						else
 							angles[1] = 0.0;
@@ -800,7 +800,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					}
 					
 					int degrees = RoundToNearest(angles[1]);
-					degrees %= 360;
+					degrees %  = 360;
 					angles[1] = float(degrees);
 					TeleportEntity(ent, NULL_VECTOR, angles, NULL_VECTOR);
 					
@@ -813,21 +813,21 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					GetEntPropVector(ent, Prop_Data, "m_angRotation", angles);
 					
 					if (!(g_iPlayerPrevButtons[client] & IN_DUCK) && iButtons & IN_DUCK) {
-						if(angles[1] <= 360.0 && angles[1] > 315.0)
+						if (angles[1] <= 360.0 && angles[1] > 315.0)
 							angles[1] = 0.0;
-						else if(angles[1] <= 315.0 && angles[1] > 270.0)
+						else if (angles[1] <= 315.0 && angles[1] > 270.0)
 							angles[1] = 315.0;
-						else if(angles[1] <= 270.0 && angles[1] > 225.0)
+						else if (angles[1] <= 270.0 && angles[1] > 225.0)
 							angles[1] = 270.0;
-						else if(angles[1] <= 225.0 && angles[1] > 180.0)
+						else if (angles[1] <= 225.0 && angles[1] > 180.0)
 							angles[1] = 225.0;
-						else if(angles[1] <= 180.0 && angles[1] > 135.0)
+						else if (angles[1] <= 180.0 && angles[1] > 135.0)
 							angles[1] = 180.0;
-						else if(angles[1] <= 135.0 && angles[1] > 90.0)
+						else if (angles[1] <= 135.0 && angles[1] > 90.0)
 							angles[1] = 135.0;
-						else if(angles[1] <= 90.0 && angles[1] > 45.0)
+						else if (angles[1] <= 90.0 && angles[1] > 45.0)
 							angles[1] = 90.0;
-						else if(angles[1] <= 45.0 && angles[1] > 0.0)
+						else if (angles[1] <= 45.0 && angles[1] > 0.0)
 							angles[1] = 45.0;
 						else
 							angles[1] = 0.0;
@@ -837,7 +837,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					}
 					
 					int degrees = RoundToNearest(angles[1]);
-					degrees %= 360;
+					degrees %  = 360;
 					angles[1] = float(degrees);
 					TeleportEntity(ent, NULL_VECTOR, angles, NULL_VECTOR);
 					

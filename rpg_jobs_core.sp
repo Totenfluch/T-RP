@@ -610,7 +610,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 public void startProgress(int client, int time, char info[64]) {
 	//SetEntPropFloat(client, Prop_Send, "m_flProgressBarStartTime", GetGameTime());
 	//SetEntProp(client, Prop_Send, "m_iProgressBarDuration", time);
-	if(g_bProgressBarActive[client])
+	if (g_bProgressBarActive[client])
 		return;
 	strcopy(g_cProgressBarInfo[client], 64, info);
 	g_bProgressBarActive[client] = true;

@@ -78,6 +78,31 @@ int g_iPerk_apples_walnut;
 Handle g_hPerk_apples_avocado;
 int g_iPerk_apples_avocado;
 
+/* GARDENER */
+Handle g_hGardener_speed_boost1;
+int g_iGardener_speed_boost1;
+
+Handle g_hGardener_speed_boost2;
+int g_iGardener_speed_boost2;
+
+Handle g_hGardener_speed_boost3;
+int g_iGardener_speed_boost3;
+
+Handle g_hGardener_speed_boost4;
+int g_iGardener_speed_boost4;
+
+Handle g_hGardener_xp_boost1;
+int g_iGardener_xp_boost1;
+
+Handle g_hGardener_xp_boost2;
+int g_iGardener_xp_boost2;
+
+Handle g_hGardener_xp_boost3;
+int g_iGardener_xp_boost3;
+
+Handle g_hGardener_xp_boost4;
+int g_iGardener_xp_boost4;
+
 public Plugin myinfo = 
 {
 	name = "Perks for T-RP", 
@@ -117,6 +142,17 @@ public void OnPluginStart() {
 	g_hPerk_apples_walnut = AutoExecConfig_CreateConVar("perk_apples_pears", "7500", "Apples:Upgrade to Walnuts");
 	g_hPerk_apples_avocado = AutoExecConfig_CreateConVar("perk_apples_pears", "10000", "Apples:Upgrade to Avocado");
 	
+	/* GARDENER */
+	g_hGardener_speed_boost1 = AutoExecConfig_CreateConVar("perk_gardener_speed_boost1", "1000", "Price of the Gardener Speed Boost1 Perk");
+	g_hGardener_speed_boost2 = AutoExecConfig_CreateConVar("perk_gardener_speed_boost2", "2500", "Price of the Gardener Speed Boost2 Perk");
+	g_hGardener_speed_boost3 = AutoExecConfig_CreateConVar("perk_gardener_speed_boost3", "4500", "Price of the Gardener Speed Boost3 Perk");
+	g_hGardener_speed_boost4 = AutoExecConfig_CreateConVar("perk_gardener_speed_boost4", "7500", "Price of the Gardener Speed Boost4 Perk");
+	
+	g_hGardener_xp_boost1 = AutoExecConfig_CreateConVar("perk_gardener_xp_boost1", "1000", "Price of the Gardener xp Boost1 Perk");
+	g_hGardener_xp_boost2 = AutoExecConfig_CreateConVar("perk_gardener_xp_boost2", "2500", "Price of the Gardener xp Boost2 Perk");
+	g_hGardener_xp_boost3 = AutoExecConfig_CreateConVar("perk_gardener_xp_boost3", "4500", "Price of the Gardener xp Boost3 Perk");
+	g_hGardener_xp_boost4 = AutoExecConfig_CreateConVar("perk_gardener_xp_boost4", "7500", "Price of the Gardener xp Boost4 Perk");
+	
 	AutoExecConfig_CleanFile();
 	AutoExecConfig_ExecuteFile();
 	
@@ -154,6 +190,16 @@ public void OnConfigsExecuted() {
 	g_iPerk_apples_nuts = GetConVarInt(g_hPerk_apples_nuts);
 	g_iPerk_apples_walnut = GetConVarInt(g_hPerk_apples_walnut);
 	g_iPerk_apples_avocado = GetConVarInt(g_hPerk_apples_avocado);
+	
+	g_iGardener_speed_boost1 = GetConVarInt(g_hGardener_speed_boost1);
+	g_iGardener_speed_boost2 = GetConVarInt(g_hGardener_speed_boost2);
+	g_iGardener_speed_boost3 = GetConVarInt(g_hGardener_speed_boost3);
+	g_iGardener_speed_boost4 = GetConVarInt(g_hGardener_speed_boost4);
+	
+	g_iGardener_xp_boost1 = GetConVarInt(g_hGardener_xp_boost1);
+	g_iGardener_xp_boost2 = GetConVarInt(g_hGardener_xp_boost2);
+	g_iGardener_xp_boost3 = GetConVarInt(g_hGardener_xp_boost3);
+	g_iGardener_xp_boost4 = GetConVarInt(g_hGardener_xp_boost4);
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
@@ -466,7 +512,94 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 			AddMenuItem(nextMenu, "x", "- There are no Perks for Drug Harvester -", ITEMDRAW_DISABLED);
 		} else if (StrEqual(cValue, "gardener")) {
 			SetMenuTitle(nextMenu, "> Gardener Perks <");
-			AddMenuItem(nextMenu, "x", "- There are no Perks for Gardener -", ITEMDRAW_DISABLED);
+			
+			// Gardener Speed Boost 1
+			if (!hasPerk(client, "Gardener Speed Boost1")) {
+				Format(display, sizeof(display), "Gardener Speed Boost1 [3](%i)", g_iGardener_speed_boost1);
+				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost1 && jobs_getLevel(client) >= 3)
+					AddMenuItem(nextMenu, "gardener_speed_boost_1", display);
+				else
+					AddMenuItem(nextMenu, "gardener_speed_boost_1", display, ITEMDRAW_DISABLED);
+			} else {
+				AddMenuItem(nextMenu, "x", "Speed Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
+			}
+			
+			// Gardener XP Boost 1
+			if (!hasPerk(client, "Gardener XP Boost1")) {
+				Format(display, sizeof(display), "Gardener XP Boost1 [4](%i)", g_iGardener_xp_boost1);
+				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost1 && jobs_getLevel(client) >= 4)
+					AddMenuItem(nextMenu, "gardener_xp_boost_1", display);
+				else
+					AddMenuItem(nextMenu, "gardener_xp_boost_1", display, ITEMDRAW_DISABLED);
+			} else {
+				AddMenuItem(nextMenu, "x", "XP Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
+			}
+			
+			// Gardener Speed Boost 2
+			if (!hasPerk(client, "Gardener Speed Boost2")) {
+				Format(display, sizeof(display), "Gardener Speed Boost2 [5](%i)", g_iGardener_speed_boost2);
+				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost2 && jobs_getLevel(client) >= 5)
+					AddMenuItem(nextMenu, "gardener_speed_boost_2", display);
+				else
+					AddMenuItem(nextMenu, "gardener_speed_boost_2", display, ITEMDRAW_DISABLED);
+			} else {
+				AddMenuItem(nextMenu, "x", "Speed Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
+			}
+			
+			// Gardener XP Boost 2
+			if (!hasPerk(client, "Gardener XP Boost2")) {
+				Format(display, sizeof(display), "Gardener XP Boost2 [6](%i)", g_iGardener_xp_boost2);
+				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost2 && jobs_getLevel(client) >= 6)
+					AddMenuItem(nextMenu, "gardener_xp_boost_2", display);
+				else
+					AddMenuItem(nextMenu, "gardener_xp_boost_2", display, ITEMDRAW_DISABLED);
+			} else {
+				AddMenuItem(nextMenu, "x", "XP Boost2 | ^~Owned~^", ITEMDRAW_DISABLED);
+			}
+			
+			// Gardener Speed Boost 3
+			if (!hasPerk(client, "Gardener Speed Boost3")) {
+				Format(display, sizeof(display), "Gardener Speed Boost3 [7](%i)", g_iGardener_speed_boost3);
+				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost3 && jobs_getLevel(client) >= 7)
+					AddMenuItem(nextMenu, "gardener_speed_boost_3", display);
+				else
+					AddMenuItem(nextMenu, "gardener_speed_boost_3", display, ITEMDRAW_DISABLED);
+			} else {
+				AddMenuItem(nextMenu, "x", "Speed Boost3 | ^~Owned~^", ITEMDRAW_DISABLED);
+			}
+			
+			// Gardener XP Boost 3
+			if (!hasPerk(client, "Gardener XP Boost3")) {
+				Format(display, sizeof(display), "Gardener XP Boost3 [8](%i)", g_iGardener_xp_boost3);
+				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost3 && jobs_getLevel(client) >= 8)
+					AddMenuItem(nextMenu, "gardener_xp_boost_3", display);
+				else
+					AddMenuItem(nextMenu, "gardener_xp_boost_3", display, ITEMDRAW_DISABLED);
+			} else {
+				AddMenuItem(nextMenu, "x", "XP Boost3 | ^~Owned~^", ITEMDRAW_DISABLED);
+			}
+			
+			// Gardener Speed Boost 4
+			if (!hasPerk(client, "Gardener Speed Boost4")) {
+				Format(display, sizeof(display), "Gardener Speed Boost4 [9](%i)", g_iGardener_speed_boost4);
+				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost4 && jobs_getLevel(client) >= 9)
+					AddMenuItem(nextMenu, "gardener_speed_boost_4", display);
+				else
+					AddMenuItem(nextMenu, "gardener_speed_boost_4", display, ITEMDRAW_DISABLED);
+			} else {
+				AddMenuItem(nextMenu, "x", "Speed Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
+			}
+			
+			// Gardener XP Boost 4
+			if (!hasPerk(client, "Gardener XP Boost4")) {
+				Format(display, sizeof(display), "Gardener XP Boost4 [10](%i)", g_iGardener_xp_boost4);
+				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost4 && jobs_getLevel(client) >= 10)
+					AddMenuItem(nextMenu, "gardener_xp_boost_4", display);
+				else
+					AddMenuItem(nextMenu, "gardener_xp_boost_4", display, ITEMDRAW_DISABLED);
+			} else {
+				AddMenuItem(nextMenu, "x", "XP Boost4 | ^~Owned~^", ITEMDRAW_DISABLED);
+			}
 		}
 		DisplayMenu(nextMenu, client, 60);
 	}
@@ -567,6 +700,46 @@ public int nextMenuHandler(Handle menu, MenuAction action, int client, int item)
 			if (tConomy_getCurrency(client) >= g_iPerk_apples_pears) {
 				tConomy_removeCurrency(client, g_iPerk_apples_pears, "Bought Apples Pears Upgrade");
 				addPerk(client, "Apple:Pears");
+			}
+		} else if (StrEqual(cValue, "gardener_speed_boost_1")) {
+			if (tConomy_getCurrency(client) >= g_iGardener_speed_boost1) {
+				tConomy_removeCurrency(client, g_iGardener_speed_boost1, "Bought Gardener Speed Boost 1 Upgrade");
+				addPerk(client, "Gardener Speed Boost1");
+			}
+		} else if (StrEqual(cValue, "gardener_speed_boost_2")) {
+			if (tConomy_getCurrency(client) >= g_iGardener_speed_boost2) {
+				tConomy_removeCurrency(client, g_iGardener_speed_boost2, "Bought Gardener Speed Boost 2 Upgrade");
+				addPerk(client, "Gardener Speed Boost2");
+			}
+		} else if (StrEqual(cValue, "gardener_speed_boost_3")) {
+			if (tConomy_getCurrency(client) >= g_iGardener_speed_boost3) {
+				tConomy_removeCurrency(client, g_iGardener_speed_boost3, "Bought Gardener Speed Boost 3 Upgrade");
+				addPerk(client, "Gardener Speed Boost3");
+			}
+		} else if (StrEqual(cValue, "gardener_speed_boost_4")) {
+			if (tConomy_getCurrency(client) >= g_iGardener_speed_boost4) {
+				tConomy_removeCurrency(client, g_iGardener_speed_boost4, "Bought Gardener Speed Boost 4 Upgrade");
+				addPerk(client, "Gardener Speed Boost4");
+			}
+		} else if (StrEqual(cValue, "gardener_xp_boost_1")) {
+			if (tConomy_getCurrency(client) >= g_iGardener_xp_boost1) {
+				tConomy_removeCurrency(client, g_iGardener_xp_boost1, "Bought Gardener XP 1 Upgrade");
+				addPerk(client, "Gardener XP Boost1");
+			}
+		} else if (StrEqual(cValue, "gardener_xp_boost_2")) {
+			if (tConomy_getCurrency(client) >= g_iGardener_xp_boost2) {
+				tConomy_removeCurrency(client, g_iGardener_xp_boost2, "Bought Gardener XP 2 Upgrade");
+				addPerk(client, "Gardener XP Boost2");
+			}
+		} else if (StrEqual(cValue, "gardener_xp_boost_3")) {
+			if (tConomy_getCurrency(client) >= g_iGardener_xp_boost3) {
+				tConomy_removeCurrency(client, g_iGardener_xp_boost3, "Bought Gardener XP 3 Upgrade");
+				addPerk(client, "Gardener XP Boost3");
+			}
+		} else if (StrEqual(cValue, "gardener_xp_boost_4")) {
+			if (tConomy_getCurrency(client) >= g_iGardener_xp_boost4) {
+				tConomy_removeCurrency(client, g_iGardener_xp_boost4, "Bought Gardener XP 4 Upgrade");
+				addPerk(client, "Gardener XP Boost4");
 			}
 		}
 	}

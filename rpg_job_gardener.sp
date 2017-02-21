@@ -11,6 +11,7 @@
 #include <multicolors>
 #include <tConomy>
 #include <rpg_inventory_core>
+#include <rpg_perks>
 
 #pragma newdecls required
 
@@ -25,8 +26,8 @@ char g_cGardenerZones[MAX_ZONES][PLATFORM_MAX_PATH];
 int g_iGardenerZoneCooldown[MAXPLAYERS + 1][MAX_ZONES];
 int g_iLoadedZones = 0;
 
-int g_iZoneCooldown = 200;
-int MAX_COLLECT = 10;
+int g_iZoneCooldown = 280;
+int MAX_COLLECT = 5;
 
 char activeZone[MAXPLAYERS + 1][128];
 
@@ -84,7 +85,17 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					return;
 				char infoString[64];
 				Format(infoString, sizeof(infoString), "Gardening (%i)", jobs_getLevel(client));
-				jobs_startProgressBar(client, 30, infoString);
+				
+				if (perks_hasPerk(client, "Gardener Speed Boost4"))
+					jobs_startProgressBar(client, 10, infoString);
+				else if (perks_hasPerk(client, "Gardener Speed Boost3"))
+					jobs_startProgressBar(client, 15, infoString);
+				else if (perks_hasPerk(client, "Gardener Speed Boost2"))
+					jobs_startProgressBar(client, 20, infoString);
+				else if (perks_hasPerk(client, "Gardener Speed Boost1"))
+					jobs_startProgressBar(client, 25, infoString);
+				else
+					jobs_startProgressBar(client, 30, infoString);
 				setInfo(client);
 			}
 		}
@@ -103,7 +114,16 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 	char addCurrencyReason[256];
 	Format(addCurrencyReason, sizeof(addCurrencyReason), "Gardening (Level %i)", jobs_getLevel(client));
 	tConomy_addBankCurrency(client, 20, "Gardening");
-	jobs_addExperience(client, 20, "Gardener");
+	if (perks_hasPerk(client, "Gardener XP Boost4"))
+		jobs_addExperience(client, 40, "Gardener");
+	else if (perks_hasPerk(client, "Gardener XP Boost3"))
+		jobs_addExperience(client, 35, "Gardener");
+	else if (perks_hasPerk(client, "Gardener XP Boost2"))
+		jobs_addExperience(client, 30, "Gardener");
+	else if (perks_hasPerk(client, "Gardener XP Boost1"))
+		jobs_addExperience(client, 25, "Gardener");
+	else
+		jobs_addExperience(client, 20, "Gardener");
 	setInfo(client);
 }
 

@@ -83,7 +83,7 @@ public int ctMenuHandler(Handle menu, MenuAction action, int client, int item) {
 			return;
 		GetClientAbsOrigin(client, playerPos);
 		GetEntPropVector(doorEnt, Prop_Data, "m_vecOrigin", entPos);
-		if (GetVectorDistance(playerPos, entPos) > 100.0){
+		if (GetVectorDistance(playerPos, entPos) > 100.0) {
 			PrintToChat(client, "[-T-] Door is too far away");
 			return;
 		}
@@ -123,7 +123,7 @@ public int criminalMenuHandler(Handle menu, MenuAction action, int client, int i
 			return;
 		GetClientAbsOrigin(client, playerPos);
 		GetEntPropVector(doorEnt, Prop_Data, "m_vecOrigin", entPos);
-		if (GetVectorDistance(playerPos, entPos) > 100.0){
+		if (GetVectorDistance(playerPos, entPos) > 100.0) {
 			PrintToChat(client, "[-T-] Door is too far away");
 			return;
 		}

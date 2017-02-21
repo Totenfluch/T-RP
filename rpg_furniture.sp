@@ -693,8 +693,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					strcopy(PlayerEditItems[client][eiUniqueId], 64, "");
 					PrintToChat(client, "[-T-] Finished Editing");
 					SetEntityMoveType(client, MOVETYPE_WALK);
-				}
-				if (!(g_iPlayerPrevButtons[client] & IN_JUMP) && iButtons & IN_JUMP) {
+				} else if (!(g_iPlayerPrevButtons[client] & IN_JUMP) && iButtons & IN_JUMP) {
 					int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
 					float pos[3];
 					GetEntPropVector(ent, Prop_Data, "m_vecOrigin", pos);
@@ -720,8 +719,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					
 					iButtons ^= IN_JUMP;
 					return Plugin_Changed;
-				}
-				if (!(g_iPlayerPrevButtons[client] & IN_DUCK) && iButtons & IN_DUCK) {
+				} else if (!(g_iPlayerPrevButtons[client] & IN_DUCK) && iButtons & IN_DUCK) {
 					int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
 					float pos[3];
 					GetEntPropVector(ent, Prop_Data, "m_vecOrigin", pos);
@@ -747,8 +745,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					
 					iButtons ^= IN_DUCK;
 					return Plugin_Changed;
-				}
-				if (!(g_iPlayerPrevButtons[client] & IN_RELOAD) && iButtons & IN_RELOAD) {
+				} else if (!(g_iPlayerPrevButtons[client] & IN_RELOAD) && iButtons & IN_RELOAD) {
 					int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
 					float pos[3];
 					pos = GetAimOrigin(client);
@@ -773,25 +770,79 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					
 					iButtons ^= IN_RELOAD;
 					return Plugin_Changed;
-				}
-				if (!(g_iPlayerPrevButtons[client] & IN_MOVELEFT) && iButtons & IN_MOVELEFT) {
+				} else if (!(g_iPlayerPrevButtons[client] & IN_MOVELEFT) && iButtons & IN_MOVELEFT) {
 					int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
 					float angles[3];
 					GetEntPropVector(ent, Prop_Data, "m_angRotation", angles);
-					angles[1] += 1;
+					
+					if (!(g_iPlayerPrevButtons[client] & IN_DUCK) && iButtons & IN_DUCK) {
+						if(angles[1] >= 0.0 && angles[1] < 45.0)
+							angles[1] = 45.0;
+						else if(angles[1] >= 45.0 && angles[1] < 90.0)
+							angles[1] = 90.0;
+						else if(angles[1] >= 90.0 && angles[1] < 135.0)
+							angles[1] = 135.0;
+						else if(angles[1] >= 135.0 && angles[1] < 180.0)
+							angles[1] = 180.0;
+						else if(angles[1] >= 180.0 && angles[1] < 225.0)
+							angles[1] = 225.0;
+						else if(angles[1] >= 225.0 && angles[1] < 270.0)
+							angles[1] = 270.0;
+						else if(angles[1] >= 270.0 && angles[1] < 315.0)
+							angles[1] = 315.0;
+						else if(angles[1] >= 315.0 && angles[1] < 360.0)
+							angles[1] = 0.0;
+						else
+							angles[1] = 0.0;
+						iButtons &= ~IN_DUCK;
+					} else {
+						angles[1] += 1;
+					}
+					
+					int degrees = RoundToNearest(angles[1]);
+					degrees %= 360;
+					angles[1] = float(degrees);
 					TeleportEntity(ent, NULL_VECTOR, angles, NULL_VECTOR);
+					
 					iButtons &= ~IN_MOVELEFT;
-					iButtons &= IN_MOVERIGHT;
+					iButtons &= ~IN_MOVERIGHT;
 					return Plugin_Changed;
-				}
-				if (!(g_iPlayerPrevButtons[client] & IN_MOVERIGHT) && iButtons & IN_MOVERIGHT) {
+				} else if (!(g_iPlayerPrevButtons[client] & IN_MOVERIGHT) && iButtons & IN_MOVERIGHT) {
 					int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
 					float angles[3];
 					GetEntPropVector(ent, Prop_Data, "m_angRotation", angles);
-					angles[1] -= 1;
+					
+					if (!(g_iPlayerPrevButtons[client] & IN_DUCK) && iButtons & IN_DUCK) {
+						if(angles[1] <= 360.0 && angles[1] > 315.0)
+							angles[1] = 0.0;
+						else if(angles[1] <= 315.0 && angles[1] > 270.0)
+							angles[1] = 315.0;
+						else if(angles[1] <= 270.0 && angles[1] > 225.0)
+							angles[1] = 270.0;
+						else if(angles[1] <= 225.0 && angles[1] > 180.0)
+							angles[1] = 225.0;
+						else if(angles[1] <= 180.0 && angles[1] > 135.0)
+							angles[1] = 180.0;
+						else if(angles[1] <= 135.0 && angles[1] > 90.0)
+							angles[1] = 135.0;
+						else if(angles[1] <= 90.0 && angles[1] > 45.0)
+							angles[1] = 90.0;
+						else if(angles[1] <= 45.0 && angles[1] > 0.0)
+							angles[1] = 45.0;
+						else
+							angles[1] = 0.0;
+						iButtons &= ~IN_DUCK;
+					} else {
+						angles[1] -= 1;
+					}
+					
+					int degrees = RoundToNearest(angles[1]);
+					degrees %= 360;
+					angles[1] = float(degrees);
 					TeleportEntity(ent, NULL_VECTOR, angles, NULL_VECTOR);
+					
 					iButtons &= ~IN_MOVERIGHT;
-					iButtons &= IN_MOVELEFT;
+					iButtons &= ~IN_MOVELEFT;
 					return Plugin_Changed;
 				}
 			}

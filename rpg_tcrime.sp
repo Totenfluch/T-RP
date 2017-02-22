@@ -12,9 +12,11 @@
 char dbconfig[] = "gsxh_multiroot";
 Database g_DB;
 
+#define MAX_COOLDOWN 60
 
 enum crimeProperties {
 	cCrime, 
+	cCooldown, 
 	String:cFlags[64]
 }
 
@@ -64,7 +66,9 @@ public Action refreshTimer(Handle Timer) {
 			continue;
 		if (g_ePlayerCrime[i][cCrime] == -1)
 			continue;
-		if (g_ePlayerCrime[i][cCrime] > 0)
+		if (g_ePlayerCrime[i][cCooldown] > 0)
+			g_ePlayerCrime[i][cCooldown]--;
+		if (g_ePlayerCrime[i][cCrime] > 0 && g_ePlayerCrime[i][cCooldown] == 0)
 			decreaseCrime(i, 1);
 	}
 }
@@ -199,6 +203,7 @@ public int Native_getFlags(Handle plugin, int numParams) {
 }
 
 public void OnClientAuthorized(int client) {
+	g_ePlayerCrime[client][cCooldown] = MAX_COOLDOWN;
 	g_ePlayerCrime[client][cCrime] = -1;
 	strcopy(g_ePlayerCrime[client][cFlags], 64, "");
 	
@@ -220,6 +225,7 @@ public void OnClientAuthorized(int client) {
 
 public void OnClientDisconnect(int client) {
 	g_ePlayerCrime[client][cCrime] = -1;
+	g_ePlayerCrime[client][cCooldown] = -1;
 	strcopy(g_ePlayerCrime[client][cFlags], 64, "");
 }
 
@@ -249,6 +255,7 @@ public void increaseCrime(int client, int amount) {
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
 	g_ePlayerCrime[client][cCrime] += amount;
+	g_ePlayerCrime[client][cCooldown] = MAX_COOLDOWN;
 	
 	char updateCrimeQuery[512];
 	Format(updateCrimeQuery, sizeof(updateCrimeQuery), "UPDATE t_rpg_tcrime SET crime = %i WHERE playerid = '%s'", g_ePlayerCrime[client][cCrime], playerid);

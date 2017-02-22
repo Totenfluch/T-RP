@@ -222,6 +222,14 @@ public int getFirstFreeSpawnedSlot() {
 	return -1;
 }
 
+public int getApartmentFurnitureItemsCount(char aId[128]) {
+	int count = 0;
+	for (int i = 0; i < g_iSpawnedFurniture; i++)
+	if (StrEqual(SpawnedFurnitureItems[i][sfApartment], aId))
+		count++;
+	return count;
+}
+
 public bool loadFurniture() {
 	clearAllLoadedFurniture();
 	
@@ -380,7 +388,14 @@ public void firstSpawnFurniture(int client, int id) {
 	if (Zone_CheckIfZoneExists(activeZone[client], true, true)) {
 		if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2])) {
 			if (apartments_isClientOwner(client, activeZone[client])) {
-				// Hurra!
+				int max = getApartmentFurnitureItemsCount(activeZone[client]);
+				int setMax = apartments_getBuyPrice(activeZone[client]) / 2500;
+				if (max < setMax) {
+					// HURRA
+				} else {
+					PrintToChat(client, "[-T-] (%s) Too much Furniture in this Apartment (%i/%i)", activeZone[client], max, setMax);
+					return;
+				}
 			} else {
 				PrintToChat(client, "[-T-] (%s) You do not own this Apartment", activeZone[client]);
 				return;
@@ -567,12 +582,12 @@ public int buildMenuHandler(Handle menu, MenuAction action, int client, int item
 			PlayerEditItems[client][eiInAdmin] = false;
 			
 			PrintToChat(client, "[-T-] Now editing %s", entName);
-			PrintToChat(client, "[-T-] Hold R for Placement, A & D for Angles JUMP for up, Crouch for down and E to Exit");
+			PrintToChat(client, "[-T-] Hold R for Placement, W,A,S,D for Angles JUMP for up, Crouch for down and E to Exit");
 			SetEntityMoveType(client, MOVETYPE_NONE);
 		} else if (StrEqual(cValue, "stash")) {
 			char mapName[128];
 			GetCurrentMap(mapName, sizeof(mapName));
-			
+			resetSlot(id);
 			char updateFurnitureQuery[256];
 			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
 			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
@@ -583,7 +598,7 @@ public int buildMenuHandler(Handle menu, MenuAction action, int client, int item
 		} else if (StrEqual(cValue, "delete")) {
 			char mapName[128];
 			GetCurrentMap(mapName, sizeof(mapName));
-			
+			resetSlot(id);
 			char updateFurnitureQuery[256];
 			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
 			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
@@ -594,6 +609,13 @@ public int buildMenuHandler(Handle menu, MenuAction action, int client, int item
 		}
 	}
 	return 1;
+}
+
+public void resetSlot(int ent) {
+	int theId = findSpawnedEntByRef(EntIndexToEntRef(ent));
+	if (theId == -1)
+		return;
+	clearSpawnedFurniture(theId);
 }
 
 public Action cmdAdminBuilder(int client, int args) {
@@ -770,35 +792,67 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					
 					iButtons ^= IN_RELOAD;
 					return Plugin_Changed;
-				} else if (!(g_iPlayerPrevButtons[client] & IN_MOVELEFT) && iButtons & IN_MOVELEFT) {
+				} else if (!(g_iPlayerPrevButtons[client] & IN_FORWARD) && iButtons & IN_FORWARD) {
 					int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
 					float angles[3];
 					GetEntPropVector(ent, Prop_Data, "m_angRotation", angles);
 					
-					if (!(g_iPlayerPrevButtons[client] & IN_DUCK) && iButtons & IN_DUCK) {
-						if (angles[1] >= 0.0 && angles[1] < 45.0)
-							angles[1] = 45.0;
-						else if (angles[1] >= 45.0 && angles[1] < 90.0)
-							angles[1] = 90.0;
-						else if (angles[1] >= 90.0 && angles[1] < 135.0)
-							angles[1] = 135.0;
-						else if (angles[1] >= 135.0 && angles[1] < 180.0)
-							angles[1] = 180.0;
-						else if (angles[1] >= 180.0 && angles[1] < 225.0)
-							angles[1] = 225.0;
-						else if (angles[1] >= 225.0 && angles[1] < 270.0)
-							angles[1] = 270.0;
-						else if (angles[1] >= 270.0 && angles[1] < 315.0)
-							angles[1] = 315.0;
-						else if (angles[1] >= 315.0 && angles[1] < 360.0)
-							angles[1] = 0.0;
-						else
-							angles[1] = 0.0;
-						iButtons &= ~IN_DUCK;
-					} else {
-						angles[1] += 1;
-					}
+					if (angles[1] >= 0.0 && angles[1] < 45.0)
+						angles[1] = 45.0;
+					else if (angles[1] >= 45.0 && angles[1] < 90.0)
+						angles[1] = 90.0;
+					else if (angles[1] >= 90.0 && angles[1] < 135.0)
+						angles[1] = 135.0;
+					else if (angles[1] >= 135.0 && angles[1] < 180.0)
+						angles[1] = 180.0;
+					else if (angles[1] >= 180.0 && angles[1] < 225.0)
+						angles[1] = 225.0;
+					else if (angles[1] >= 225.0 && angles[1] < 270.0)
+						angles[1] = 270.0;
+					else if (angles[1] >= 270.0 && angles[1] < 315.0)
+						angles[1] = 315.0;
+					else if (angles[1] >= 315.0 && angles[1] < 360.0)
+						angles[1] = 0.0;
+					else
+						angles[1] = 0.0;
+					int degrees = RoundToNearest(angles[1]);
+					degrees = degrees % 360;
+					angles[1] = float(degrees);
+					TeleportEntity(ent, NULL_VECTOR, angles, NULL_VECTOR);
+				} else if (!(g_iPlayerPrevButtons[client] & IN_BACK) && iButtons & IN_BACK) {
+					int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
+					float angles[3];
+					GetEntPropVector(ent, Prop_Data, "m_angRotation", angles);
 					
+					if ((angles[1] <= 360.0 && angles[1] > 315.0) || angles[1] == 0.0)
+						angles[1] = 315.0;
+					else if (angles[1] <= 315.0 && angles[1] > 270.0)
+						angles[1] = 270.0;
+					else if (angles[1] <= 270.0 && angles[1] > 225.0)
+						angles[1] = 225.0;
+					else if (angles[1] <= 225.0 && angles[1] > 180.0)
+						angles[1] = 180.0;
+					else if (angles[1] <= 180.0 && angles[1] > 135.0)
+						angles[1] = 135.0;
+					else if (angles[1] <= 135.0 && angles[1] > 90.0)
+						angles[1] = 90.0;
+					else if (angles[1] <= 90.0 && angles[1] > 45.0)
+						angles[1] = 45.0;
+					else if (angles[1] <= 45.0 && angles[1] > 0.0)
+						angles[1] = 0.0;
+					else
+						angles[1] = 0.0;
+					
+					
+					int degrees = RoundToNearest(angles[1]);
+					degrees = degrees % 360;
+					angles[1] = float(degrees);
+					TeleportEntity(ent, NULL_VECTOR, angles, NULL_VECTOR);
+				} else if (!(g_iPlayerPrevButtons[client] & IN_MOVELEFT) && iButtons & IN_MOVELEFT) {
+					int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
+					float angles[3];
+					GetEntPropVector(ent, Prop_Data, "m_angRotation", angles);
+					angles[1] += 1;
 					int degrees = RoundToNearest(angles[1]);
 					degrees = degrees % 360;
 					angles[1] = float(degrees);
@@ -811,31 +865,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					int ent = EntRefToEntIndex(PlayerEditItems[client][eiRef]);
 					float angles[3];
 					GetEntPropVector(ent, Prop_Data, "m_angRotation", angles);
-					
-					if (!(g_iPlayerPrevButtons[client] & IN_DUCK) && iButtons & IN_DUCK) {
-						if (angles[1] <= 360.0 && angles[1] > 315.0)
-							angles[1] = 0.0;
-						else if (angles[1] <= 315.0 && angles[1] > 270.0)
-							angles[1] = 315.0;
-						else if (angles[1] <= 270.0 && angles[1] > 225.0)
-							angles[1] = 270.0;
-						else if (angles[1] <= 225.0 && angles[1] > 180.0)
-							angles[1] = 225.0;
-						else if (angles[1] <= 180.0 && angles[1] > 135.0)
-							angles[1] = 180.0;
-						else if (angles[1] <= 135.0 && angles[1] > 90.0)
-							angles[1] = 135.0;
-						else if (angles[1] <= 90.0 && angles[1] > 45.0)
-							angles[1] = 90.0;
-						else if (angles[1] <= 45.0 && angles[1] > 0.0)
-							angles[1] = 45.0;
-						else
-							angles[1] = 0.0;
-						iButtons &= ~IN_DUCK;
-					} else {
-						angles[1] -= 1;
-					}
-					
+					angles[1] -= 1;
 					int degrees = RoundToNearest(angles[1]);
 					degrees = degrees % 360;
 					angles[1] = float(degrees);

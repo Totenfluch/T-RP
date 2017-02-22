@@ -1,5 +1,5 @@
 #if defined _rpg_npc_core_included_
-  #endinput
+#endinput
 #endif
 #define _rpg_npc_core_included_
 
@@ -11,7 +11,7 @@
 	@return loaded Slot
 */
 native void npc_registerNpcType(char npcType[128]);
-	
+
 /*
 	Forward when a Client interacted with an NPC
 		
@@ -22,4 +22,4 @@ native void npc_registerNpcType(char npcType[128]);
 		
 	@return -
 */
-forward void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex);
+forward void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex); 

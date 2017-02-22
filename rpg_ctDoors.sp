@@ -42,11 +42,11 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				if (HasEntProp(ent, Prop_Data, "m_iName")) {
 					char uniqueId[64];
 					GetEntPropString(ent, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
-					if (StrContains(uniqueId, "_ct_") != -1) {
+					if (StrContains(uniqueId, "ct_p_") != -1) {
 						if (jobs_isActiveJob(client, "Police")) {
 							ctDoorMenu(client, ent);
 						} else {
-							if (inventory_hasPlayerItem(client, "lockpick"))
+							if (inventory_hasPlayerItem(client, "Lockpick"))
 								openCriminalMenu(client, ent);
 						}
 					}
@@ -83,8 +83,8 @@ public int ctMenuHandler(Handle menu, MenuAction action, int client, int item) {
 			return;
 		GetClientAbsOrigin(client, playerPos);
 		GetEntPropVector(doorEnt, Prop_Data, "m_vecOrigin", entPos);
-		if (GetVectorDistance(playerPos, entPos) > 100.0) {
-			PrintToChat(client, "[-T-] Door is too far away");
+		if (GetVectorDistance(playerPos, entPos) > 175.0) {
+			PrintToChat(client, "[-T-] Door is too far away (%.2f/150.0)", GetVectorDistance(playerPos, entPos));
 			return;
 		}
 		
@@ -107,6 +107,7 @@ public void openCriminalMenu(int client, int ent) {
 	DisplayMenu(criminalMenu, client, 60);
 }
 
+int g_iClientDoorTarget[MAXPLAYERS + 1];
 public int criminalMenuHandler(Handle menu, MenuAction action, int client, int item) {
 	if (action == MenuAction_Select) {
 		char cValue[32];
@@ -123,14 +124,27 @@ public int criminalMenuHandler(Handle menu, MenuAction action, int client, int i
 			return;
 		GetClientAbsOrigin(client, playerPos);
 		GetEntPropVector(doorEnt, Prop_Data, "m_vecOrigin", entPos);
-		if (GetVectorDistance(playerPos, entPos) > 100.0) {
-			PrintToChat(client, "[-T-] Door is too far away");
+		if (GetVectorDistance(playerPos, entPos) > 175.0) {
+			PrintToChat(client, "[-T-] Door is too far away (%.2f/150.0)", GetVectorDistance(playerPos, entPos));
 			return;
 		}
 		
 		if (StrEqual(cValue, "lockpick")) {
+			g_iClientDoorTarget[client] = EntIndexToEntRef(doorEnt);
+			jobs_startProgressBar(client, 100, "Lockpicking CT Door");
+		}
+	}
+}
+
+public void jobs_OnProgressBarInterrupted(int client, char info[64]) {
+	g_iClientDoorTarget[client] = -1;
+}
+
+public void jobs_OnProgressBarFinished(int client, char info[64]) {
+	if (StrEqual(info, "Lockpicking CT Door")) {
+		if (g_iClientDoorTarget[client] != -1) {
 			if (GetRandomInt(0, 10) == 2) {
-				AcceptEntityInput(doorEnt, "unlock", -1);
+				AcceptEntityInput(EntRefToEntIndex(g_iClientDoorTarget[client]), "unlock", -1);
 				PrintToChat(client, "lockpicked CT Door...");
 				tCrime_addCrime(client, 300);
 			} else {

@@ -75,8 +75,8 @@ public void OnPluginStart()
 	AutoExecConfig_SetCreateFile(true);
 	
 	g_hJailExitX = AutoExecConfig_CreateConVar("jail_ExitPositionX", "-2920.29", "X-Position where the Players exit the Jail");
-	g_hJailExitY = AutoExecConfig_CreateConVar("jail_ExitPositionX", "-276.88", "X-Position where the Players exit the Jail");
-	g_hJailExitZ = AutoExecConfig_CreateConVar("jail_ExitPositionX", "-50.79", "X-Position where the Players exit the Jail");
+	g_hJailExitY = AutoExecConfig_CreateConVar("jail_ExitPositionY", "-276.88", "X-Position where the Players exit the Jail");
+	g_hJailExitZ = AutoExecConfig_CreateConVar("jail_ExitPositionZ", "-50.79", "X-Position where the Players exit the Jail");
 	g_hMaxDistanceToJail = AutoExecConfig_CreateConVar("jail_maxDistance", "300.0", "Max Distance Player can have to jail before getting teleported back");
 	
 	AutoExecConfig_CleanFile();
@@ -448,9 +448,10 @@ stock bool isValidClient(int client) {
 }
 
 public int Zone_OnClientEntry(int client, char[] zone) {
-	if (StrEqual(zone, "JailExit"))
-		if (g_bIsInJail[client] && g_ePlayerData[client][ppCell_number] == -1) {
-		tCrime_addCrime(client, tCrime_getCrime(client));
-		escape(client);
+	if (StrEqual(zone, "JailExit")) {
+		if (g_bIsInJail[client] && g_ePlayerData[client][ppCell_number] != -1) {
+			tCrime_addCrime(client, tCrime_getCrime(client));
+			escape(client);
+		}
 	}
 } 

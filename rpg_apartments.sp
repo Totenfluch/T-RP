@@ -152,6 +152,13 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		return true or false
 	*/
 	CreateNative("apartments_isClientOwner", Native_isClientOwner);
+	
+	/*
+		Returns the Buy Price of an Apartment
+		@Param1 -> apartmentId[128] (zone ID)
+		return Price or -1 if invalid
+	*/
+	CreateNative("apartments_getBuyPrice", Native_getBuyPrice);
 }
 
 public int Native_allowPlayer(Handle plugin, int numParams) {
@@ -165,6 +172,15 @@ public int Native_isClientOwner(Handle plugin, int numParams) {
 	char apartmentId[128];
 	GetNativeString(2, apartmentId, sizeof(apartmentId));
 	return isOwnedBy(client, apartmentId);
+}
+
+public int Native_getBuyPrice(Handle plugin, int numParams) {
+	char apartmentId[128];
+	GetNativeString(1, apartmentId, sizeof(apartmentId));
+	int id;
+	if ((id = getOwnedApartmentFromKey(apartmentId)) != -1)
+		return ownedApartments[id][oaPrice_of_purchase];
+	return -1;
 }
 
 public bool isOwnedBy(int client, char apartmentId[128]) {
@@ -319,18 +335,24 @@ public int lockpickActionHandler(Handle menu, MenuAction action, int client, int
 		char cValue[32];
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		if (StrEqual(cValue, "lockpick")) {
-			if (GetRandomInt(0, 10) == 2) {
-				changeDoorLock(client, 0);
-				PrintToChat(client, "lockpicked Apartment");
-				tCrime_addCrime(client, 300);
-			} else {
-				PrintToChat(client, "lockpicking failed");
-				tCrime_addCrime(client, 75);
-			}
-			if (GetRandomInt(0, 3) == 1) {
-				inventory_removePlayerItems(client, "Lockpick", 1, "Lockpick broke");
-				tCrime_addCrime(client, 50);
-			}
+			jobs_startProgressBar(client, 100, "Lockpicking Apartment");
+		}
+	}
+}
+
+public void jobs_OnProgressBarFinished(int client, char info[64]) {
+	if (StrEqual(info, "Lockpicking Apartment")) {
+		if (GetRandomInt(0, 10) == 2) {
+			changeDoorLock(client, 0);
+			PrintToChat(client, "lockpicked Apartment");
+			tCrime_addCrime(client, 300);
+		} else {
+			PrintToChat(client, "lockpicking failed");
+			tCrime_addCrime(client, 75);
+		}
+		if (GetRandomInt(0, 3) == 1) {
+			inventory_removePlayerItems(client, "Lockpick", 1, "Lockpick broke");
+			tCrime_addCrime(client, 50);
 		}
 	}
 }

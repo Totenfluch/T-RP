@@ -93,3 +93,72 @@ native void inventory_showInventoryOfClientToOtherClientByCategory(int client1, 
 		@Param2-> int type = 1: Single Item, 2: Category, 3: Category2, 4:Category+Category2
 	*/
 native void inventory_addItemHandle(char itemname[128], int type);
+
+	/*
+		Return the owned items of a client
+		
+		@Param1 -> int client
+		
+		return amount of items the client has
+	*/
+native int inventory_getClientItemsAmount(int client);
+	
+	/*
+		Check if the Item is valid or not
+		
+		@Param1 -> int client
+		@Param2 -> int slot
+		
+		return true when it is valid false if not
+	*/
+native bool inventory_isValidItem(int client, int slot);
+	
+	/*
+		Return the Name of an Item Slot
+		
+		@Param1 -> int client
+		@Param2 -> int slot
+		@Param3 -> ItemNameBuffer[128]
+		@Param4 -> char FilterFlags[8] // leave blank to enforce flags (only usable items)
+		
+		Saves the ItemName in Param3
+		
+		return true if usable false if not
+	*/
+native bool inventory_getItemNameBySlotAndClient(int client, int slot, char ItemNameBuffer[128], char FilterFlags[8]);
+	
+	/*
+		Return the Category of an Item Slot
+		
+		@Param1 -> int client
+		@Param2 -> int slot
+		@Param3 -> ItemNameBuffer[128]
+		@Param4 -> char FilterFlags[8] // leave blank to enforce flags (only usable items)
+		
+		Saves the ItemName in Param3
+		
+		return true if usable false if not
+	*/
+native bool inventory_getItemCategoryBySlotAndClient(int client, int slot, char ItemNameBuffer[128], char FilterFlags[8]);
+	
+	/*
+		Transfer Item to Container
+		
+		@Param1 -> int client
+		@Param2 -> int slot
+		@Param3 -> char containerName[64]
+		
+		noreturn
+	*/
+native void inventory_transferItemToContainer(int client, int slot, char containerName[64]);
+	
+	/*
+		Delete Item by Slot
+		
+		@Param1 -> int client
+		@Param2 -> int slot
+		@Param3 -> char reason[256]
+		
+		noreturn
+	*/
+native void inventory_deleteItemBySlot(int client, int slot, char reason[256]);

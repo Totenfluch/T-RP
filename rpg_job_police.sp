@@ -1075,7 +1075,10 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					char menuTitle[128];
 					Format(menuTitle, sizeof(menuTitle), "What do you want to do? (Crime: %i)", tCrime_getCrime(Target));
 					SetMenuTitle(m, menuTitle);
-					AddMenuItem(m, "arrest", "Arrest Player");
+					char targetNameString[32];
+					GetClientName(Target, targetNameString, sizeof(targetNameString));
+					AddMenuItem(m, "x", targetNameString, ITEMDRAW_DISABLED);
+					//AddMenuItem(m, "arrest", "Arrest Player");
 					AddMenuItem(m, "search", "Search Inventory");
 					AddMenuItem(m, "licenses", "Lookup Licenses");
 					AddMenuItem(m, "pardon", "Pardon Player");
@@ -1091,9 +1094,10 @@ public int searchMenuHandler(Handle menu, MenuAction action, int client, int ite
 	if (action == MenuAction_Select) {
 		char cValue[32];
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
-		if (StrEqual(cValue, "arrest")) {
+		/*if (StrEqual(cValue, "arrest")) {
 			putInJail(client, g_iOfficerTarget[client]);
-		} else if (StrEqual(cValue, "search")) {
+		} else */
+		if (StrEqual(cValue, "search")) {
 			inventory_showInventoryOfClientToOtherClient(g_iOfficerTarget[client], client);
 		} else if (StrEqual(cValue, "licenses")) {
 			inventory_showInventoryOfClientToOtherClientByCategory(g_iOfficerTarget[client], client, "License");
@@ -1109,33 +1113,195 @@ public int searchMenuHandler(Handle menu, MenuAction action, int client, int ite
 int overtake[MAXPLAYERS + 1];
 public void openPunishMenu(int officer, int target) {
 	Menu punishMenu = CreateMenu(punishMenuHandler);
-	SetMenuTitle(punishMenu, "Add Crime to the Player");
-	AddMenuItem(punishMenu, "small", "100 : (illegal Drugs)");
-	AddMenuItem(punishMenu, "medium", "200 : (frags Players)");
-	AddMenuItem(punishMenu, "high", "300 : (no Weapon License)");
-	AddMenuItem(punishMenu, "take", "Take Weapons away");
+	SetMenuTitle(punishMenu, "Punish Player");
+	AddMenuItem(punishMenu, "arrest", "Arrest Player");
+	AddMenuItem(punishMenu, "small", "Crime: 100 (illegal Drugs)");
+	AddMenuItem(punishMenu, "medium", "Crime: 200 (frags Players)");
+	AddMenuItem(punishMenu, "high", "Crime: 300 (no Weapon License)");
+	if (jobs_getLevel(officer) >= 3)
+		AddMenuItem(punishMenu, "setCrime", "Crime: Add Crime [3]");
+	else
+		AddMenuItem(punishMenu, "setCrime", "Crime: Add Crime [3]", ITEMDRAW_DISABLED);
+	AddMenuItem(punishMenu, "giveTicket", "Give Ticket (Crime * 2)");
+	if (jobs_getLevel(officer) >= 3)
+		AddMenuItem(punishMenu, "setTicket", "Set Ticket [3]");
+	else
+		AddMenuItem(punishMenu, "setTicket", "Set Ticket (In Chat)", ITEMDRAW_DISABLED);
+	AddMenuItem(punishMenu, "deleteIllegal", "Delete Items");
+	AddMenuItem(punishMenu, "deleteAll", "Delete Active Weapons");
 	DisplayMenu(punishMenu, officer, 60);
 	overtake[officer] = target;
-	PrintToChat(officer, "%i %i %i", g_iOfficerTarget[officer], target, overtake[officer]);
+	//PrintToChat(officer, "%i %i %i", g_iOfficerTarget[officer], target, overtake[officer]);
 }
 
 public int punishMenuHandler(Handle menu, MenuAction action, int client, int item) {
 	if (action == MenuAction_Select) {
 		char cValue[32];
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
-		PrintToChat(client, "o1: %i", overtake[client]);
+		//PrintToChat(client, "o1: %i", overtake[client]);
 		if (StrEqual(cValue, "small")) {
 			tCrime_addCrime(overtake[client], 100);
 		} else if (StrEqual(cValue, "medium")) {
 			tCrime_addCrime(overtake[client], 200);
 		} else if (StrEqual(cValue, "high")) {
 			tCrime_addCrime(overtake[client], 300);
-		} else if (StrEqual(cValue, "take")) {
+		} else if (StrEqual(cValue, "deleteAll")) {
 			StripAllPlayerWeapons(overtake[client]);
 			GivePlayerItem(overtake[client], "weapon_knife");
+		} else if (StrEqual(cValue, "arrest")) {
+			putInJail(client, overtake[client]);
+		} else if (StrEqual(cValue, "deleteIllegal")) {
+			deleteItems(client, overtake[client]);
+		} else if (StrEqual(cValue, "setCrime")) {
+			openSetCrimeMenu(client, overtake[client]);
+		} else if (StrEqual(cValue, "setTicket")) {
+			openSetTicketMenu(client, overtake[client]);
+		} else if (StrEqual(cValue, "giveTicket")) {
+			giveTicketToClient(client, overtake[client], tCrime_getCrime(overtake[client]) * 2);
 		}
 		overtake[client] = -1;
 		g_iOfficerTarget[client] = -1;
+	}
+}
+
+int g_iLatestTicket[MAXPLAYERS + 1];
+int g_iTickpriceOvertake[MAXPLAYERS + 1];
+public void giveTicketToClient(int officer, int client, int amount) {
+	Handle menu = CreateMenu(giveTicketmenuHandler);
+	char menuTitle[128];
+	Format(menuTitle, sizeof(menuTitle), "Pay ticket of %i$", amount);
+	SetMenuTitle(menu, menuTitle);
+	AddMenuItem(menu, "x", "Ignore");
+	if (tConomy_getCurrency(client) >= amount)
+		AddMenuItem(menu, "pay", "Pay Ticket");
+	else
+		AddMenuItem(menu, "pay", "Pay Ticket", ITEMDRAW_DISABLED);
+	g_iLatestTicket[client] = officer;
+	g_iTickpriceOvertake[client] = amount;
+	DisplayMenu(menu, client, 60);
+}
+
+public int giveTicketmenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "pay")) {
+			if (tConomy_getCurrency(client) >= g_iTickpriceOvertake[client]) {
+				tConomy_removeCurrency(client, g_iTickpriceOvertake[client], "Paid Ticket");
+				PrintToChat(g_iLatestTicket[client], "[-T-] %N has paid the Ticket of %i", client, g_iTickpriceOvertake[client]);
+			}
+		}
+	}
+}
+
+int g_iOfficerSetTicketOvertake[MAXPLAYERS + 1];
+public void openSetTicketMenu(int officer, int client){
+	Handle menu = CreateMenu(setTicketMenuHandler);
+	SetMenuTitle(menu, "Choose Ticket amount");
+	
+	int tempMoney = 20;
+	int increaseBy = 20;
+	int step = 0;
+	int reduce = 0;
+	while (tempMoney <= 15000) {
+		char cTempMoney[128];
+		IntToString(tempMoney, cTempMoney, sizeof(cTempMoney));
+		AddMenuItem(menu, cTempMoney, cTempMoney);
+		if (++step < (5 - reduce))
+			tempMoney += increaseBy;
+		else {
+			increaseBy *= 5;
+			step = 0;
+			tempMoney += increaseBy;
+			reduce = 1;
+		}
+	}
+	g_iOfficerSetTicketOvertake[officer] = client;
+	DisplayMenu(menu, officer, 30);
+}
+
+public int setTicketMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[8];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		int theAmount = StringToInt(cValue);
+		if (!isValidClient(g_iOfficerSetTicketOvertake[client]))
+			return;
+		giveTicketToClient(client, g_iOfficerSetTicketOvertake[client], theAmount);
+	}
+}
+
+
+int g_iOfficerSetCrimeMenuTarget[MAXPLAYERS + 1];
+public void openSetCrimeMenu(int officer, int client) {
+	Handle menu = CreateMenu(setCrimeMenuHandler);
+	SetMenuTitle(menu, "Choose Crime amount");
+	
+	int tempMoney = 20;
+	int increaseBy = 20;
+	int step = 0;
+	int reduce = 0;
+	while (tempMoney <= 15000) {
+		char cTempMoney[128];
+		IntToString(tempMoney, cTempMoney, sizeof(cTempMoney));
+		AddMenuItem(menu, cTempMoney, cTempMoney);
+		if (++step < (5 - reduce))
+			tempMoney += increaseBy;
+		else {
+			increaseBy *= 5;
+			step = 0;
+			tempMoney += increaseBy;
+			reduce = 1;
+		}
+	}
+	g_iOfficerSetCrimeMenuTarget[officer] = client;
+	DisplayMenu(menu, officer, 30);
+}
+
+public int setCrimeMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[8];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		int theAmount = StringToInt(cValue);
+		if (!isValidClient(g_iOfficerSetCrimeMenuTarget[client]))
+			return;
+		tCrime_addCrime(g_iOfficerSetCrimeMenuTarget[client], theAmount);
+	}
+}
+
+
+int g_iOfficerDeleteItemsTaget[MAXPLAYERS + 1];
+public void deleteItems(int officer, int client) {
+	g_iOfficerDeleteItemsTaget[officer] = client;
+	int maxItems = inventory_getClientItemsAmount(client);
+	Menu deleteItemsMenu = CreateMenu(deleteItemsMenuHandler);
+	SetMenuTitle(deleteItemsMenu, "Delete Items");
+	for (int i = 0; i < maxItems; i++) {
+		if (inventory_isValidItem(client, i)) {
+			char itemName[128];
+			if (inventory_getItemNameBySlotAndClient(client, i, itemName, "")) {
+				char cId[8];
+				IntToString(i, cId, sizeof(cId));
+				AddMenuItem(deleteItemsMenu, cId, itemName);
+			}
+		}
+	}
+	DisplayMenu(deleteItemsMenu, officer, 60);
+}
+
+public int deleteItemsMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[8];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		int id = StringToInt(cValue);
+		if (!isValidClient(g_iOfficerDeleteItemsTaget[client]))
+			return;
+		if (!inventory_isValidItem(g_iOfficerDeleteItemsTaget[client], id))
+			return;
+		char reason[256];
+		Format(reason, sizeof(reason), "Deleted By Police Officer %N", client);
+		inventory_deleteItemBySlot(g_iOfficerDeleteItemsTaget[client], id, reason);
+		g_iOfficerDeleteItemsTaget[client] = -1;
 	}
 }
 

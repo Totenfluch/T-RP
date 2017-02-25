@@ -15,6 +15,7 @@
 #include <rpg_inventory_core>
 #include <rpg_jail>
 #include <rpg_perks>
+#include <rpg_job_police>
 
 #pragma newdecls required
 
@@ -58,8 +59,6 @@ int g_iPlayerPlanted[MAXPLAYERS + 1];
 
 
 public void OnPluginStart() {
-	jobs_registerJob("Drug Planter", "Plant drugs to earn money but don't get cought by the Police", 20, 600, 3.0);
-	
 	HookEvent("round_start", onRoundStart);
 	
 	RegConsoleCmd("sm_plant", cmdPlantCommand, "plants drugs");
@@ -71,8 +70,6 @@ public void OnPluginStart() {
 	char CreateTableQuery[4096];
 	Format(CreateTableQuery, sizeof(CreateTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_drugs ( `playerid` VARCHAR(20) NOT NULL , `state` INT NOT NULL , `time` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , `pos_x` FLOAT NOT NULL , `pos_y` FLOAT NOT NULL , `pos_z` FLOAT NOT NULL ) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, CreateTableQuery);
-	
-	inventory_addItemHandle("Marijuana Seeds", 1);
 }
 
 public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]) {
@@ -199,6 +196,8 @@ public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 
 public void OnMapStart() {
 	npc_registerNpcType(npctype);
+	jobs_registerJob("Drug Planter", "Plant drugs to earn money but don't get cought by the Police", 20, 600, 3.0);
+	inventory_addItemHandle("Marijuana Seeds", 1);
 	CreateTimer(10.0, refreshTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	PrecacheModel("models/custom_prop/marijuana/marijuana_0.mdl", true);
 	PrecacheModel("models/custom_prop/marijuana/marijuana_1.mdl", true);
@@ -277,6 +276,11 @@ public Action cmdPlantCommand(int client, int args) {
 		return Plugin_Handled;
 	}
 	
+	if (police_isPlayerCuffed(client)) {
+		CPrintToChat(client, "[-T-]{red} You can't plant drugs while cuffed...'");
+		return Plugin_Handled;
+	}
+	
 	if (inventory_hasPlayerItem(client, "Marijuana Seeds"))
 		inventory_removePlayerItems(client, "Marijuana Seeds", 1, "Planted Marijuana");
 	else
@@ -343,7 +347,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				char entName[256];
 				Entity_GetGlobalName(ent, entName, sizeof(entName));
 				if (StrEqual(entName, "Drug Plant")) {
-					if (findPlantLoadedIdByIndex(ent) == -1) {
+					if (findPlantLoadedIdByIndex(ent) == -1 || police_isPlayerCuffed(client)) {
 						g_iPlayerPrevButtons[client] = iButtons;
 						return;
 					}

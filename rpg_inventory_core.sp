@@ -73,6 +73,7 @@ public void OnPluginStart() {
   `category` varchar(64) COLLATE utf8_bin NOT NULL, \
   `category2` varchar(64) COLLATE utf8_bin NOT NULL, \
   `rarity` int(11) NOT NULL, \
+  `container` varchar(64) COLLATE utf8_bin NOT NULL \
   PRIMARY KEY (`Id`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
@@ -187,6 +188,76 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("inventory_showInventoryOfClientToOtherClientByCategory", Native_showInventoryOfClientToOtherClientByCategory);
 	
 	/*
+		Return the owned items of a client
+		
+		@Param1 -> int client
+		
+		return amount of items the client has
+	*/
+	CreateNative("inventory_getClientItemsAmount", Native_getClientItemsAmount);
+	
+	/*
+		Check if the Item is valid or not
+		
+		@Param1 -> int client
+		@Param2 -> int slot
+		
+		return true when it is valid false if not
+	*/
+	CreateNative("inventory_isValidItem", Native_isValidItem);
+	
+	/*
+		Return the Name of an Item Slot
+		
+		@Param1 -> int client
+		@Param2 -> int slot
+		@Param3 -> ItemNameBuffer[128]
+		@Param4 -> char FilterFlags[8] // leave blank to enforce flags (only usable items)
+		
+		Saves the ItemName in Param3
+		
+		return true if usable false if not
+	*/
+	CreateNative("inventory_getItemNameBySlotAndClient", Native_getItemNameBySlotAndClient);
+	
+	/*
+		Return the Category of an Item Slot
+		
+		@Param1 -> int client
+		@Param2 -> int slot
+		@Param3 -> ItemNameBuffer[128]
+		@Param4 -> char FilterFlags[8] // leave blank to enforce flags (only usable items)
+		
+		Saves the ItemName in Param3
+		
+		return true if usable false if not
+	*/
+	CreateNative("inventory_getItemCategoryBySlotAndClient", Native_getItemCategoryBySlotAndClient);
+	
+	/*
+		Transfer Item to Container
+		
+		@Param1 -> int client
+		@Param2 -> int slot
+		@Param3 -> char containerName[64]
+		
+		noreturn
+	*/
+	CreateNative("inventory_transferItemToContainer", Native_transferItemToContainer);
+	
+	/*
+		Delete Item by Slot
+		
+		@Param1 -> int client
+		@Param2 -> int slot
+		@Param3 -> char reason[256]
+		
+		noreturn
+	*/
+	CreateNative("inventory_deleteItemBySlot", Native_deleteItemBySlot);
+	
+	
+	/*
 		On Item used
 		@Param1 -> int client
 		@Param2 -> char Itemname[128]
@@ -197,7 +268,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		@Param7 -> char timestamp[64]
 	
 	*/
-	
 	g_hOnItemUsed = CreateGlobalForward("inventory_onItemUsed", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_String, Param_String, Param_Cell, Param_String);
 	
 	
@@ -289,6 +359,60 @@ public int Native_showInventoryOfClientToOtherClientByCategory(Handle plugin, in
 	showInventoryOfClientToOtherClientByCategory(client1, client2, category);
 }
 
+public int Native_getClientItemsAmount(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	return getMaxSlot(client);
+}
+
+public int Native_isValidItem(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	int slot = GetNativeCell(2);
+	return g_ePlayerInventory[client][slot][iIsActive];
+}
+
+public int Native_transferItemToContainer(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	int slot = GetNativeCell(2);
+	char containerBuffer[64];
+	GetNativeString(3, containerBuffer, sizeof(containerBuffer));
+	transferItemToContainer(client, slot, containerBuffer);
+}
+
+public int Native_deleteItemBySlot(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	int slot = GetNativeCell(2);
+	char reason[256];
+	GetNativeString(3, reason, sizeof(reason));
+	deleteItemBySlot(client, slot, reason);
+}
+
+public int Native_getItemCategoryBySlotAndClient(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	int slot = GetNativeCell(2);
+	SetNativeString(3, g_ePlayerInventory[client][slot][iCategory], 128);
+	char flags[8];
+	GetNativeString(4, flags, sizeof(flags));
+	if ((StrContains(flags, "i") == -1) && (StrContains(g_ePlayerInventory[client][slot][iFlags], "i") != -1))
+		return false;
+	if ((StrContains(flags, "l") == -1) && (StrContains(g_ePlayerInventory[client][slot][iFlags], "l") != -1))
+		return false;
+	return true;
+}
+
+public int Native_getItemNameBySlotAndClient(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	int slot = GetNativeCell(2);
+	SetNativeString(3, g_ePlayerInventory[client][slot][iItemname], 128);
+	char flags[8];
+	GetNativeString(4, flags, sizeof(flags));
+	if ((StrContains(flags, "i") == -1) && (StrContains(g_ePlayerInventory[client][slot][iFlags], "i") != -1))
+		return false;
+	if ((StrContains(flags, "l") == -1) && (StrContains(g_ePlayerInventory[client][slot][iFlags], "l") != -1))
+		return false;
+	return true;
+}
+
+
 public int Native_addItemHandle(Handle plugin, int numParams) {
 	if (g_aHandledItems == INVALID_HANDLE) {
 		g_aHandledItems = CreateArray(400, 200);
@@ -359,7 +483,7 @@ public void loadClientInventory(int client) {
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
 	char loadClientInventoryQuery[1024];
-	Format(loadClientInventoryQuery, sizeof(loadClientInventoryQuery), "SELECT timestamp,playerid,playername,itemname,itemid,weight,flags,category,category2,rarity FROM t_rpg_items WHERE playerid = '%s';", playerid);
+	Format(loadClientInventoryQuery, sizeof(loadClientInventoryQuery), "SELECT timestamp,playerid,playername,itemname,itemid,weight,flags,category,category2,rarity FROM t_rpg_items WHERE playerid = '%s' AND container = '';", playerid);
 	SQL_TQuery(g_DB, SQLLoadClientInventoryQuery, loadClientInventoryQuery, client);
 }
 
@@ -414,7 +538,7 @@ public bool givePlayerItem(int client, char itemname[128], int weight, char flag
 	Format(itemid, sizeof(itemid), "%s_%s", itemname, timeKey);
 	
 	char addItemQuery[512];
-	Format(addItemQuery, sizeof(addItemQuery), "INSERT INTO `t_rpg_items` (`Id`, `timestamp`, `playerid`, `playername`, `itemname`, `itemid`, `weight`, `flags`, `category`, `category2`, `rarity`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%i', '%s', '%s', '%s', '%i');", playerid, clean_playername, itemname, itemid, weight, flags, category, category2, rarity);
+	Format(addItemQuery, sizeof(addItemQuery), "INSERT INTO `t_rpg_items` (`Id`, `timestamp`, `playerid`, `playername`, `itemname`, `itemid`, `weight`, `flags`, `category`, `category2`, `rarity`, `container`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%i', '%s', '%s', '%s', '%i', '');", playerid, clean_playername, itemname, itemid, weight, flags, category, category2, rarity);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, addItemQuery);
 	
 	Format(addItemQuery, sizeof(addItemQuery), "INSERT INTO `t_rpg_inventory_log` (`Id`, `timestamp`, `playerid`, `item`, `category`, `category2`, `reason`, `type`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s');", playerid, itemname, category, category2, reason, "GIVEN");
@@ -454,6 +578,14 @@ public int getItemOwnedAmount(int client, char[] itemname) {
 	return count;
 }
 
+public int getMaxSlot(int client) {
+	int max = 0;
+	for (int i = 0; i < MAX_ITEMS; i++)
+	if (g_ePlayerInventory[client][i][iIsActive])
+		max = i;
+	return max;
+}
+
 public bool hasPlayerItem(int client, char itemname[128]) {
 	if (getItemOwnedAmount(client, itemname) >= 1)
 		return true;
@@ -470,7 +602,7 @@ public bool takePlayerItem(int client, char itemname[128], int amount, char reas
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
 	char removeItemQuery[1024];
-	Format(removeItemQuery, sizeof(removeItemQuery), "DELETE FROM t_rpg_items WHERE playerid = '%s' AND itemname = '%s' LIMIT %i;", playerid, itemname, amount);
+	Format(removeItemQuery, sizeof(removeItemQuery), "DELETE FROM t_rpg_items WHERE playerid = '%s' AND itemname = '%s' AND container = '' LIMIT %i;", playerid, itemname, amount);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, removeItemQuery);
 	
 	Format(removeItemQuery, sizeof(removeItemQuery), "INSERT INTO `t_rpg_inventory_log` (`Id`, `timestamp`, `playerid`, `item`, `category`, `category2`, `reason`, `type`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s');", playerid, itemname, "", "", reason, "TAKEN");
@@ -663,6 +795,26 @@ public int inventoryMenuHandler(Handle menu, MenuAction action, int client, int 
 			DisplayMenu(m, client, 60);
 		}
 	}
+}
+
+public void transferItemToContainer(int client, int slot, char containerBuffer[64]) {
+	char iName[128];
+	strcopy(iName, sizeof(iName), g_ePlayerInventory[client][slot][iItemname]);
+	if (!takeFromLocalInventory(client, iName, 1))
+		return;
+	
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	char updateContainerQuery[512];
+	Format(updateContainerQuery, sizeof(updateContainerQuery), "UPDATE t_rpg_items SET container = '%s' WHERE playerid = '%s' AND container = '' AND itemname = '%s'", containerBuffer, playerid, g_ePlayerInventory[client][slot][iItemname]);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateContainerQuery);
+}
+
+public void deleteItemBySlot(int client, int slot, char reason[256]) {
+	char iName[128];
+	strcopy(iName, sizeof(iName), g_ePlayerInventory[client][slot][iItemname]);
+	takePlayerItem(client, iName, 1, reason);
 }
 
 public int defaultItemHandleHandler(Handle menu, MenuAction action, int client, int item) {

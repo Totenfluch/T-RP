@@ -256,6 +256,18 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	*/
 	CreateNative("inventory_deleteItemBySlot", Native_deleteItemBySlot);
 	
+	/*
+		Transfer Item to other Player by Slot
+		
+		@Param1 -> int client
+		@Param2 -> int target
+		@Param3 -> int slot
+		@Param4 -> char reason[256]
+		
+		noreturn
+	*/
+	CreateNative("inventory_transferItemToPlayerBySlot", Native_transferItemToPlayerBySlot);
+	
 	
 	/*
 		On Item used
@@ -410,6 +422,15 @@ public int Native_getItemNameBySlotAndClient(Handle plugin, int numParams) {
 	if ((StrContains(flags, "l") == -1) && (StrContains(g_ePlayerInventory[client][slot][iFlags], "l") != -1))
 		return false;
 	return true;
+}
+
+public int Native_transferItemToPlayerBySlot(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	int target = GetNativeCell(2);
+	int slot = GetNativeCell(3);
+	char reason[256];
+	GetNativeString(4, reason, sizeof(reason));
+	transferItemBySlot(client, target, slot, reason);
 }
 
 
@@ -833,6 +854,20 @@ public int defaultItemHandleHandler(Handle menu, MenuAction action, int client, 
 			if (takePlayerItem(client, tempItem, amount, "Throwed all away"))
 				PrintToConsole(client, "Successfully removed items");
 		}
+	}
+}
+
+public void transferItemBySlot(int client, int target, int slot, char reason[256]){
+	char itemName[128];
+	strcopy(itemName, sizeof(itemName), g_ePlayerInventory[client][slot][iItemname]);
+	if(takePlayerItem(client, itemName, 1, reason)){
+		char flags[64];
+		char category[64];
+		char category2[64];
+		strcopy(flags, sizeof(flags), g_ePlayerInventory[client][slot][iFlags]);
+		strcopy(category, sizeof(category), g_ePlayerInventory[client][slot][iCategory]);
+		strcopy(category2, sizeof(category2), g_ePlayerInventory[client][slot][iCategory2]);
+		givePlayerItem(target, itemName, g_ePlayerInventory[client][slot][iWeight], flags, category, category2, g_ePlayerInventory[client][slot][iRarity], reason);
 	}
 }
 

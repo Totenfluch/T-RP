@@ -136,7 +136,7 @@ public void OnClientAuthorized(int client) {
 	g_bPlayerInMiningZone[client] = false;
 	g_iPlayerZoneId[client] = -1;
 	for (int zones = 0; zones < MAX_ZONES; zones++) {
-		g_iMiningZoneCooldown[client][zones] = 0;
+		g_iMiningZoneCooldown[client][zones] = g_iZoneCooldown;
 		g_iCollectedLoot[client][zones] = 0;
 	}
 }

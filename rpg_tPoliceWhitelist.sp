@@ -68,6 +68,7 @@ public void OnPluginStart() {
 }
 
 public void OnConfigsExecuted() {
+	g_iFlagCount = 0;
 	g_iTestPoliceDuration = GetConVarInt(g_hTestPoliceDuration);
 	char cFlags[256];
 	GetConVarString(g_hFlag, cFlags, sizeof(cFlags));
@@ -260,10 +261,10 @@ public void showPlayerSelectMenu(int client, int reason) {
 			continue;
 		
 		if (reason == 2) {
-			if (!g_bIspolice[client])
+			if (!g_bIspolice[i])
 				continue;
 		} else if (reason == 1) {
-			if (g_bIspolice[client])
+			if (g_bIspolice[i])
 				continue;
 		}
 		

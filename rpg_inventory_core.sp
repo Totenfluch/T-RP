@@ -73,7 +73,7 @@ public void OnPluginStart() {
   `category` varchar(64) COLLATE utf8_bin NOT NULL, \
   `category2` varchar(64) COLLATE utf8_bin NOT NULL, \
   `rarity` int(11) NOT NULL, \
-  `container` varchar(64) COLLATE utf8_bin NOT NULL \
+  `container` varchar(64) COLLATE utf8_bin NOT NULL, \
   PRIMARY KEY (`Id`) \
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
@@ -877,7 +877,7 @@ public void transferItemBySlot(int client, int target, int slot, char reason[256
 	}
 }
 
-public void transferItemFromContainer(int client, char containerName[64], char uniqueId[64]){
+public void transferItemFromContainer(int client, char containerName[64], char uniqueId[64]) {
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	

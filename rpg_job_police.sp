@@ -270,6 +270,11 @@ public void OnPluginStart() {
 	g_hSkin2Value = AutoExecConfig_CreateConVar("rpg_police_skin_2_cost", "250", "Cost of 'Police 2' Skin");
 	g_hSkin3Value = AutoExecConfig_CreateConVar("rpg_police_skin_3_cost", "250", "Cost of 'Police 3' Skin");
 	
+	AutoExecConfig_CleanFile();
+	AutoExecConfig_ExecuteFile();
+}
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
 	/*
 		Return is the Player is cuffed or not
 		@Param1-> int client
@@ -278,9 +283,6 @@ public void OnPluginStart() {
 	
 	*/
 	CreateNative("police_isPlayerCuffed", Native_isPlayerCuffed);
-	
-	AutoExecConfig_CleanFile();
-	AutoExecConfig_ExecuteFile();
 }
 
 public int Native_isPlayerCuffed(Handle plugin, int numParams) {

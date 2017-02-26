@@ -331,7 +331,6 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 				
 				
 				// Mining Boost 1
-				
 				if (!hasPerk(client, "Mining Boost1")) {
 					Format(display, sizeof(display), "Mining Speed Boost 1 [4](%i)", g_iPerk_mining_boost1);
 					if (tConomy_getCurrency(client) >= g_iPerk_mining_boost1 && jobs_getLevel(client) >= 4)
@@ -344,7 +343,6 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 				
 				
 				// Mining Fossil
-				
 				if (!hasPerk(client, "Mining Fosil")) {
 					Format(display, sizeof(display), "Mine Fosil [5](%i)", g_iPerk_mining_fosil);
 					if (tConomy_getCurrency(client) >= g_iPerk_mining_fosil && jobs_getLevel(client) >= 5)
@@ -419,12 +417,14 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 			} else {
 				AddMenuItem(nextMenu, "x", "- You are not a Miner -", ITEMDRAW_DISABLED);
 			}
+			
 		} else if (StrEqual(cValue, "garbage")) {
 			SetMenuTitle(nextMenu, "> Garbage Collector Perks <");
 			AddMenuItem(nextMenu, "x", "- There are no Perks for Garbage Collector -", ITEMDRAW_DISABLED);
 		} else if (StrEqual(cValue, "apple")) {
 			SetMenuTitle(nextMenu, "> Apple Harvester Perks <");
 			if (jobs_isActiveJob(client, "Apple Harvester")) {
+				
 				// Apples Boost 1
 				if (!hasPerk(client, "Apples Boost1")) {
 					Format(display, sizeof(display), "Apples XP Boost1 [4](%i)", g_iPerk_apples_boost1);
@@ -516,109 +516,119 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 			} else {
 				AddMenuItem(nextMenu, "x", "- You are not a Apple Harvester -", ITEMDRAW_DISABLED);
 			}
+			
 		} else if (StrEqual(cValue, "drugs")) {
 			SetMenuTitle(nextMenu, "> Drug Harvester Perks <");
-			
-			// Drug Seed Boost
-			if (!hasPerk(client, "Drug Seed Boost")) {
-				Format(display, sizeof(display), "Marijuana Seed Boost [4](%i)", g_iDrug_seed_boost);
-				if (tConomy_getCurrency(client) >= g_iDrug_seed_boost && jobs_getLevel(client) >= 4)
-					AddMenuItem(nextMenu, "drug_seed_boost", display);
-				else
-					AddMenuItem(nextMenu, "drug_seed_boost", display, ITEMDRAW_DISABLED);
+			if (jobs_isActiveJob(client, "Drug Planter")) {
+				
+				// Drug Seed Boost
+				if (!hasPerk(client, "Drug Seed Boost")) {
+					Format(display, sizeof(display), "Marijuana Seed Boost [4](%i)", g_iDrug_seed_boost);
+					if (tConomy_getCurrency(client) >= g_iDrug_seed_boost && jobs_getLevel(client) >= 4)
+						AddMenuItem(nextMenu, "drug_seed_boost", display);
+					else
+						AddMenuItem(nextMenu, "drug_seed_boost", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Marijuana Seed Boost | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
 			} else {
-				AddMenuItem(nextMenu, "x", "Marijuana Seed Boost | ^~Owned~^", ITEMDRAW_DISABLED);
+				AddMenuItem(nextMenu, "x", "- You are not a Drug Planter -", ITEMDRAW_DISABLED);
 			}
-			
+
 		} else if (StrEqual(cValue, "gardener")) {
 			SetMenuTitle(nextMenu, "> Gardener Perks <");
-			
-			// Gardener Speed Boost 1
-			if (!hasPerk(client, "Gardener Speed Boost1")) {
-				Format(display, sizeof(display), "Gardener Speed Boost1 [3](%i)", g_iGardener_speed_boost1);
-				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost1 && jobs_getLevel(client) >= 3)
-					AddMenuItem(nextMenu, "gardener_speed_boost_1", display);
-				else
-					AddMenuItem(nextMenu, "gardener_speed_boost_1", display, ITEMDRAW_DISABLED);
+			if (jobs_isActiveJob(client, "Gardener")) {
+				
+				// Gardener Speed Boost 1
+				if (!hasPerk(client, "Gardener Speed Boost1")) {
+					Format(display, sizeof(display), "Gardener Speed Boost1 [3](%i)", g_iGardener_speed_boost1);
+					if (tConomy_getCurrency(client) >= g_iGardener_speed_boost1 && jobs_getLevel(client) >= 3)
+						AddMenuItem(nextMenu, "gardener_speed_boost_1", display);
+					else
+						AddMenuItem(nextMenu, "gardener_speed_boost_1", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Speed Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
+				
+				// Gardener XP Boost 1
+				if (!hasPerk(client, "Gardener XP Boost1")) {
+					Format(display, sizeof(display), "Gardener XP Boost1 [4](%i)", g_iGardener_xp_boost1);
+					if (tConomy_getCurrency(client) >= g_iGardener_speed_boost1 && jobs_getLevel(client) >= 4)
+						AddMenuItem(nextMenu, "gardener_xp_boost_1", display);
+					else
+						AddMenuItem(nextMenu, "gardener_xp_boost_1", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "XP Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
+				
+				// Gardener Speed Boost 2
+				if (!hasPerk(client, "Gardener Speed Boost2")) {
+					Format(display, sizeof(display), "Gardener Speed Boost2 [5](%i)", g_iGardener_speed_boost2);
+					if (tConomy_getCurrency(client) >= g_iGardener_speed_boost2 && jobs_getLevel(client) >= 5)
+						AddMenuItem(nextMenu, "gardener_speed_boost_2", display);
+					else
+						AddMenuItem(nextMenu, "gardener_speed_boost_2", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Speed Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
+				
+				// Gardener XP Boost 2
+				if (!hasPerk(client, "Gardener XP Boost2")) {
+					Format(display, sizeof(display), "Gardener XP Boost2 [6](%i)", g_iGardener_xp_boost2);
+					if (tConomy_getCurrency(client) >= g_iGardener_speed_boost2 && jobs_getLevel(client) >= 6)
+						AddMenuItem(nextMenu, "gardener_xp_boost_2", display);
+					else
+						AddMenuItem(nextMenu, "gardener_xp_boost_2", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "XP Boost2 | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
+				
+				// Gardener Speed Boost 3
+				if (!hasPerk(client, "Gardener Speed Boost3")) {
+					Format(display, sizeof(display), "Gardener Speed Boost3 [7](%i)", g_iGardener_speed_boost3);
+					if (tConomy_getCurrency(client) >= g_iGardener_speed_boost3 && jobs_getLevel(client) >= 7)
+						AddMenuItem(nextMenu, "gardener_speed_boost_3", display);
+					else
+						AddMenuItem(nextMenu, "gardener_speed_boost_3", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Speed Boost3 | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
+				
+				// Gardener XP Boost 3
+				if (!hasPerk(client, "Gardener XP Boost3")) {
+					Format(display, sizeof(display), "Gardener XP Boost3 [8](%i)", g_iGardener_xp_boost3);
+					if (tConomy_getCurrency(client) >= g_iGardener_speed_boost3 && jobs_getLevel(client) >= 8)
+						AddMenuItem(nextMenu, "gardener_xp_boost_3", display);
+					else
+						AddMenuItem(nextMenu, "gardener_xp_boost_3", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "XP Boost3 | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
+				
+				// Gardener Speed Boost 4
+				if (!hasPerk(client, "Gardener Speed Boost4")) {
+					Format(display, sizeof(display), "Gardener Speed Boost4 [9](%i)", g_iGardener_speed_boost4);
+					if (tConomy_getCurrency(client) >= g_iGardener_speed_boost4 && jobs_getLevel(client) >= 9)
+						AddMenuItem(nextMenu, "gardener_speed_boost_4", display);
+					else
+						AddMenuItem(nextMenu, "gardener_speed_boost_4", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Speed Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
+				
+				// Gardener XP Boost 4
+				if (!hasPerk(client, "Gardener XP Boost4")) {
+					Format(display, sizeof(display), "Gardener XP Boost4 [10](%i)", g_iGardener_xp_boost4);
+					if (tConomy_getCurrency(client) >= g_iGardener_speed_boost4 && jobs_getLevel(client) >= 10)
+						AddMenuItem(nextMenu, "gardener_xp_boost_4", display);
+					else
+						AddMenuItem(nextMenu, "gardener_xp_boost_4", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "XP Boost4 | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
+				
 			} else {
-				AddMenuItem(nextMenu, "x", "Speed Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
-			}
-			
-			// Gardener XP Boost 1
-			if (!hasPerk(client, "Gardener XP Boost1")) {
-				Format(display, sizeof(display), "Gardener XP Boost1 [4](%i)", g_iGardener_xp_boost1);
-				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost1 && jobs_getLevel(client) >= 4)
-					AddMenuItem(nextMenu, "gardener_xp_boost_1", display);
-				else
-					AddMenuItem(nextMenu, "gardener_xp_boost_1", display, ITEMDRAW_DISABLED);
-			} else {
-				AddMenuItem(nextMenu, "x", "XP Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
-			}
-			
-			// Gardener Speed Boost 2
-			if (!hasPerk(client, "Gardener Speed Boost2")) {
-				Format(display, sizeof(display), "Gardener Speed Boost2 [5](%i)", g_iGardener_speed_boost2);
-				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost2 && jobs_getLevel(client) >= 5)
-					AddMenuItem(nextMenu, "gardener_speed_boost_2", display);
-				else
-					AddMenuItem(nextMenu, "gardener_speed_boost_2", display, ITEMDRAW_DISABLED);
-			} else {
-				AddMenuItem(nextMenu, "x", "Speed Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
-			}
-			
-			// Gardener XP Boost 2
-			if (!hasPerk(client, "Gardener XP Boost2")) {
-				Format(display, sizeof(display), "Gardener XP Boost2 [6](%i)", g_iGardener_xp_boost2);
-				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost2 && jobs_getLevel(client) >= 6)
-					AddMenuItem(nextMenu, "gardener_xp_boost_2", display);
-				else
-					AddMenuItem(nextMenu, "gardener_xp_boost_2", display, ITEMDRAW_DISABLED);
-			} else {
-				AddMenuItem(nextMenu, "x", "XP Boost2 | ^~Owned~^", ITEMDRAW_DISABLED);
-			}
-			
-			// Gardener Speed Boost 3
-			if (!hasPerk(client, "Gardener Speed Boost3")) {
-				Format(display, sizeof(display), "Gardener Speed Boost3 [7](%i)", g_iGardener_speed_boost3);
-				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost3 && jobs_getLevel(client) >= 7)
-					AddMenuItem(nextMenu, "gardener_speed_boost_3", display);
-				else
-					AddMenuItem(nextMenu, "gardener_speed_boost_3", display, ITEMDRAW_DISABLED);
-			} else {
-				AddMenuItem(nextMenu, "x", "Speed Boost3 | ^~Owned~^", ITEMDRAW_DISABLED);
-			}
-			
-			// Gardener XP Boost 3
-			if (!hasPerk(client, "Gardener XP Boost3")) {
-				Format(display, sizeof(display), "Gardener XP Boost3 [8](%i)", g_iGardener_xp_boost3);
-				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost3 && jobs_getLevel(client) >= 8)
-					AddMenuItem(nextMenu, "gardener_xp_boost_3", display);
-				else
-					AddMenuItem(nextMenu, "gardener_xp_boost_3", display, ITEMDRAW_DISABLED);
-			} else {
-				AddMenuItem(nextMenu, "x", "XP Boost3 | ^~Owned~^", ITEMDRAW_DISABLED);
-			}
-			
-			// Gardener Speed Boost 4
-			if (!hasPerk(client, "Gardener Speed Boost4")) {
-				Format(display, sizeof(display), "Gardener Speed Boost4 [9](%i)", g_iGardener_speed_boost4);
-				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost4 && jobs_getLevel(client) >= 9)
-					AddMenuItem(nextMenu, "gardener_speed_boost_4", display);
-				else
-					AddMenuItem(nextMenu, "gardener_speed_boost_4", display, ITEMDRAW_DISABLED);
-			} else {
-				AddMenuItem(nextMenu, "x", "Speed Boost1 | ^~Owned~^", ITEMDRAW_DISABLED);
-			}
-			
-			// Gardener XP Boost 4
-			if (!hasPerk(client, "Gardener XP Boost4")) {
-				Format(display, sizeof(display), "Gardener XP Boost4 [10](%i)", g_iGardener_xp_boost4);
-				if (tConomy_getCurrency(client) >= g_iGardener_speed_boost4 && jobs_getLevel(client) >= 10)
-					AddMenuItem(nextMenu, "gardener_xp_boost_4", display);
-				else
-					AddMenuItem(nextMenu, "gardener_xp_boost_4", display, ITEMDRAW_DISABLED);
-			} else {
-				AddMenuItem(nextMenu, "x", "XP Boost4 | ^~Owned~^", ITEMDRAW_DISABLED);
+				AddMenuItem(nextMenu, "x", "- You are not a Gardener -", ITEMDRAW_DISABLED);
 			}
 		}
 		DisplayMenu(nextMenu, client, 60);
@@ -767,6 +777,6 @@ public int nextMenuHandler(Handle menu, MenuAction action, int client, int item)
 				addPerk(client, "Drug Seed Boost");
 			}
 		}
-
+		
 	}
 } 

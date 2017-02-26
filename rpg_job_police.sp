@@ -1195,7 +1195,7 @@ public int giveTicketmenuHandler(Handle menu, MenuAction action, int client, int
 }
 
 int g_iOfficerSetTicketOvertake[MAXPLAYERS + 1];
-public void openSetTicketMenu(int officer, int client){
+public void openSetTicketMenu(int officer, int client) {
 	Handle menu = CreateMenu(setTicketMenuHandler);
 	SetMenuTitle(menu, "Choose Ticket amount");
 	

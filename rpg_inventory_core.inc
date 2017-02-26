@@ -175,3 +175,14 @@ native void inventory_deleteItemBySlot(int client, int slot, char reason[256]);
 		noreturn
 	*/
 native void inventory_transferItemToPlayerBySlot(int client, int target, int slot, char reason[256]);
+
+	/*
+		Transfer Item from Container
+		
+		@Param1 -> int client
+		@Param2 -> char containerName[64]
+		@Param3 -> char uniqueId[64]
+		
+		@return noreturn
+	*/
+native void inventory_transferItemFromContainer(int client, char containerName[64], char uniqueId[64]);

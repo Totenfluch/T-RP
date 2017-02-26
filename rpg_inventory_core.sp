@@ -246,6 +246,17 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("inventory_transferItemToContainer", Native_transferItemToContainer);
 	
 	/*
+		Transfer Item from Container
+		
+		@Param1 -> int client
+		@Param2 -> char containerName[64]
+		@Param3 -> char uniqueId[64]
+		
+		@return noreturn
+	*/
+	CreateNative("inventory_transferItemFromContainer", Native_transferItemFromContainer);
+	
+	/*
 		Delete Item by Slot
 		
 		@Param1 -> int client
@@ -431,6 +442,15 @@ public int Native_transferItemToPlayerBySlot(Handle plugin, int numParams) {
 	char reason[256];
 	GetNativeString(4, reason, sizeof(reason));
 	transferItemBySlot(client, target, slot, reason);
+}
+
+public int Native_transferItemFromContainer(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	char containerName[64];
+	GetNativeString(2, containerName, sizeof(containerName));
+	char uniqueId[64];
+	GetNativeString(3, uniqueId, sizeof(uniqueId));
+	transferItemFromContainer(client, containerName, uniqueId);
 }
 
 
@@ -765,22 +785,6 @@ public Action cmdOpenInventory(int client, const char[] command, int argc) {
 	return Plugin_Continue;
 }
 
-/*public Action cmdOpenInventory(int client, const char[] command, int argc)
-{
-	Handle menu = CreateMenu(inventoryMenuHandler);
-	SetMenuTitle(menu, "Your Inventory");
-	for (int i = 0; i < MAX_ITEMS; i++) {
-		if (g_ePlayerInventory[client][i][iIsActive]) {
-			char id[8];
-			IntToString(i, id, sizeof(id));
-			AddMenuItem(menu, id, g_ePlayerInventory[client][i][iItemname]);
-		}
-	}
-	DisplayMenu(menu, client, 60);
-	
-	return Plugin_Continue;
-}*/
-
 public int inventoryMenuHandler(Handle menu, MenuAction action, int client, int item) {
 	if (action == MenuAction_Select) {
 		char info[64];
@@ -823,12 +827,12 @@ public void transferItemToContainer(int client, int slot, char containerBuffer[6
 	strcopy(iName, sizeof(iName), g_ePlayerInventory[client][slot][iItemname]);
 	if (!takeFromLocalInventory(client, iName, 1))
 		return;
-	
+	CPrintToChat(client, "{darkred}Removed {olive}%ix{darkred} {olive}%s{darkred} from your Inventory {purple}({darkred}%s{purple})", 1, iName, "Put in Container");
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
-	char updateContainerQuery[512];
-	Format(updateContainerQuery, sizeof(updateContainerQuery), "UPDATE t_rpg_items SET container = '%s' WHERE playerid = '%s' AND container = '' AND itemname = '%s'", containerBuffer, playerid, g_ePlayerInventory[client][slot][iItemname]);
+	char updateContainerQuery[1024];
+	Format(updateContainerQuery, sizeof(updateContainerQuery), "UPDATE t_rpg_items SET container = '%s' WHERE playerid = '%s' AND container = '' AND itemname = '%s' LIMIT 1;", containerBuffer, playerid, iName);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateContainerQuery);
 }
 
@@ -857,18 +861,44 @@ public int defaultItemHandleHandler(Handle menu, MenuAction action, int client, 
 	}
 }
 
-public void transferItemBySlot(int client, int target, int slot, char reason[256]){
+public void transferItemBySlot(int client, int target, int slot, char reason[256]) {
 	char itemName[128];
 	strcopy(itemName, sizeof(itemName), g_ePlayerInventory[client][slot][iItemname]);
-	if(takePlayerItem(client, itemName, 1, reason)){
-		char flags[64];
-		char category[64];
-		char category2[64];
-		strcopy(flags, sizeof(flags), g_ePlayerInventory[client][slot][iFlags]);
-		strcopy(category, sizeof(category), g_ePlayerInventory[client][slot][iCategory]);
-		strcopy(category2, sizeof(category2), g_ePlayerInventory[client][slot][iCategory2]);
+	
+	char flags[64];
+	char category[64];
+	char category2[64];
+	strcopy(flags, sizeof(flags), g_ePlayerInventory[client][slot][iFlags]);
+	strcopy(category, sizeof(category), g_ePlayerInventory[client][slot][iCategory]);
+	strcopy(category2, sizeof(category2), g_ePlayerInventory[client][slot][iCategory2]);
+	
+	if (takePlayerItem(client, itemName, 1, reason)) {
 		givePlayerItem(target, itemName, g_ePlayerInventory[client][slot][iWeight], flags, category, category2, g_ePlayerInventory[client][slot][iRarity], reason);
 	}
+}
+
+public void transferItemFromContainer(int client, char containerName[64], char uniqueId[64]){
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	char updateContainerQuery[512];
+	Format(updateContainerQuery, sizeof(updateContainerQuery), "UPDATE t_rpg_items SET playerid = '%s' WHERE itemid = '%s' AND container = '%s';", playerid, uniqueId, containerName);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateContainerQuery);
+	
+	char playername[MAX_NAME_LENGTH + 8];
+	GetClientName(client, playername, sizeof(playername));
+	char clean_playername[MAX_NAME_LENGTH * 2 + 16];
+	SQL_EscapeString(g_DB, playername, clean_playername, sizeof(clean_playername));
+	
+	Format(updateContainerQuery, sizeof(updateContainerQuery), "UPDATE t_rpg_items SET playername = '%s' WHERE itemid = '%s' AND container = '%s';", clean_playername, uniqueId, containerName);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateContainerQuery);
+	
+	char loadClientInventoryQuery[1024];
+	Format(loadClientInventoryQuery, sizeof(loadClientInventoryQuery), "SELECT timestamp,playerid,playername,itemname,itemid,weight,flags,category,category2,rarity FROM t_rpg_items WHERE playerid = '%s' AND container = '%s' AND itemid = '%s';", playerid, containerName, uniqueId);
+	SQL_TQuery(g_DB, SQLLoadClientInventoryQuery, loadClientInventoryQuery, client);
+	
+	Format(updateContainerQuery, sizeof(updateContainerQuery), "UPDATE t_rpg_items SET container = '' WHERE itemid = '%s' AND container = '%s';", uniqueId, containerName);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateContainerQuery);
 }
 
 public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error, any data) {

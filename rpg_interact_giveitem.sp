@@ -22,9 +22,9 @@ public Plugin myinfo =
 	url = "http://ggc-base.de"
 };
 
-public void OnPluginStart(){}
+public void OnPluginStart() {  }
 
-public void OnMapStart(){
+public void OnMapStart() {
 	interact_registerInteract(g_cInteraction);
 }
 
@@ -67,7 +67,7 @@ public int giveItemMenuHandler(Handle menu, MenuAction action, int client, int i
 		int theId = StringToInt(cId);
 		char reason[256];
 		Format(reason, sizeof(reason), "Transfered from %N to %N", client, g_iPlayerTarget[client]);
-		if(inventory_isValidItem(client, theId)){
+		if (inventory_isValidItem(client, theId)) {
 			inventory_transferItemToPlayerBySlot(client, g_iPlayerTarget[client], theId, reason);
 		}
 		

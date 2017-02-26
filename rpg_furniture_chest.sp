@@ -134,7 +134,7 @@ public void openStoreChooserForClient(int client, int entity) {
 	SetMenuTitle(storeItemMenu, menuTitle);
 	bool hasItems = false;
 	int maxItems = inventory_getClientItemsAmount(client);
-	for (int i = 0; i < maxItems; i++) {
+	for (int i = 0; i <= maxItems; i++) {
 		if (inventory_isValidItem(client, i)) {
 			char itemName[128];
 			if (inventory_getItemNameBySlotAndClient(client, i, itemName, "")) {

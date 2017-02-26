@@ -37,7 +37,7 @@ public void OnPlayerInteract(int client, int target, char interaction[64]) {
 	Format(menuTitle, sizeof(menuTitle), "Give %N an Item", g_iPlayerTarget[client]);
 	SetMenuTitle(menu, menuTitle);
 	int maxItems = inventory_getClientItemsAmount(client);
-	for (int i = 0; i < maxItems; i++) {
+	for (int i = 0; i <= maxItems; i++) {
 		if (inventory_isValidItem(client, i)) {
 			char itemName[128];
 			if (inventory_getItemNameBySlotAndClient(client, i, itemName, "")) {

@@ -13,28 +13,28 @@
 
 public Plugin myinfo = 
 {
-	name = "T-RP Deathpenalty",
-	author = PLUGIN_AUTHOR,
-	description = "Adds a penalty on player death",
-	version = PLUGIN_VERSION,
+	name = "T-RP Deathpenalty", 
+	author = PLUGIN_AUTHOR, 
+	description = "Adds a penalty on player death", 
+	version = PLUGIN_VERSION, 
 	url = "http://ggc-base.de"
 };
 
-public void OnPluginStart(){
+public void OnPluginStart() {
 	HookEvent("player_death", onPlayerDeath);
 }
 
-public Action onPlayerDeath(Handle event, const char[] name, bool dontBroadcast){
+public Action onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 	
 	char reason[256];
-	if(isValidClient(attacker))
+	if (isValidClient(attacker))
 		Format(reason, sizeof(reason), "You died (Killed by %N)", attacker);
 	else
 		Format(reason, sizeof(reason), "You died (Suicide)");
-		
-	if(!isValidClient(client))
+	
+	if (!isValidClient(client))
 		return;
 	tConomy_setCurrency(client, 0, "You died...");
 	tCrime_setCrime(client, 0);
@@ -47,9 +47,9 @@ public Action onPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 			}
 		}
 	}
-
+	
 }
 
 stock bool isValidClient(int client) {
 	return (1 <= client <= MaxClients && IsClientInGame(client));
-}
+} 

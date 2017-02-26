@@ -96,7 +96,7 @@ public void loadItemsFromChestCallback(Handle owner, Handle hndl, const char[] e
 		AddMenuItem(takeItemMenu, itemid, itemname);
 		hasItems = true;
 	}
-	if(!hasItems)
+	if (!hasItems)
 		PrintToChat(client, "[-T-] There are no Items in this Container");
 	DisplayMenu(takeItemMenu, client, 30);
 }
@@ -116,7 +116,7 @@ public int takeItemMenuHandler(Handle menu, MenuAction action, int client, int i
 		
 		char containerName[64];
 		GetEntPropString(g_iLastInteractedWith[client], Prop_Data, "m_iName", containerName, sizeof(containerName));
-	
+		
 		char itemid[64];
 		int style = 0;
 		char name[64];
@@ -145,7 +145,7 @@ public void openStoreChooserForClient(int client, int entity) {
 			}
 		}
 	}
-	if(!hasItems)
+	if (!hasItems)
 		PrintToChat(client, "[-T-] There is no item that can be stored in your Inventory");
 	
 	DisplayMenu(storeItemMenu, client, 60);

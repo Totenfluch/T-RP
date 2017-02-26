@@ -28,9 +28,9 @@ enum GlobalNpcProperties {
 	String:gUniqueId[128], 
 	String:gName[256], 
 	String:gType[128], 
-	String:gIdleAnimation[256],
-	String:gSecondAnimation[256],
-	String:gThirdAnimation[256],
+	String:gIdleAnimation[256], 
+	String:gSecondAnimation[256], 
+	String:gThirdAnimation[256], 
 	bool:gEnabled
 }
 
@@ -734,7 +734,7 @@ public void onNpcInteract(int client, char uniqueId[128], int entIndex) {
 			cmdEditNpc(client, 0);
 	}
 	
-	if(!StrEqual(g_iNpcList[id][gSecondAnimation], "")){
+	if (!StrEqual(g_iNpcList[id][gSecondAnimation], "")) {
 		SetVariantString(g_iNpcList[id][gSecondAnimation]);
 		AcceptEntityInput(entIndex, "SetAnimation");
 		CreateTimer(2.0, setIdleAnimation, EntIndexToEntRef(entIndex));
@@ -748,7 +748,7 @@ public void onNpcInteract(int client, char uniqueId[128], int entIndex) {
 	Call_Finish();
 }
 
-public Action setIdleAnimation(Handle Timer, int entRef){
+public Action setIdleAnimation(Handle Timer, int entRef) {
 	int ent = EntRefToEntIndex(entRef);
 	int id;
 	if ((id = getNpcLoadedIdFromRef(entRef)) == -1)
@@ -765,7 +765,7 @@ stock int getNpcLoadedIdFromUniqueId(char uniqueId[128]) {
 	return -1;
 }
 
-stock int getNpcLoadedIdFromRef(int entRef){
+stock int getNpcLoadedIdFromRef(int entRef) {
 	for (int i = 0; i < g_iNpcId; i++) {
 		if (g_iNpcList[i][gRefId] == entRef)
 			return i;

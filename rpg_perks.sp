@@ -534,7 +534,7 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 			} else {
 				AddMenuItem(nextMenu, "x", "- You are not a Drug Planter -", ITEMDRAW_DISABLED);
 			}
-
+			
 		} else if (StrEqual(cValue, "gardener")) {
 			SetMenuTitle(nextMenu, "> Gardener Perks <");
 			if (jobs_isActiveJob(client, "Gardener")) {

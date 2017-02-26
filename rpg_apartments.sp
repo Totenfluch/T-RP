@@ -342,7 +342,7 @@ public int lockpickActionHandler(Handle menu, MenuAction action, int client, int
 
 public void jobs_OnProgressBarFinished(int client, char info[64]) {
 	if (StrEqual(info, "Lockpicking Apartment")) {
-		if (GetRandomInt(0, 10) == 2) {
+		if (GetRandomInt(0, 20) == 1) {
 			changeDoorLock(client, 0);
 			PrintToChat(client, "lockpicked Apartment");
 			tCrime_addCrime(client, 300);
@@ -350,7 +350,7 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 			PrintToChat(client, "lockpicking failed");
 			tCrime_addCrime(client, 75);
 		}
-		if (GetRandomInt(0, 3) == 1) {
+		if (GetRandomInt(0, 1) == 1) {
 			inventory_removePlayerItems(client, "Lockpick", 1, "Lockpick broke");
 			tCrime_addCrime(client, 50);
 		}

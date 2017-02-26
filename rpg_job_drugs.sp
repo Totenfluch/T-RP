@@ -16,6 +16,7 @@
 #include <rpg_jail>
 #include <rpg_perks>
 #include <rpg_job_police>
+#include <devzones>
 
 #pragma newdecls required
 
@@ -30,6 +31,23 @@ int g_iLastInteractedWith[MAXPLAYERS + 1];
 char npctype[128] = "Drug Shop";
 
 int g_iHarvestIndex[MAXPLAYERS + 1];
+
+
+/* Heroin */
+#define MAX_ZONES 64
+
+bool g_bPlayerInPapaverZone[MAXPLAYERS + 1];
+int g_iCollectedLoot[MAXPLAYERS + 1][MAX_ZONES];
+int g_iPlayerZoneId[MAXPLAYERS + 1];
+
+char g_cInPapaverZones[MAX_ZONES][PLATFORM_MAX_PATH];
+int g_iPapaverZoneCooldown[MAXPLAYERS + 1][MAX_ZONES];
+int g_iLoadedZones = 0;
+
+int g_iZoneCooldown = 44;
+int MAX_COLLECT = 2;
+
+char activeZone[MAXPLAYERS + 1][128];
 
 public Plugin myinfo = 
 {
@@ -109,6 +127,14 @@ public int defaultItemHandleHandler(Handle menu, MenuAction action, int client, 
 public void OnClientAuthorized(int client) {
 	g_iPlayerPlanted[client] = getActivePlantsOfPlayerAmount(client);
 	g_iHarvestIndex[client] = 0;
+	
+	g_bPlayerInPapaverZone[client] = false;
+	g_iPlayerZoneId[client] = -1;
+	for (int zones = 0; zones < MAX_ZONES; zones++) {
+		g_iPapaverZoneCooldown[client][zones] = g_iZoneCooldown;
+		g_iCollectedLoot[client][zones] = 0;
+	}
+	
 }
 
 public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex) {
@@ -128,10 +154,10 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 	else
 		AddMenuItem(menu, "x", "Sell Fresh Marijuana", ITEMDRAW_DISABLED);
 	if (jobs_isActiveJob(client, "Drug Planter") && jobs_getLevel(client) >= 2) {
-		if (tConomy_getCurrency(client) >= 1500)
-			AddMenuItem(menu, "lockpick", "Buy Lockpick (1500)");
+		if (tConomy_getCurrency(client) >= 2500)
+			AddMenuItem(menu, "lockpick", "Buy Lockpick (2500)");
 		else
-			AddMenuItem(menu, "lockpick", "Buy Lockpick (1500)", ITEMDRAW_DISABLED);
+			AddMenuItem(menu, "lockpick", "Buy Lockpick (2500)", ITEMDRAW_DISABLED);
 	}
 	if (inventory_hasPlayerItem(client, "Fresh Marijuana")) {
 		char sellAll[256];
@@ -215,6 +241,17 @@ public Action refreshTimer(Handle Timer) {
 				evolvePlant(g_ePlayerPlants[plant][pEntRef], g_ePlayerPlants[plant][pState]);
 			}
 			updatePlant(plant);
+		}
+	}
+	
+	for (int i = 1; i < MAXPLAYERS; i++) {
+		if (!isValidClient(i))
+			continue;
+		for (int x = 0; x < MAX_ZONES; x++) {
+			if (g_iPapaverZoneCooldown[i][x] > 0)
+				g_iPapaverZoneCooldown[i][x]--;
+			if (g_iPapaverZoneCooldown[i][x] == 0 && g_iCollectedLoot[i][x] == MAX_COLLECT)
+				g_iCollectedLoot[i][x] = 0;
 		}
 	}
 }
@@ -371,6 +408,19 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					//harvestPlant(client, ent, plantId, g_ePlayerPlants[plantId][pState]);
 					
 				}
+			} else if (g_bPlayerInPapaverZone[client]) {
+				if (g_iCollectedLoot[client][g_iPlayerZoneId[client]] >= MAX_COLLECT || g_iPapaverZoneCooldown[client][g_iPlayerZoneId[client]] > 0) {
+					CPrintToChat(client, "{red}Papaver Harvesting at this field cooldown");
+					g_iPlayerPrevButtons[client] = iButtons;
+					setInfo(client);
+					return;
+				}
+				if (!jobs_isActiveJob(client, "Papaver Harvester"))
+					return;
+				char infoString[64];
+				Format(infoString, sizeof(infoString), "Papaver Harvesting (%i)", jobs_getLevel(client));
+				jobs_startProgressBar(client, 50, infoString);
+				setInfo(client);
 			}
 		}
 		g_iPlayerPrevButtons[client] = iButtons;
@@ -397,6 +447,17 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 		tConomy_addBankCurrency(client, 150, "Confiscated Plant");
 		deletePlant(g_iHarvestIndex[client], plantId);
 	}
+	
+	if (!jobs_isActiveJob(client, "Drug Planter"))
+		return;
+	if (StrContains(info, "Papaver", false) == -1)
+		return;
+	if (++g_iCollectedLoot[client][g_iPlayerZoneId[client]] >= MAX_COLLECT)
+		g_iPapaverZoneCooldown[client][g_iPlayerZoneId[client]] = g_iZoneCooldown + GetRandomInt(0, 50);
+	
+	char addCurrencyReason[256];
+	Format(addCurrencyReason, sizeof(addCurrencyReason), "Papaver Harvesting (Level %i)", jobs_getLevel(client));
+	inventory_givePlayerItem(client, "Papaver", 50, "", "Crafting Materials", "Papaver Harvesting", 1, addCurrencyReason);
 }
 
 public void harvestPlant(int client, int ent, int plantId, int state) {
@@ -507,6 +568,64 @@ public int getClientFromAuth2(char auth2[20]) {
 		}
 	}
 	return -1;
+}
+
+public int Zone_OnClientEntry(int client, char[] zone) {
+	strcopy(activeZone[client], sizeof(activeZone), zone);
+	if (StrContains(zone, "Papaver", false) != -1) {
+		addZone(zone);
+		g_bPlayerInPapaverZone[client] = true;
+		g_iPlayerZoneId[client] = getZoneId(zone);
+	} else {
+		g_bPlayerInPapaverZone[client] = false;
+		g_iPlayerZoneId[client] = -1;
+	}
+	setInfo(client);
+}
+
+public int Zone_OnClientLeave(int client, char[] zone) {
+	float pos[3];
+	GetClientAbsOrigin(client, pos);
+	if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]))
+		return;
+	if (StrContains(zone, "Papaver", false) != -1) {
+		g_bPlayerInPapaverZone[client] = false;
+		g_iPlayerZoneId[client] = -1;
+	}
+	eraseInfo(client);
+}
+
+public void addZone(char[] zone) {
+	if (StrContains(zone, "Papaver", false) != -1) {
+		for (int i = 0; i < g_iLoadedZones; i++) {
+			if (StrEqual(g_cInPapaverZones[i], zone))
+				return;
+		}
+		strcopy(g_cInPapaverZones[g_iLoadedZones], PLATFORM_MAX_PATH, zone);
+		g_iLoadedZones++;
+	}
+}
+
+public int getZoneId(char[] zone) {
+	for (int i = 0; i < g_iLoadedZones; i++) {
+		if (StrEqual(g_cInPapaverZones[i], zone))
+			return i;
+	}
+	return -1;
+}
+
+public void setInfo(int client) {
+	if (!jobs_isActiveJob(client, "Papaver Harvester"))
+		return;
+	if (StrContains(activeZone[client], "Papaver", false) == -1)
+		return;
+	char info[128];
+	Format(info, sizeof(info), "%s: Harvested %i/%i (%is Cd)", activeZone[client], g_iCollectedLoot[client][g_iPlayerZoneId[client]], MAX_COLLECT, g_iPapaverZoneCooldown[client][g_iPlayerZoneId[client]]);
+	jobs_setCurrentInfo(client, info);
+}
+
+public void eraseInfo(int client) {
+	jobs_setCurrentInfo(client, "");
 }
 
 public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error, any data) {

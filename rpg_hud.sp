@@ -75,7 +75,7 @@ public Action updateHUD(Handle Timer) {
 		if (StrEqual(jobname, ""))
 			Format(printHudString, sizeof(printHudString), "%sJob: none\n", printHudString);
 		else {
-			if(StrContains(jobname, "Apple") != -1)
+			if (StrContains(jobname, "Apple") != -1)
 				ReplaceString(jobname, sizeof(jobname), "Apple ", "", false);
 			Format(printHudString, sizeof(printHudString), "%sJob: %s | Level: %i | XP: %i/%i\n", printHudString, jobname, jobs_getLevel(client), jobs_getExperience(client), jobs_getExperienceForNextLevel(client));
 		}

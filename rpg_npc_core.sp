@@ -8,6 +8,7 @@
 #include <smlib>
 #include <rpg_licensing>
 #include <sha1>
+#include <multicolors>
 
 #define MAX_NPCS 512
 #define MAX_TYPES 64
@@ -31,7 +32,8 @@ enum GlobalNpcProperties {
 	String:gIdleAnimation[256], 
 	String:gSecondAnimation[256], 
 	String:gThirdAnimation[256], 
-	bool:gEnabled
+	bool:gEnabled, 
+	bool:gInAnimation
 }
 
 int g_iNpcId = 0;
@@ -725,19 +727,19 @@ public void onNpcInteract(int client, char uniqueId[128], int entIndex) {
 	
 	char name[64];
 	Entity_GetGlobalName(entIndex, name, sizeof(name));
-	PrintToChat(client, "Hello! My name is %s", name);
 	if (!StrEqual(g_iNpcList[id][gType], "") && !StrEqual(g_iNpcList[id][gType], "normal"))
-		PrintToChat(client, "I'm a %s, Sir.", g_iNpcList[id][gType]);
+		CPrintToChat(client, "{green}[{purple}%s{green}] {orange} Hello! {green}I'm a {purple}%s{green}, Sir.", name, g_iNpcList[id][gType]);
 	else {
-		PrintToChat(client, "Some retard admin forgot to configure this npc... (Npc: %i)", id);
+		PrintToChat(client, "Some retard admin forgot to configure %s... (Npc: %i)", name, id);
 		if (CheckCommandAccess(client, "sm_pedo", ADMFLAG_ROOT, true))
 			cmdEditNpc(client, 0);
 	}
 	
-	if (!StrEqual(g_iNpcList[id][gSecondAnimation], "")) {
+	if (!StrEqual(g_iNpcList[id][gSecondAnimation], "") && !g_iNpcList[id][gInAnimation]) {
 		SetVariantString(g_iNpcList[id][gSecondAnimation]);
 		AcceptEntityInput(entIndex, "SetAnimation");
 		CreateTimer(2.0, setIdleAnimation, EntIndexToEntRef(entIndex));
+		g_iNpcList[id][gInAnimation] = true;
 	}
 	
 	Call_StartForward(g_hOnNpcInteract);
@@ -755,6 +757,7 @@ public Action setIdleAnimation(Handle Timer, int entRef) {
 		return;
 	SetVariantString(g_iNpcList[id][gIdleAnimation]);
 	AcceptEntityInput(ent, "SetAnimation");
+	g_iNpcList[id][gInAnimation] = false;
 }
 
 stock int getNpcLoadedIdFromUniqueId(char uniqueId[128]) {

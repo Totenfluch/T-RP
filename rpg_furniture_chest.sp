@@ -31,7 +31,7 @@ public void OnPluginStart() {
 
 int g_iLastInteractedWith[MAXPLAYERS + 1];
 public void furniture_OnFurnitureInteract(int entity, int client, char name[64], char lfBuf[64], char flags[8], char ownerId[20], int durability) {
-	if (!StrEqual(name, "BlackBox"))
+	if (!StrEqual(lfBuf, "container"))
 		return;
 	
 	openChooserMenuForClient(client, entity);
@@ -64,8 +64,8 @@ public int chooserMenuHandler(Handle menu, MenuAction action, int client, int it
 			if (GetVectorDistance(playerPos, entPos) > 100.0)
 				return;
 			
-			openStoreChooserForClient(client, g_iLastInteractedWith[client]);
-			
+			//openStoreChooserForClient(client, g_iLastInteractedWith[client]);
+			getItemsInChest(client, g_iLastInteractedWith[client]);
 		} else if (StrEqual(cValue, "take")) {
 			openChestForClient(client, g_iLastInteractedWith[client]);
 		}
@@ -127,10 +127,33 @@ public int takeItemMenuHandler(Handle menu, MenuAction action, int client, int i
 		openChestForClient(client, g_iLastInteractedWith[client]);
 	}
 }
-public void openStoreChooserForClient(int client, int entity) {
+
+public void getItemsInChest(int client, int entity) {
+	char containerName[64];
+	GetEntPropString(entity, Prop_Data, "m_iName", containerName, sizeof(containerName));
+	
+	char getTheItemsInChest[1024];
+	Format(getTheItemsInChest, sizeof(getTheItemsInChest), "SELECT Count(*) as amount from t_rpg_items WHERE container = '%s';", containerName);
+	SQL_TQuery(g_DB, SQLGetItemsInChestCallback, getTheItemsInChest, client);
+	g_iLastInteractedWith[client] = entity;
+}
+
+public void SQLGetItemsInChestCallback(Handle owner, Handle hndl, const char[] error, any data) {
+	int client = data;
+	while (SQL_FetchRow(hndl)) {
+		int amount = SQL_FetchInt(hndl, 0);
+		int maxAmount = furniture_getDurability(g_iLastInteractedWith[client]);
+		if (amount < maxAmount)
+			openStoreChooserForClient(client, g_iLastInteractedWith[client], false, amount, maxAmount);
+		else
+			openStoreChooserForClient(client, g_iLastInteractedWith[client], true, amount, maxAmount);
+	}
+}
+
+public void openStoreChooserForClient(int client, int entity, bool full, int amount, int maxAmount) {
 	Menu storeItemMenu = CreateMenu(storeItemMenuHandler);
 	char menuTitle[256];
-	Format(menuTitle, sizeof(menuTitle), "Store an Item");
+	Format(menuTitle, sizeof(menuTitle), "Store an Item (%i/%i)", amount, maxAmount);
 	SetMenuTitle(storeItemMenu, menuTitle);
 	bool hasItems = false;
 	int maxItems = inventory_getClientItemsAmount(client);
@@ -140,7 +163,7 @@ public void openStoreChooserForClient(int client, int entity) {
 			if (inventory_getItemNameBySlotAndClient(client, i, itemName, "")) {
 				char cId[8];
 				IntToString(i, cId, sizeof(cId));
-				AddMenuItem(storeItemMenu, cId, itemName);
+				AddMenuItem(storeItemMenu, cId, itemName, full ? ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 				hasItems = true;
 			}
 		}
@@ -175,7 +198,8 @@ public int storeItemMenuHandler(Handle menu, MenuAction action, int client, int 
 		Format(reason, sizeof(reason), "Transfered from %N to Container", client);
 		if (inventory_isValidItem(client, theId)) {
 			inventory_transferItemToContainer(client, theId, uniqueId);
-			openStoreChooserForClient(client, g_iLastInteractedWith[client]);
+			//openStoreChooserForClient(client, g_iLastInteractedWith[client]);
+			getItemsInChest(client, g_iLastInteractedWith[client]);
 		}
 		
 	}

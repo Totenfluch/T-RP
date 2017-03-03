@@ -8,6 +8,7 @@
 #include <rpg_inventory_core>
 #include <tCrime>
 #include <tConomy>
+#include <rpg_jobs_core>
 
 #pragma newdecls required
 
@@ -29,15 +30,17 @@ public Action onPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 	
 	char reason[256];
-	if (isValidClient(attacker))
+	if (isValidClient(attacker) && isValidClient(client)) {
 		Format(reason, sizeof(reason), "You died (Killed by %N)", attacker);
-	else
+		if (jobs_getActiveJob(attacker, "Police"))
+			tCrime_setCrime(client, 0);
+	} else
 		Format(reason, sizeof(reason), "You died (Suicide)");
 	
 	if (!isValidClient(client))
 		return;
+	
 	tConomy_setCurrency(client, 0, "You died...");
-	tCrime_setCrime(client, 0);
 	int maxItems = inventory_getClientItemsAmount(client);
 	for (int i = 0; i <= maxItems; i++) {
 		if (inventory_isValidItem(client, i)) {

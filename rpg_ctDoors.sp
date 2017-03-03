@@ -24,7 +24,11 @@ public Plugin myinfo =
 };
 
 public void OnPluginStart() {
-	
+	HookEvent("round_start", onRoundStart);
+}
+
+public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
+	lockDoors("jail_door");
 }
 
 public void OnClientPostAdminCheck(int client) {
@@ -42,7 +46,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				if (HasEntProp(ent, Prop_Data, "m_iName")) {
 					char uniqueId[64];
 					GetEntPropString(ent, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
-					if (StrContains(uniqueId, "ct_p_") != -1) {
+					if ((StrContains(uniqueId, "ct_p_") != -1) || StrContains(uniqueId, "jail_door") != -1) {
 						if (jobs_isActiveJob(client, "Police")) {
 							ctDoorMenu(client, ent);
 						} else {
@@ -161,4 +165,15 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 
 stock bool isValidClient(int client) {
 	return (1 <= client <= MaxClients && IsClientInGame(client));
+}
+
+public void lockDoors(char[] name) {
+	int entity = -1;
+	while ((entity = FindEntityByClassname(entity, "func_door")) != INVALID_ENT_REFERENCE) {
+		char uniqueId[64];
+		GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
+		if (StrContains(uniqueId, name) != -1) {
+			AcceptEntityInput(entity, "lock", -1);
+		}
+	}
 }

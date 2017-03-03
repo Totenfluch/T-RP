@@ -72,7 +72,7 @@ public int criminalInteractionsMenuHandler(Handle menu, MenuAction action, int c
 }
 
 public void jobs_OnProgressBarFinished(int client, char info[64]) {
-	if (!StrEqual(info, "Steal Money") && !StrEqual(info, "Ziptie Player"))
+	if (!StrEqual(info, "Steal Money") && !StrEqual(info, "Ziptie Player") && !StrEqual(info, "Free Player"))
 		return;
 	
 	float ppos[3];
@@ -82,7 +82,7 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 		GetClientAbsOrigin(g_iPlayerTarget[client], tpos);
 	else
 		return;
-	if (GetVectorDistance(ppos, tpos) > 100.0) {
+	if (GetVectorDistance(ppos, tpos) > 150.0) {
 		PrintToChat(client, "[-T-] Target is too far away...");
 		return;
 	}

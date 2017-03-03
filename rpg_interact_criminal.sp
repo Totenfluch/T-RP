@@ -9,6 +9,7 @@
 #include <rpg_jobs_core>
 #include <rpg_interact>
 #include <tConomy>
+#include <tCrime>
 
 #pragma newdecls required
 
@@ -93,26 +94,31 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 		tConomy_addCurrency(client, amount, reason);
 		Format(reason, sizeof(reason), "Stolen by %N", client);
 		tConomy_removeCurrency(g_iPlayerTarget[client], amount, reason);
+		tCrime_addCrime(client, amount * 2);
 	} else if (StrEqual(info, "Ziptie Player")) {
-		if (inventory_removePlayerItems(client, "ziptie", 1, "Ziptied Player"))
-			ziptiePlayer(g_iPlayerTarget[client]);
+		if (inventory_removePlayerItems(client, "ziptie", 1, "Ziptied Player")){
+			ziptiePlayer(g_iPlayerTarget[client], client);
+			tCrime_addCrime(client, 100);
+		}
 	} else if (StrEqual(info, "Free Player")) {
-		unzipPlayer(g_iPlayerTarget[client]);
+		unzipPlayer(g_iPlayerTarget[client], client);
 	}
 }
 
-public void ziptiePlayer(int client) {
+public void ziptiePlayer(int client, int initiator) {
 	if (!isValidClient(client))
 		return;
 	g_bIsZiptied[client] = true;
 	SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 0.0);
+	PrintToChat(client, "[-T-] You were Ziptied by %N", initiator);
 }
 
-public void unzipPlayer(int client) {
+public void unzipPlayer(int client, int initiator) {
 	if (!isValidClient(client))
 		return;
 	g_bIsZiptied[client] = false;
 	SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 1.0);
+	PrintToChat(client, "[-T-] You were freed by %N", initiator);
 }
 
 stock bool isValidClient(int client) {

@@ -51,7 +51,7 @@ public void OnMapStart() {
 	g_iGlow = -1;
 	g_iBombTimeLeft = -1;
 	g_iExplosionSprite = -1;
-
+	
 	g_iGlow = PrecacheModel("sprites/ledglow.vmt");
 	PrecacheSoundAny("UI/beep07.wav", true);
 	PrecacheSoundAny("ambient/explosions/explode_8.wav", true);
@@ -238,15 +238,23 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				return;
 			}
 			if (HasEntProp(ent, Prop_Data, "m_iName") && HasEntProp(ent, Prop_Data, "m_iGlobalname")) {
-				char entName[256];
-				Entity_GetGlobalName(ent, entName, sizeof(entName));
-				if (StrEqual(entName, "Vault Gate")) {
-					if (!IsValidEntity(EntRefToEntIndex(g_iBombEnt)))
-						setupBomb();
-				} else if (StrEqual(entName, "Vault Money")) {
-					if (IsValidEntity(ent)) {
-						jobs_startProgressBar(client, 300, "Steal Vault Money");
-						g_iLastMoneyTarget[client] = EntIndexToEntRef(ent);
+				float pos[3];
+				GetEntPropVector(ent, Prop_Data, "m_vecOrigin", pos);
+				float ppos[3];
+				GetClientAbsOrigin(client, ppos);
+				if (GetVectorDistance(ppos, pos) < 100.0) {
+					char entName[256];
+					Entity_GetGlobalName(ent, entName, sizeof(entName));
+					if (StrEqual(entName, "Vault Gate")) {
+						if (!IsValidEntity(EntRefToEntIndex(g_iBombEnt)))
+							if (inventory_hasPlayerItem(client, "c4"))
+							if (inventory_removePlayerItems(client, "c4", 1, "planted c4"))
+							setupBomb();
+					} else if (StrEqual(entName, "Vault Money")) {
+						if (IsValidEntity(ent)) {
+							jobs_startProgressBar(client, 300, "Steal Vault Money");
+							g_iLastMoneyTarget[client] = EntIndexToEntRef(ent);
+						}
 					}
 				}
 			}

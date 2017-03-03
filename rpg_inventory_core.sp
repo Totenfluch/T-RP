@@ -576,7 +576,7 @@ public bool givePlayerItem(int client, char itemname[128], int weight, char flag
 	IntToString(time, timeKey, sizeof(timeKey));
 	
 	char itemid[64];
-	Format(itemid, sizeof(itemid), "%s_%s", itemname, timeKey);
+	Format(itemid, sizeof(itemid), "%s_%s%s%i", itemname, timeKey, GetRandomInt(0, 1) == 0 ? "|":"-", GetRandomInt(0, 10000));
 	
 	char addItemQuery[512];
 	Format(addItemQuery, sizeof(addItemQuery), "INSERT INTO `t_rpg_items` (`Id`, `timestamp`, `playerid`, `playername`, `itemname`, `itemid`, `weight`, `flags`, `category`, `category2`, `rarity`, `container`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%i', '%s', '%s', '%s', '%i', '');", playerid, clean_playername, itemname, itemid, weight, flags, category, category2, rarity);

@@ -1050,6 +1050,9 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				{
 					float origin[3];
 					GetClientAbsOrigin(client, origin);
+					float origin2[3];
+					GetClientAbsOrigin(client, origin2);
+					origin2[2] += 5.0;
 					float location[3];
 					GetClientEyePosition(client, location);
 					float ang[3];
@@ -1061,6 +1064,9 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					location2[2] = origin[2] += 5.0;
 					
 					TeleportEntity(Target, location2, NULL_VECTOR, NULL_VECTOR);
+					if (IsPlayerStuck(Target))
+						TeleportEntity(Target, origin2, NULL_VECTOR, NULL_VECTOR);
+					
 				}
 			}
 		}
@@ -1628,4 +1634,22 @@ public Action refreshTimer(Handle Timer) {
 				FreeEm(client, g_iCuffedBy[client]);
 		}
 	}
+}
+
+stock bool IsPlayerStuck(int client) {
+	float vecMin[3];
+	float vecMax[3];
+	float vecOrigin[3];
+	
+	GetClientMins(client, vecMin);
+	GetClientMaxs(client, vecMax);
+	
+	GetClientAbsOrigin(client, vecOrigin);
+	
+	TR_TraceHullFilter(vecOrigin, vecOrigin, vecMin, vecMax, MASK_PLAYERSOLID, TraceRayDontHitPlayerAndWorld);
+	return TR_GetEntityIndex() != -1;
+}
+
+public bool TraceRayDontHitPlayerAndWorld(int entityhit, int mask) {
+	return (entityhit < 1 || entityhit > MaxClients);
 } 

@@ -17,6 +17,7 @@
 #include <rpg_perks>
 #include <rpg_job_police>
 #include <devzones>
+#include <rpg_furniture>
 
 #pragma newdecls required
 
@@ -91,21 +92,51 @@ public void OnPluginStart() {
 }
 
 public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]) {
-	if (!StrEqual(itemname, "Marijuana Seeds"))
-		return;
-	Menu m = CreateMenu(defaultItemHandleHandler);
-	char display[128];
-	Format(display, sizeof(display), "What to do with '%s' ?", itemname);
-	SetMenuTitle(m, display);
-	AddMenuItem(m, "plant", "Plant Seeds");
-	AddMenuItem(m, "throw", "Throw Away");
-	int amount = inventory_getPlayerItemAmount(client, itemname);
-	if (amount > 1) {
-		char displ[128];
-		Format(displ, sizeof(displ), "Throw all Away (%i)", amount);
-		AddMenuItem(m, "throwall", displ);
+	if (StrEqual(itemname, "Marijuana Seeds")) {
+		Menu m = CreateMenu(defaultItemHandleHandler);
+		char display[128];
+		Format(display, sizeof(display), "What to do with '%s' ?", itemname);
+		SetMenuTitle(m, display);
+		AddMenuItem(m, "plant", "Plant Seeds");
+		AddMenuItem(m, "throw", "Throw Away");
+		int amount = inventory_getPlayerItemAmount(client, itemname);
+		if (amount > 1) {
+			char displ[128];
+			Format(displ, sizeof(displ), "Throw all Away (%i)", amount);
+			AddMenuItem(m, "throwall", displ);
+		}
+		DisplayMenu(m, client, 60);
+	} else if (StrEqual(itemname, "Papaver")) {
+		Menu m = CreateMenu(papaverItemHandler);
+		char display[64];
+		Format(display, sizeof(display), "What to do with '%s' ?", itemname);
+		SetMenuTitle(m, display);
+		AddMenuItem(m, "crush", "Crush Papaver");
+		AddMenuItem(m, "throw", "Throw Away");
+		int amount = inventory_getPlayerItemAmount(client, itemname);
+		if (amount > 1) {
+			char displ[128];
+			Format(displ, sizeof(displ), "Throw all Away (%i)", amount);
+			AddMenuItem(m, "throwall", displ);
+		}
+		DisplayMenu(m, client, 60);
 	}
-	DisplayMenu(m, client, 60);
+}
+
+public int papaverItemHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char info[64];
+		GetMenuItem(menu, item, info, sizeof(info));
+		
+		if (StrEqual(info, "throw"))
+			inventory_removePlayerItems(client, "Papaver", 1, "Thrown away");
+		else if (StrEqual(info, "throwall")) {
+			int amount = inventory_getPlayerItemAmount(client, "Papaver");
+			inventory_removePlayerItems(client, "Papaver", amount, "Throwed all away");
+		} else if (StrEqual(info, "crush")) {
+			jobs_startProgressBar(client, 10, "Crush Papaver");
+		}
+	}
 }
 
 public int defaultItemHandleHandler(Handle menu, MenuAction action, int client, int item) {
@@ -224,6 +255,7 @@ public void OnMapStart() {
 	npc_registerNpcType(npctype);
 	jobs_registerJob("Drug Planter", "Plant drugs to earn money but don't get cought by the Police", 20, 600, 3.0);
 	inventory_addItemHandle("Marijuana Seeds", 1);
+	inventory_addItemHandle("Papaver", 1);
 	CreateTimer(10.0, refreshTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	PrecacheModel("models/custom_prop/marijuana/marijuana_0.mdl", true);
 	PrecacheModel("models/custom_prop/marijuana/marijuana_1.mdl", true);
@@ -376,47 +408,46 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 	if (IsClientInGame(client) && IsPlayerAlive(client)) {
 		if (!(g_iPlayerPrevButtons[client] & IN_USE) && iButtons & IN_USE) {
 			int ent = GetClientAimTarget(client, false);
-			if (!IsValidEntity(ent)) {
-				g_iPlayerPrevButtons[client] = iButtons;
-				return;
-			}
-			if (HasEntProp(ent, Prop_Data, "m_iName") && HasEntProp(ent, Prop_Data, "m_iGlobalname")) {
-				char entName[256];
-				Entity_GetGlobalName(ent, entName, sizeof(entName));
-				if (StrEqual(entName, "Drug Plant")) {
-					if (findPlantLoadedIdByIndex(ent) == -1 || police_isPlayerCuffed(client)) {
-						g_iPlayerPrevButtons[client] = iButtons;
-						return;
-					}
-					float pos[3];
-					GetEntPropVector(ent, Prop_Data, "m_vecOrigin", pos);
-					float ppos[3];
-					GetClientAbsOrigin(client, ppos);
-					if (GetVectorDistance(ppos, pos) < 100.0) {
-						if (jobs_isActiveJob(client, "Police")) {
-							jobs_startProgressBar(client, 50, "Confiscate Plant");
-							g_iHarvestIndex[client] = ent;
-						} else {
-							jobs_startProgressBar(client, 100, "Harvest Plant");
-							g_iHarvestIndex[client] = ent;
+			if (IsValidEntity(ent)) {
+				if (HasEntProp(ent, Prop_Data, "m_iName") && HasEntProp(ent, Prop_Data, "m_iGlobalname")) {
+					char entName[256];
+					Entity_GetGlobalName(ent, entName, sizeof(entName));
+					if (StrEqual(entName, "Drug Plant")) {
+						if (findPlantLoadedIdByIndex(ent) == -1 || police_isPlayerCuffed(client)) {
+							g_iPlayerPrevButtons[client] = iButtons;
+							return Plugin_Continue;
 						}
-					} else {
-						PrintToChat(client, "This Drug plant is too far away (%.2f/100.0)", GetVectorDistance(ppos, pos));
-						g_iPlayerPrevButtons[client] = iButtons;
-						return;
+						float pos[3];
+						GetEntPropVector(ent, Prop_Data, "m_vecOrigin", pos);
+						float ppos[3];
+						GetClientAbsOrigin(client, ppos);
+						if (GetVectorDistance(ppos, pos) < 100.0) {
+							if (jobs_isActiveJob(client, "Police")) {
+								jobs_startProgressBar(client, 50, "Confiscate Plant");
+								g_iHarvestIndex[client] = ent;
+							} else {
+								jobs_startProgressBar(client, 100, "Harvest Plant");
+								g_iHarvestIndex[client] = ent;
+							}
+						} else {
+							PrintToChat(client, "This Drug plant is too far away (%.2f/100.0)", GetVectorDistance(ppos, pos));
+							g_iPlayerPrevButtons[client] = iButtons;
+							return Plugin_Continue;
+						}
+						//harvestPlant(client, ent, plantId, g_ePlayerPlants[plantId][pState]);
 					}
-					//harvestPlant(client, ent, plantId, g_ePlayerPlants[plantId][pState]);
-					
 				}
 			} else if (g_bPlayerInPapaverZone[client]) {
+				if (!jobs_isActiveJob(client, "Drug Planter")) {
+					g_iPlayerPrevButtons[client] = iButtons;
+					return Plugin_Continue;
+				}
 				if (g_iCollectedLoot[client][g_iPlayerZoneId[client]] >= MAX_COLLECT || g_iPapaverZoneCooldown[client][g_iPlayerZoneId[client]] > 0) {
 					CPrintToChat(client, "{red}Papaver Harvesting at this field cooldown");
 					g_iPlayerPrevButtons[client] = iButtons;
 					setInfo(client);
-					return;
+					return Plugin_Continue;
 				}
-				if (!jobs_isActiveJob(client, "Papaver Harvester"))
-					return;
 				char infoString[64];
 				Format(infoString, sizeof(infoString), "Papaver Harvesting (%i)", jobs_getLevel(client));
 				jobs_startProgressBar(client, 50, infoString);
@@ -425,6 +456,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 		}
 		g_iPlayerPrevButtons[client] = iButtons;
 	}
+	return Plugin_Continue;
 }
 
 public void jobs_OnProgressBarInterrupted(int client, char info[64]) {
@@ -450,14 +482,28 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 	
 	if (!jobs_isActiveJob(client, "Drug Planter"))
 		return;
-	if (StrContains(info, "Papaver", false) == -1)
-		return;
-	if (++g_iCollectedLoot[client][g_iPlayerZoneId[client]] >= MAX_COLLECT)
-		g_iPapaverZoneCooldown[client][g_iPlayerZoneId[client]] = g_iZoneCooldown + GetRandomInt(0, 50);
-	
-	char addCurrencyReason[256];
-	Format(addCurrencyReason, sizeof(addCurrencyReason), "Papaver Harvesting (Level %i)", jobs_getLevel(client));
-	inventory_givePlayerItem(client, "Papaver", 50, "", "Crafting Materials", "Papaver Harvesting", 1, addCurrencyReason);
+	if (StrContains(info, "Papaver Harvesting", false) != -1) {
+		if (++g_iCollectedLoot[client][g_iPlayerZoneId[client]] >= MAX_COLLECT)
+			g_iPapaverZoneCooldown[client][g_iPlayerZoneId[client]] = g_iZoneCooldown + GetRandomInt(0, 50);
+		
+		char addCurrencyReason[256];
+		Format(addCurrencyReason, sizeof(addCurrencyReason), "Papaver Harvesting (Level %i)", jobs_getLevel(client));
+		inventory_givePlayerItem(client, "Papaver", 50, "", "Crafting Materials", "Papaver Harvesting", 1, addCurrencyReason);
+	}
+	if (StrEqual(info, "Crush Papaver")) {
+		if (inventory_hasPlayerItem(client, "Papaver"))
+			if (inventory_removePlayerItems(client, "Papaver", 1, "Crushed Papaver")) {
+			inventory_givePlayerItem(client, "Crushed Papaver", 2, "", "Heroin Production", "Criminal", 2, "Crushed Papaver");
+			jobs_addExperience(client, 5, "Drug Planter");
+		}
+	} else if (StrEqual(info, "Mix Heroin")) {
+		if (inventory_hasPlayerItem(client, "Crushed Papaver") && inventory_hasPlayerItem(client, "Morphine")) {
+			if (inventory_removePlayerItems(client, "Crushed Papaver", 1, "Mixed Heroin") && inventory_removePlayerItems(client, "Morphine", 1, "Mixed Heroin")) {
+				inventory_givePlayerItem(client, "Heroin", 1, "", "Drugs", "Criminal", 3, "Mixed Heroin");
+				jobs_addExperience(client, 40, "Drug Planter");
+			}
+		}
+	}
 }
 
 public void harvestPlant(int client, int ent, int plantId, int state) {
@@ -615,12 +661,12 @@ public int getZoneId(char[] zone) {
 }
 
 public void setInfo(int client) {
-	if (!jobs_isActiveJob(client, "Papaver Harvester"))
+	if (!jobs_isActiveJob(client, "Drug Planter"))
 		return;
 	if (StrContains(activeZone[client], "Papaver", false) == -1)
 		return;
 	char info[128];
-	Format(info, sizeof(info), "%s: Harvested %i/%i (%is Cd)", activeZone[client], g_iCollectedLoot[client][g_iPlayerZoneId[client]], MAX_COLLECT, g_iPapaverZoneCooldown[client][g_iPlayerZoneId[client]]);
+	Format(info, sizeof(info), "%s: Harvested %i/%i (%is Cd)", activeZone[client], g_iCollectedLoot[client][g_iPlayerZoneId[client]], MAX_COLLECT, g_iPapaverZoneCooldown[client][g_iPlayerZoneId[client]] * 10);
 	jobs_setCurrentInfo(client, info);
 }
 
@@ -631,4 +677,12 @@ public void eraseInfo(int client) {
 public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error, any data) {
 	if (!StrEqual(error, ""))
 		LogError(error);
+}
+
+public void furniture_OnFurnitureInteract(int entity, int client, char name[64], char lfBuf[64], char flags[8], char ownerId[20], int durability) {
+	if (!StrEqual(name, "Heroin laboratory"))
+		return;
+	
+	if (inventory_hasPlayerItem(client, "Crushed Papaver") && inventory_hasPlayerItem(client, "Morphine"))
+		jobs_startProgressBar(client, 50, "Mix Heroin");
 }

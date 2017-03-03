@@ -17,6 +17,8 @@
 #define MAX_FURNITURE 1024
 #define MAX_SPAWNABLE 400
 
+#define MAX_NPCS 8
+
 enum LoadedFurniture {
 	lfId, 
 	bool:lfActive, 
@@ -26,7 +28,8 @@ enum LoadedFurniture {
 	Float:lfSize, 
 	lfPrice, 
 	String:lfFlags[8], 
-	lfBaseDurability
+	lfBaseDurability, 
+	String:lfVendor[128]
 }
 
 int LoadedFurnitureItems[MAX_FURNITURE][LoadedFurniture];
@@ -53,8 +56,13 @@ char dbconfig[] = "gsxh_multiroot";
 Database g_DB;
 
 char npctype[128] = "Furniture Vendor";
+char g_cLastNpcType[MAXPLAYERS + 1][64];
 
 Handle g_hOnFurnitureInteract;
+
+int g_iDifferentNpcs;
+char g_cNpcNames[MAX_NPCS][128];
+
 
 enum EditItem {
 	eiRef, 
@@ -182,6 +190,9 @@ public void OnMapStart() {
 }
 
 public void clearAllLoadedFurniture() {
+	g_iDifferentNpcs = 0;
+	for (int i = 0; i < MAX_NPCS; i++)
+	strcopy(g_cNpcNames[i], 128, "");
 	g_iLoadedFurniture = 0;
 	for (int i = 0; i < MAX_FURNITURE; i++)
 	clearLoadedFurniture(i);
@@ -193,6 +204,7 @@ public void clearLoadedFurniture(int id) {
 	strcopy(LoadedFurnitureItems[id][lfModelPath], 128, "");
 	strcopy(LoadedFurnitureItems[id][lfFlags], 8, "");
 	strcopy(LoadedFurnitureItems[id][lfBuff], 64, "");
+	strcopy(LoadedFurnitureItems[id][lfVendor], 128, "");
 	LoadedFurnitureItems[id][lfSize] = -1.0;
 	LoadedFurnitureItems[id][lfPrice] = -1;
 	LoadedFurnitureItems[id][lfId] = -1;
@@ -267,6 +279,10 @@ public bool loadFurniture() {
 		kv.GetString("durability", tempVars2, 64, "1337");
 		LoadedFurnitureItems[g_iLoadedFurniture][lfBaseDurability] = StringToInt(tempVars2);
 		
+		kv.GetString("vendor", tempVars, 128, "Furniture Vendor");
+		if (tryToRegisterNewNpc(tempVars))
+			strcopy(g_cNpcNames[g_iDifferentNpcs++], 128, tempVars);
+		strcopy(LoadedFurnitureItems[g_iLoadedFurniture][lfVendor], 128, tempVars);
 		
 		LoadedFurnitureItems[g_iLoadedFurniture][lfActive] = true;
 		LoadedFurnitureItems[g_iLoadedFurniture][lfId] = g_iLoadedFurniture;
@@ -278,13 +294,26 @@ public bool loadFurniture() {
 	return true;
 }
 
+public bool tryToRegisterNewNpc(char npcName[128]) {
+	bool contained = false;
+	if (StrEqual(npcName, ""))
+		return false;
+	for (int i = 0; i < MAX_NPCS; i++) {
+		if (StrEqual(npcName, g_cNpcNames[i]) || StrEqual(npcName, "Furniture Vendor"))
+			contained = true;
+	}
+	if (!contained)
+		npc_registerNpcType(npcName);
+	return !contained;
+}
+
 public Action cmdReloadFurniture(int client, int args) {
 	loadFurniture();
 	PrintToChat(client, "Loaded %i Furnitures", g_iLoadedFurniture);
 	return Plugin_Handled;
 }
 
-public void openFurnitureMenu(int client) {
+public void openFurnitureMenu(int client, char npcType[64]) {
 	float playerPos[3];
 	float entPos[3];
 	if (!isValidClient(client))
@@ -297,14 +326,18 @@ public void openFurnitureMenu(int client) {
 		return;
 	
 	Handle menu = CreateMenu(furnitureMenuHandler);
-	char menuTitle[128];
-	Format(menuTitle, sizeof(menuTitle), "Loaded Furniture (%i)", g_iLoadedFurniture);
-	SetMenuTitle(menu, menuTitle);
+	int items = 0;
 	for (int i = 0; i < g_iLoadedFurniture; i++) {
-		char cId[8];
-		IntToString(i, cId, sizeof(cId));
-		AddMenuItem(menu, cId, LoadedFurnitureItems[i][lfName]);
+		if (StrEqual(npcType, LoadedFurnitureItems[i][lfVendor])) {
+			char cId[8];
+			IntToString(i, cId, sizeof(cId));
+			AddMenuItem(menu, cId, LoadedFurnitureItems[i][lfName]);
+			items++;
+		}
 	}
+	char menuTitle[128];
+	Format(menuTitle, sizeof(menuTitle), "Available Furniture: %i Pieces", items);
+	SetMenuTitle(menu, menuTitle);
 	DisplayMenu(menu, client, 60);
 }
 
@@ -320,20 +353,12 @@ public int furnitureMenuHandler(Handle menu, MenuAction action, int client, int 
 		AddMenuItem(menu2, "x", display, ITEMDRAW_DISABLED);
 		Format(display, sizeof(display), "Price: %i", LoadedFurnitureItems[id][lfPrice]);
 		AddMenuItem(menu2, "x", display, ITEMDRAW_DISABLED);
-		Format(display, sizeof(display), "Size: %.2f", LoadedFurnitureItems[id][lfSize]);
-		AddMenuItem(menu2, "x", display, ITEMDRAW_DISABLED);
 		Format(display, sizeof(display), "Buff: %s", LoadedFurnitureItems[id][lfBuff]);
-		AddMenuItem(menu2, "x", display, ITEMDRAW_DISABLED);
-		Format(display, sizeof(display), "Flags: %s", LoadedFurnitureItems[id][lfBuff]);
 		AddMenuItem(menu2, "x", display, ITEMDRAW_DISABLED);
 		Format(display, sizeof(display), "Durability: %i", LoadedFurnitureItems[id][lfBaseDurability]);
 		AddMenuItem(menu2, "x", display, ITEMDRAW_DISABLED);
-		AddMenuItem(menu2, info, "Buy");
+		AddMenuItem(menu2, info, "Buy", tConomy_getCurrency(client) >= LoadedFurnitureItems[id][lfPrice] ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 		DisplayMenu(menu2, client, 60);
-	}
-	if (action == MenuAction_Cancel) {
-		if (isValidClient(client))
-			cmdReloadFurniture(client, 0);
 	}
 }
 
@@ -351,6 +376,8 @@ public int furnitureItemMenuHandler(Handle menu, MenuAction action, int client, 
 			tConomy_removeCurrency(client, LoadedFurnitureItems[id][lfPrice], reason);
 			inventory_givePlayerItem(client, itemName, 100, "", "Furniture", "Apartment Stuff", 0, reason);
 		}
+		if (isValidClient(client))
+			openFurnitureMenu(client, g_cLastNpcType[client]);
 	}
 }
 
@@ -889,13 +916,14 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 							
 							int index;
 							if ((index = findSpawnedEntByRef(EntIndexToEntRef(target))) != -1) {
-								PrintToConsole(client, "[-T-]: sfId: %i | sfLoadedId: %i | sfRef: %i | sfActive: %d | sfApartment: %s | sfOwner: %s", 
+								PrintToConsole(client, "[-T-]: sfId: %i | sfLoadedId: %i | sfRef: %i | sfActive: %d | sfApartment: %s | sfOwner: %s | sDurability: %i", 
 									SpawnedFurnitureItems[index][sfId], 
 									SpawnedFurnitureItems[index][sfLoadedId], 
 									SpawnedFurnitureItems[index][sfRef], 
 									SpawnedFurnitureItems[index][sfIsActive], 
 									SpawnedFurnitureItems[index][sfApartment], 
-									SpawnedFurnitureItems[index][sfOwner]);
+									SpawnedFurnitureItems[index][sfOwner], 
+									SpawnedFurnitureItems[index][sfDurability]);
 								
 								
 								int loadedIndex = SpawnedFurnitureItems[index][sfLoadedId];
@@ -1076,10 +1104,18 @@ public int Zone_OnClientLeave(int client, char[] zone) {
 }
 
 public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex) {
-	if (!StrEqual(npcType, npctype))
+	if (!isVendorPartOfPlugin(npcType))
 		return;
 	g_iLastInteractedWith[client] = entIndex;
-	openFurnitureMenu(client);
+	strcopy(g_cLastNpcType[client], 128, npcType);
+	openFurnitureMenu(client, npcType);
+}
+
+public bool isVendorPartOfPlugin(char npcType[64]) {
+	for (int i = 0; i < MAX_NPCS; i++)
+	if (StrEqual(g_cNpcNames[i], npcType) || StrEqual(npcType, "Furniture Vendor"))
+		return true;
+	return false;
 }
 
 public Action cmdListFurniture(int client, int args) {

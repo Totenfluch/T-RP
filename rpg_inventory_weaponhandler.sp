@@ -29,7 +29,7 @@ public void OnPluginStart()
 }
 
 public void OnMapStart() {
-	inventory_addItemHandle("Weapon", 2);
+	inventory_addItemHandle("Weapon", 4);
 	inventory_addItemHandle("item_kevlar", 1);
 	inventory_addItemHandle("item_assaultsuit", 1);
 }
@@ -45,7 +45,7 @@ public Action cmdStashWeapon(int client, int args) {
 }
 
 public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]) {
-	if (!(StrEqual(category, "Weapon") || StrEqual(itemname, "item_kevlar") || StrEqual(itemname, "item_assaultsuit")))
+	if (!(StrContains(category, "Weapon") != -1 || StrEqual(itemname, "item_kevlar") || StrEqual(itemname, "item_assaultsuit")))
 		return;
 	Menu wMenu = CreateMenu(weaponMenuHandler);
 	strcopy(g_cLastItemUsed[client], 128, itemname);

@@ -1197,6 +1197,7 @@ public int giveTicketmenuHandler(Handle menu, MenuAction action, int client, int
 			if (tConomy_getCurrency(client) >= g_iTickpriceOvertake[client]) {
 				tConomy_removeCurrency(client, g_iTickpriceOvertake[client], "Paid Ticket");
 				PrintToChat(g_iLatestTicket[client], "[-T-] %N has paid the Ticket of %i", client, g_iTickpriceOvertake[client]);
+				tConomy_addCurrency(g_iLatestTicket[client], RoundToNearest(g_iTickpriceOvertake[client] / 10.0), "Ticket Split");
 			}
 		}
 	}
@@ -1315,7 +1316,7 @@ public int deleteItemsMenuHandler(Handle menu, MenuAction action, int client, in
 
 public void putInJail(int initiator, int target) {
 	FreeEm(target, initiator);
-	int amount = RoundToNearest(tCrime_getCrime(target) / 10.0);
+	int amount = RoundToNearest(tCrime_getCrime(target) / 5.0);
 	jobs_addExperience(initiator, amount, "Police");
 	jail_putInJail(initiator, target);
 }
@@ -1397,7 +1398,7 @@ public Action incomeTimer(Handle Timer) {
 		if (!isValidClient(i))
 			continue;
 		if (jobs_isActiveJob(i, "Police"))
-			tConomy_addBankCurrency(i, jobs_getLevel(i) * 10 + 10, "Police Salary");
+			tConomy_addBankCurrency(i, jobs_getLevel(i) * 20 + 50, "Police Salary");
 	}
 }
 
@@ -1406,8 +1407,7 @@ public void OnClientPutInServer(int client) {
 		SDKHook(client, SDKHook_OnTakeDamage, OnTakedamage);
 }
 
-public Action CuffsEm(int client, int attacker)
-{
+public Action CuffsEm(int client, int attacker){
 	if (g_iPlayerHandCuffs[attacker] > 0) {
 		SetEntityMoveType(client, MOVETYPE_NONE);
 		SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 0.0);
@@ -1425,6 +1425,7 @@ public Action CuffsEm(int client, int attacker)
 		g_iCuffedTimeLeft[client] = MAX_CUFF_TIME;
 		if (g_bSounds)
 			EmitSoundToAllAny(g_sSoundCuffsPath);
+		tConomy_addCurrency(attacker, 20, "Police Control");
 		
 		//CPrintToChatAll("%t %t", "warden_tag", "warden_cuffson", attacker, client);
 		//CPrintToChat(attacker, "%t %t", "warden_tag", "warden_cuffsgot", g_iPlayerHandCuffs[attacker]);

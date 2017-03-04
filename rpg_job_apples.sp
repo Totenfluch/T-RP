@@ -276,40 +276,40 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 				tConomy_addCurrency(client, (5 + jobs_getLevel(client)) * itemamount, "Sold Apple to Vendor");
 		} else if (StrEqual(cValue, "sellPear")) {
 			if (inventory_hasPlayerItem(client, "Pear")) {
-				tConomy_addCurrency(client, 7 + jobs_getLevel(client), "Sold Pear to Vendor");
+				tConomy_addCurrency(client, 10 + jobs_getLevel(client), "Sold Pear to Vendor");
 				inventory_removePlayerItems(client, "Pear", 1, "Sold to Vendor");
 			}
 		} else if (StrEqual(cValue, "sellAllPears")) {
 			int itemamount = inventory_getPlayerItemAmount(client, "Pear");
 			if (inventory_removePlayerItems(client, "Pear", itemamount, "Sold to Vendor (Mass Sell)"))
-				tConomy_addCurrency(client, (7 + jobs_getLevel(client)) * itemamount, "Sold Pear to Vendor");
+				tConomy_addCurrency(client, (10 + jobs_getLevel(client)) * itemamount, "Sold Pear to Vendor");
 		} else if (StrEqual(cValue, "sellNut")) {
 			if (inventory_hasPlayerItem(client, "Nut")) {
-				tConomy_addCurrency(client, 10 + jobs_getLevel(client), "Sold Nut to Vendor");
+				tConomy_addCurrency(client, 15 + jobs_getLevel(client), "Sold Nut to Vendor");
 				inventory_removePlayerItems(client, "Nut", 1, "Sold to Vendor");
 			}
 		} else if (StrEqual(cValue, "sellAllNuts")) {
 			int itemamount = inventory_getPlayerItemAmount(client, "Nut");
 			if (inventory_removePlayerItems(client, "Nut", itemamount, "Sold to Vendor (Mass Sell)"))
-				tConomy_addCurrency(client, (10 + jobs_getLevel(client)) * itemamount, "Sold Nut to Vendor");
+				tConomy_addCurrency(client, (15 + jobs_getLevel(client)) * itemamount, "Sold Nut to Vendor");
 		} else if (StrEqual(cValue, "sellWalnut")) {
 			if (inventory_hasPlayerItem(client, "Walnut")) {
-				tConomy_addCurrency(client, 12 + jobs_getLevel(client), "Sold Walnut to Vendor");
+				tConomy_addCurrency(client, 20 + jobs_getLevel(client), "Sold Walnut to Vendor");
 				inventory_removePlayerItems(client, "Walnut", 1, "Sold to Vendor");
 			}
 		} else if (StrEqual(cValue, "sellAllWalnuts")) {
 			int itemamount = inventory_getPlayerItemAmount(client, "Walnut");
 			if (inventory_removePlayerItems(client, "Walnut", itemamount, "Sold to Vendor (Mass Sell)"))
-				tConomy_addCurrency(client, (12 + jobs_getLevel(client)) * itemamount, "Sold Walnut to Vendor");
+				tConomy_addCurrency(client, (20 + jobs_getLevel(client)) * itemamount, "Sold Walnut to Vendor");
 		} else if (StrEqual(cValue, "sellAvocado")) {
 			if (inventory_hasPlayerItem(client, "Avocado")) {
-				tConomy_addCurrency(client, 15 + jobs_getLevel(client), "Sold Avocado to Vendor");
+				tConomy_addCurrency(client, 25 + jobs_getLevel(client), "Sold Avocado to Vendor");
 				inventory_removePlayerItems(client, "Avocado", 1, "Sold to Vendor");
 			}
 		} else if (StrEqual(cValue, "sellAllAvocados")) {
 			int itemamount = inventory_getPlayerItemAmount(client, "Avocado");
 			if (inventory_removePlayerItems(client, "Avocado", itemamount, "Sold to Vendor (Mass Sell)"))
-				tConomy_addCurrency(client, (15 + jobs_getLevel(client)) * itemamount, "Sold Avocado to Vendor");
+				tConomy_addCurrency(client, (25 + jobs_getLevel(client)) * itemamount, "Sold Avocado to Vendor");
 		} else if (StrEqual(cValue, "skin")) {
 			tConomy_removeCurrency(client, 250, "Bought Skin");
 			inventory_givePlayerItem(client, "Zoey", 0, "", "Skin", "Skin", 1, "Bought from Apple Harvester");

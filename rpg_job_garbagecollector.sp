@@ -54,9 +54,11 @@ public void OnPluginStart() {
 	
 	jobs_registerJob("Garbage Collector", "Collect Garbage and put it in the Trash Cans", 20, 400, 3.0);
 	npc_registerNpcType("Garbagerman Recruiter");
+	resetAmountVars();
 }
 
 public void OnMapStart() {
+	resetAmountVars();
 	PrecacheModel("models/props_junk/trashcluster01a_corner.mdl", true);
 	PrecacheModel("models/props/de_train/hr_t/trash_c/hr_clothes_pile.mdl", true);
 	PrecacheModel("models/props/de_train/hr_t/trash_b/hr_food_pile_02.mdl", true);
@@ -150,7 +152,7 @@ public Action refreshTimer(Handle Timer) {
 	}
 	if (active >= g_iBaseGarbageSpawns && active < g_iMaxGarbageSpawns) {
 		if (GetArraySize(randomNumbers) > 0) {
-			if (GetRandomInt(0, 10) == 7) {
+			if (GetRandomInt(0, 20) == 7) {
 				int spawnId = GetArrayCell(randomNumbers, 0);
 				RemoveFromArray(randomNumbers, 0);
 				spawnGarbage(spawnId);
@@ -384,15 +386,15 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			jobs_giveJob(client, "Garbage Collector");
 		} else if (StrEqual(cValue, "recycle")) {
 			if (inventory_hasPlayerItem(client, "Garbage")) {
-				tConomy_addCurrency(client, 65, "Recycled Garbage");
+				tConomy_addCurrency(client, 55, "Recycled Garbage");
 				inventory_removePlayerItems(client, "Garbage", 1, "Recycled");
-				jobs_addExperience(client, 50, "Garbage Collector");
+				jobs_addExperience(client, 40, "Garbage Collector");
 			}
 		} else if (StrEqual(cValue, "recycleAll")) {
 			int itemamount = inventory_getPlayerItemAmount(client, "Garbage");
 			if (inventory_removePlayerItems(client, "Garbage", itemamount, "Recycled Garbage (Mass)")) {
-				tConomy_addCurrency(client, 65 * itemamount, "Recycled Garbage");
-				jobs_addExperience(client, 50 * itemamount, "Garbage Collector");
+				tConomy_addCurrency(client, 55 * itemamount, "Recycled Garbage");
+				jobs_addExperience(client, 40 * itemamount, "Garbage Collector");
 			}
 		} else if (StrEqual(cValue, "skin")) {
 			tConomy_removeCurrency(client, 250, "Bought Skin");
@@ -401,5 +403,26 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 	}
 }
 
-// Garbage Collector
+public void OnClientPostAdminCheck(int client) {
+	resetAmountVars();
+}
 
+public void resetAmountVars() {
+	int amount;
+	if ((amount = GetRealClientCount()) != 0) {
+		g_iMaxGarbageSpawns = amount;
+		amount /= 3;
+		g_iBaseGarbageSpawns = amount <= 3 ? 3:amount;
+	} else {
+		g_iBaseGarbageSpawns = 1;
+		g_iMaxGarbageSpawns = 5;
+	}
+}
+
+public int GetRealClientCount() {
+	int total = 0;
+	for (int i = 1; i <= MaxClients; i++)
+	if (IsClientConnected(i) && !IsFakeClient(i))
+		total++;
+	return total;
+} 

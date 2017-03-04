@@ -87,15 +87,15 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				Format(infoString, sizeof(infoString), "Gardening (%i)", jobs_getLevel(client));
 				
 				if (perks_hasPerk(client, "Gardener Speed Boost4"))
-					jobs_startProgressBar(client, 10, infoString);
+					jobs_startProgressBar(client, 5, infoString);
 				else if (perks_hasPerk(client, "Gardener Speed Boost3"))
-					jobs_startProgressBar(client, 15, infoString);
+					jobs_startProgressBar(client, 10, infoString);
 				else if (perks_hasPerk(client, "Gardener Speed Boost2"))
-					jobs_startProgressBar(client, 20, infoString);
+					jobs_startProgressBar(client, 15, infoString);
 				else if (perks_hasPerk(client, "Gardener Speed Boost1"))
-					jobs_startProgressBar(client, 25, infoString);
+					jobs_startProgressBar(client, 20, infoString);
 				else
-					jobs_startProgressBar(client, 30, infoString);
+					jobs_startProgressBar(client, 25, infoString);
 				setInfo(client);
 			}
 		}
@@ -115,17 +115,17 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 		g_iGardenerZoneCooldown[client][g_iPlayerZoneId[client]] = g_iZoneCooldown + GetRandomInt(0, 50);
 	char addCurrencyReason[256];
 	Format(addCurrencyReason, sizeof(addCurrencyReason), "Gardening (Level %i)", jobs_getLevel(client));
-	tConomy_addBankCurrency(client, 20, "Gardening");
+	tConomy_addBankCurrency(client, 35 + jobs_getLevel(client) * 2, "Gardening");
 	if (perks_hasPerk(client, "Gardener XP Boost4"))
-		jobs_addExperience(client, 40, "Gardener");
+		jobs_addExperience(client, 45, "Gardener");
 	else if (perks_hasPerk(client, "Gardener XP Boost3"))
-		jobs_addExperience(client, 35, "Gardener");
+		jobs_addExperience(client, 40, "Gardener");
 	else if (perks_hasPerk(client, "Gardener XP Boost2"))
-		jobs_addExperience(client, 30, "Gardener");
+		jobs_addExperience(client, 35, "Gardener");
 	else if (perks_hasPerk(client, "Gardener XP Boost1"))
-		jobs_addExperience(client, 25, "Gardener");
+		jobs_addExperience(client, 30, "Gardener");
 	else
-		jobs_addExperience(client, 20, "Gardener");
+		jobs_addExperience(client, 25, "Gardener");
 	setInfo(client);
 }
 

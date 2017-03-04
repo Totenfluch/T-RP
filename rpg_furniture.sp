@@ -50,6 +50,7 @@ int g_iSpawnedFurniture;
 
 int g_iPlayerPrevButtons[MAXPLAYERS + 1];
 char activeZone[MAXPLAYERS + 1][128];
+char prevZone[MAXPLAYERS + 1][128];
 int g_iLastInteractedWith[MAXPLAYERS + 1];
 
 char dbconfig[] = "gsxh_multiroot";
@@ -1092,6 +1093,7 @@ public void loadFurnitureQueryCallback(Handle owner, Handle hndl, const char[] e
 }
 
 public int Zone_OnClientEntry(int client, char[] zone) {
+	strcopy(prevZone[client], sizeof(prevZone), activeZone[client]);
 	strcopy(activeZone[client], sizeof(activeZone), zone);
 }
 
@@ -1100,7 +1102,15 @@ public int Zone_OnClientLeave(int client, char[] zone) {
 	GetClientAbsOrigin(client, pos);
 	if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]))
 		return;
-	strcopy(activeZone[client], sizeof(activeZone), "");
+	if (Zone_isPositionInZone(prevZone[client], pos[0], pos[1], pos[2])) {
+		char tempZone[128];
+		strcopy(tempZone, sizeof(tempZone), activeZone[client]);
+		strcopy(activeZone[client], 128, prevZone[client]);
+		strcopy(prevZone[client], 128, tempZone);
+	} else {
+		strcopy(prevZone[client], sizeof(prevZone), "");
+		strcopy(activeZone[client], sizeof(activeZone), "");
+	}
 }
 
 public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex) {

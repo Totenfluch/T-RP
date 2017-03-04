@@ -1227,11 +1227,11 @@ public Action makeGlowCb(Handle Timer, any datapack) {
 	ResetPack(datapack, false);
 	int client = EntRefToEntIndex(ReadPackCell(datapack));
 	int entity = EntRefToEntIndex(ReadPackCell(datapack));
-	if(!IsValidEntity(entity))
+	if (!IsValidEntity(entity))
 		return;
 	char className[64];
 	GetEntityClassname(entity, className, sizeof(className));
-	if(!StrEqual(className, "prop_door_rotating"))
+	if (!StrEqual(className, "prop_door_rotating"))
 		return;
 	CloseHandle(datapack);
 	char m_ModelName[PLATFORM_MAX_PATH];
@@ -1263,14 +1263,14 @@ public Action makeGlowCb(Handle Timer, any datapack) {
 	CreateTimer(2.5, killGlow, EntIndexToEntRef(doorGlow));
 }
 
-public Action Hook_SetTransmit(int ent, int client){
-    if(ent != EntRefToEntIndex(g_iClientGlow[client]))
-        return Plugin_Handled;
-    return Plugin_Continue;
-}  
+public Action Hook_SetTransmit(int ent, int client) {
+	if (ent != EntRefToEntIndex(g_iClientGlow[client]))
+		return Plugin_Handled;
+	return Plugin_Continue;
+}
 
-public Action killGlow(Handle Timer, int ent){
-	if(IsValidEntity(EntRefToEntIndex(ent))){
+public Action killGlow(Handle Timer, int ent) {
+	if (IsValidEntity(EntRefToEntIndex(ent))) {
 		SDKUnhook(EntRefToEntIndex(ent), SDKHook_SetTransmit, Hook_SetTransmit);
 		AcceptEntityInput(EntRefToEntIndex(ent), "kill");
 	}
@@ -1286,4 +1286,4 @@ stock void SetGlowColor(int entity, const char[] color)
 	colors[3] = 255;
 	SetVariantColor(colors);
 	AcceptEntityInput(entity, "SetGlowColor");
-}
+} 

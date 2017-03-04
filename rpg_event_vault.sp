@@ -254,10 +254,17 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					char entName[256];
 					Entity_GetGlobalName(ent, entName, sizeof(entName));
 					if (StrEqual(entName, "Vault Gate")) {
-						if (!IsValidEntity(EntRefToEntIndex(g_iBombEnt)))
-							if (inventory_hasPlayerItem(client, "c4"))
-							if (inventory_removePlayerItems(client, "c4", 1, "planted c4"))
-							setupBomb(client);
+						if (!IsValidEntity(EntRefToEntIndex(g_iBombEnt))) {
+							if (inventory_hasPlayerItem(client, "c4")) {
+								if (getPoliceCount() >= 3) {
+									if (inventory_removePlayerItems(client, "c4", 1, "planted c4")) {
+										jobs_startProgressBar(client, 600, "Plant Bomb");
+									}
+								} else {
+									PrintToChat(client, "[-T-] No enough Police online");
+								}
+							}
+						}
 					} else if (StrEqual(entName, "Vault Money")) {
 						if (IsValidEntity(ent)) {
 							jobs_startProgressBar(client, 300, "Steal Vault Money");
@@ -285,10 +292,25 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 				AcceptEntityInput(EntRefToEntIndex(g_iLastMoneyTarget[client]), "kill");
 			}
 		}
+	} else if (StrEqual(info, "Plant Bomb")) {
+		setupBomb(client);
 	}
 }
 
 public Action clearEffect(Handle Timer, any ent) {
 	int iEnt = EntRefToEntIndex(ent);
 	AcceptEntityInput(iEnt, "kill");
+}
+
+public int getPoliceCount() {
+	int count = 0;
+	for (int i = 1; i < MAXPLAYERS; i++)
+	if (isValidClient(i))
+		if (jobs_isActiveJob(i, "Police"))
+		count++;
+	return count;
+}
+
+stock bool isValidClient(int client) {
+	return (1 <= client <= MaxClients && IsClientInGame(client));
 } 

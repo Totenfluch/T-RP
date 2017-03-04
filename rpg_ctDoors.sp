@@ -100,6 +100,9 @@ public int ctMenuHandler(Handle menu, MenuAction action, int client, int item) {
 			PrintToChat(client, "[-T-] Door unlocked");
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void openCriminalMenu(int client, int ent) {
@@ -137,6 +140,9 @@ public int criminalMenuHandler(Handle menu, MenuAction action, int client, int i
 			g_iClientDoorTarget[client] = EntIndexToEntRef(doorEnt);
 			jobs_startProgressBar(client, 100, "Lockpicking CT Door");
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 

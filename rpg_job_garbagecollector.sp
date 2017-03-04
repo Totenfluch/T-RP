@@ -310,10 +310,8 @@ public Action addSpawnPointsMenu(int client, int args)
 	return Plugin_Handled;
 }
 
-public int addSpawnPointsMenuHandler(Handle menu, MenuAction action, int client, int item)
-{
-	if (action == MenuAction_Select)
-	{
+public int addSpawnPointsMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
 		if (item == 1) {
 			AddLootSpawn(client);
 			addSpawnPointsMenu(client, 0);
@@ -321,6 +319,9 @@ public int addSpawnPointsMenuHandler(Handle menu, MenuAction action, int client,
 			ShowSpawns();
 			addSpawnPointsMenu(client, 0);
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -400,6 +401,9 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			tConomy_removeCurrency(client, 250, "Bought Skin");
 			inventory_givePlayerItem(client, "Ellis", 0, "", "Skin", "Skin", 1, "Bought from Garbage Collector");
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 

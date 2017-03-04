@@ -93,6 +93,9 @@ public int weaponMenuHandler(Handle menu, MenuAction action, int client, int ite
 		}
 		strcopy(g_cLastItemUsed[client], 128, "");
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void stashWeapon(int client, bool useOverride, char[] weapon) {

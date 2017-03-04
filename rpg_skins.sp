@@ -111,6 +111,9 @@ public int wardrobeMenuHandler(Handle menu, MenuAction action, int client, int i
 			showWardrobeToClient(client);
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void showWardrobeToClient(int client) {
@@ -148,6 +151,9 @@ public int chooseSkinMenuCallback(Handle menu, MenuAction action, int client, in
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		strcopy(g_cCurrentSkin[client], 128, cValue);
 		changeSkinGlobally(client);
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -205,6 +211,9 @@ public int stashClothMenuHandler(Handle menu, MenuAction action, int client, int
 				addItemToWardrobe(client, cValue);
 			}
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 

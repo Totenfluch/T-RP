@@ -91,11 +91,11 @@ public int BulletMenuHandler(Handle menu, MenuAction action, int client, int ite
 			}
 		}
 	}
+	if (action == MenuAction_End) { 
+    	delete menu; 
+	}
 }
 
-public bool isValidClient(int client) {
-	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
-		return false;
-	
-	return true;
-} 
+stock bool isValidClient(int client) {
+	return (1 <= client <= MaxClients && IsClientInGame(client));
+}

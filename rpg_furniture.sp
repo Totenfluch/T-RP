@@ -361,6 +361,9 @@ public int furnitureMenuHandler(Handle menu, MenuAction action, int client, int 
 		AddMenuItem(menu2, info, "Buy", tConomy_getCurrency(client) >= LoadedFurnitureItems[id][lfPrice] ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 		DisplayMenu(menu2, client, 60);
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public int furnitureItemMenuHandler(Handle menu, MenuAction action, int client, int item) {
@@ -379,6 +382,9 @@ public int furnitureItemMenuHandler(Handle menu, MenuAction action, int client, 
 		}
 		if (isValidClient(client))
 			openFurnitureMenu(client, g_cLastNpcType[client]);
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -636,6 +642,9 @@ public int buildMenuHandler(Handle menu, MenuAction action, int client, int item
 			PrintToChat(client, "[-T-] Deleted %s", globalName);
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 	return 1;
 }
 
@@ -726,6 +735,9 @@ public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int
 				AcceptEntityInput(id, "kill");
 			PrintToChat(client, "[-T-] Deleted %s", globalName);
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 	return 1;
 }

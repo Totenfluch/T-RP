@@ -65,6 +65,9 @@ public int bankMenuHandler(Handle menu, MenuAction action, int client, int item)
 			openTransferMenu(client);
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void openWithdrawMenu(int client) {
@@ -122,7 +125,9 @@ public int withdrawMenuHandler(Handle menu, MenuAction action, int client, int i
 				return;
 			}
 		}
-		
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -181,7 +186,9 @@ public int depositMenuHandler(Handle menu, MenuAction action, int client, int it
 				return;
 			}
 		}
-		
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -243,6 +250,9 @@ public int transferMenuHandler(Handle menu, MenuAction action, int client, int i
 		
 		DisplayMenu(menu2, client, 60);
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public int transferMenuHandler2(Handle menu, MenuAction action, int client, int item) {
@@ -275,13 +285,12 @@ public int transferMenuHandler2(Handle menu, MenuAction action, int client, int 
 		
 		tConomy_removeBankCurrency(client, amount, transferReason);
 		tConomy_addBankCurrency(target, amount, transferReason);
-		
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
 stock bool isValidClient(int client) {
-	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
-		return false;
-	
-	return true;
-}
+	return (1 <= client <= MaxClients && IsClientInGame(client));
+} 

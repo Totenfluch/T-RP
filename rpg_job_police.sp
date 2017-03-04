@@ -389,8 +389,7 @@ public void showTopPanelToClient(int client) {
 	}
 }
 
-public int policeWeaponVendorHandler(Handle menu, MenuAction action, int client, int item)
-{
+public int policeWeaponVendorHandler(Handle menu, MenuAction action, int client, int item) {
 	if (action == MenuAction_Select) {
 		if (item == 1) {
 			showPistolsPanelToClient(client);
@@ -405,6 +404,9 @@ public int policeWeaponVendorHandler(Handle menu, MenuAction action, int client,
 		} else if (item == 6) {
 			showArmorHpPanelToClient(client);
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -508,6 +510,9 @@ public int pistolsPanelHandler(Handle menu, MenuAction action, int client, int i
 	} else if (action == MenuAction_Cancel) {
 		showTopPanelToClient(client);
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void showSMGPanelToClient(int client) {
@@ -583,6 +588,9 @@ public int SMGPanelHandler(Handle menu, MenuAction action, int client, int item)
 	} else if (action == MenuAction_Cancel) {
 		showTopPanelToClient(client);
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void showShotgunPanelToClient(int client) {
@@ -639,6 +647,9 @@ public int ShotgunPanelHandler(Handle menu, MenuAction action, int client, int i
 		}
 	} else if (action == MenuAction_Cancel) {
 		showTopPanelToClient(client);
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -723,6 +734,9 @@ public int RiflesPanelHandler(Handle menu, MenuAction action, int client, int it
 		}
 	} else if (action == MenuAction_Cancel) {
 		showTopPanelToClient(client);
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -829,6 +843,9 @@ public int ArmorAndHPPanelHandler(Handle menu, MenuAction action, int client, in
 	} else if (action == MenuAction_Cancel) {
 		showTopPanelToClient(client);
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void showSpecialWeaponsPanelToClient(int client) {
@@ -905,6 +922,9 @@ public int SpecialWeaponsPanelHandler(Handle menu, MenuAction action, int client
 	} else if (action == MenuAction_Cancel) {
 		showTopPanelToClient(client);
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void t_GiveClientItem(int client, char[] weaponItem) {
@@ -921,6 +941,9 @@ public int policeRecruiterHandler(Handle menu, MenuAction action, int client, in
 			jobs_quitJob(client);
 			jobs_giveJob(client, "Police");
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -980,6 +1003,9 @@ public int criminalsHandler(Handle menu, MenuAction action, int client, int item
 		if (StrEqual(cValue, "...")) {
 			
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -1116,6 +1142,9 @@ public int searchMenuHandler(Handle menu, MenuAction action, int client, int ite
 		}
 		g_iOfficerTarget[client] = -1;
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 int overtake[MAXPLAYERS + 1];
@@ -1170,6 +1199,9 @@ public int punishMenuHandler(Handle menu, MenuAction action, int client, int ite
 		overtake[client] = -1;
 		g_iOfficerTarget[client] = -1;
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 int g_iLatestTicket[MAXPLAYERS + 1];
@@ -1200,6 +1232,9 @@ public int giveTicketmenuHandler(Handle menu, MenuAction action, int client, int
 				tConomy_addCurrency(g_iLatestTicket[client], RoundToNearest(g_iTickpriceOvertake[client] / 10.0), "Ticket Split");
 			}
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -1237,6 +1272,9 @@ public int setTicketMenuHandler(Handle menu, MenuAction action, int client, int 
 		if (!isValidClient(g_iOfficerSetTicketOvertake[client]))
 			return;
 		giveTicketToClient(client, g_iOfficerSetTicketOvertake[client], theAmount);
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -1276,6 +1314,9 @@ public int setCrimeMenuHandler(Handle menu, MenuAction action, int client, int i
 			return;
 		tCrime_addCrime(g_iOfficerSetCrimeMenuTarget[client], theAmount);
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 
@@ -1311,6 +1352,9 @@ public int deleteItemsMenuHandler(Handle menu, MenuAction action, int client, in
 		Format(reason, sizeof(reason), "Deleted By Police Officer %N", client);
 		inventory_deleteItemBySlot(g_iOfficerDeleteItemsTaget[client], id, reason);
 		g_iOfficerDeleteItemsTaget[client] = -1;
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -1407,7 +1451,7 @@ public void OnClientPutInServer(int client) {
 		SDKHook(client, SDKHook_OnTakeDamage, OnTakedamage);
 }
 
-public Action CuffsEm(int client, int attacker){
+public Action CuffsEm(int client, int attacker) {
 	if (g_iPlayerHandCuffs[attacker] > 0) {
 		SetEntityMoveType(client, MOVETYPE_NONE);
 		SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 0.0);

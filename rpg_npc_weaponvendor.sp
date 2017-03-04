@@ -311,6 +311,9 @@ public int LicensedWeaponVendorHandler(Handle menu, MenuAction action, int clien
 			showArmorHpPanelToClient(client);
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void showPistolsPanelToClient(int client) {
@@ -423,6 +426,9 @@ public int pistolsPanelHandler(Handle menu, MenuAction action, int client, int i
 	} else if (action == MenuAction_Cancel) {
 		showTopPanelToClient(client);
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void showSMGPanelToClient(int client) {
@@ -508,6 +514,9 @@ public int SMGPanelHandler(Handle menu, MenuAction action, int client, int item)
 	} else if (action == MenuAction_Cancel) {
 		showTopPanelToClient(client);
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void showShotgunPanelToClient(int client) {
@@ -574,6 +583,9 @@ public int ShotgunPanelHandler(Handle menu, MenuAction action, int client, int i
 		}
 	} else if (action == MenuAction_Cancel) {
 		showTopPanelToClient(client);
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -669,6 +681,9 @@ public int RiflesPanelHandler(Handle menu, MenuAction action, int client, int it
 	} else if (action == MenuAction_Cancel) {
 		showTopPanelToClient(client);
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void showArmorHpPanelToClient(int client) {
@@ -744,6 +759,9 @@ public int ArmorAndHPPanelHandler(Handle menu, MenuAction action, int client, in
 		}
 	} else if (action == MenuAction_Cancel) {
 		showTopPanelToClient(client);
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -830,6 +848,9 @@ public int SpecialWeaponsPanelHandler(Handle menu, MenuAction action, int client
 		}
 	} else if (action == MenuAction_Cancel) {
 		showTopPanelToClient(client);
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 

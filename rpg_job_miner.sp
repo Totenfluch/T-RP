@@ -318,6 +318,9 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			inventory_givePlayerItem(client, "Barryv", 0, "", "Skin", "Skin", 1, "Bought from Mining Recruiter");
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void addZone(char[] zone) {
@@ -340,10 +343,7 @@ public int getZoneId(char[] zone) {
 }
 
 stock bool isValidClient(int client) {
-	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
-		return false;
-	
-	return true;
+	return (1 <= client <= MaxClients && IsClientInGame(client));
 }
 
 public void setInfo(int client) {

@@ -220,6 +220,9 @@ public int openVendorMenuHandler(Handle menu, MenuAction action, int client, int
 		}
 		DisplayMenu(menu2, client, 60);
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public int vendorItemMenuHandler(Handle menu, MenuAction action, int client, int item) {
@@ -261,8 +264,10 @@ public int vendorItemMenuHandler(Handle menu, MenuAction action, int client, int
 				}
 			}
 		}
-		
 		if (isValidClient(client))
 			openVendorMenu(client, g_cLastNpcType[client]);
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }

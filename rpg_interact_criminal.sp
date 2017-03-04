@@ -69,6 +69,9 @@ public int criminalInteractionsMenuHandler(Handle menu, MenuAction action, int c
 			jobs_startProgressBar(client, 15, "Ziptie Player");
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void jobs_OnProgressBarFinished(int client, char info[64]) {

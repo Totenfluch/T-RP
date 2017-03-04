@@ -125,6 +125,9 @@ public int policePanelMenuHandler(Handle menu, MenuAction action, int client, in
 	if (action == MenuAction_Select) {
 		// TODO ?
 	}
+	if (action == MenuAction_End) { 
+    	delete menu; 
+	}
 }
 
 public Action cmdAddpolice(int client, int args) {
@@ -198,6 +201,9 @@ public int mainChooserHandler(Handle menu, MenuAction action, int client, int it
 			listUsers(client);
 		}
 	}
+	if (action == MenuAction_End) { 
+    	delete menu; 
+	}
 }
 
 int g_iReason[MAXPLAYERS + 1];
@@ -230,6 +236,9 @@ public int selectDurationHandler(Handle menu, MenuAction action, int client, int
 			g_iDurationSelected[client] = StringToInt(cValue);
 			showPlayerSelectMenu(client, g_iReason[client]);
 		}
+	}
+	if (action == MenuAction_End) { 
+    	delete menu; 
 	}
 }
 
@@ -426,6 +435,9 @@ public int menuToRemoveClientsHandler(Handle menu, MenuAction action, int client
 		showAllPoliceOfficerToAdmin(client);
 		CPrintToChat(client, "{green}Removed {orange}%ss{green} Police Status {green}({orange}%s{green})", display, info);
 	}
+	if (action == MenuAction_End) { 
+    	delete menu; 
+	}
 }
 
 public void deletepolice(char playerid[20]) {
@@ -502,6 +514,9 @@ public int listPolicesMenuHandler(Handle menu, MenuAction action, int client, in
 		char detailsQuery[512];
 		Format(detailsQuery, sizeof(detailsQuery), "SELECT playername,playerid,enddate,timestamp,admin_playername,admin_playerid FROM tPolice WHERE playerid = '%s';", cValue);
 		SQL_TQuery(g_DB, SQLDetailsQuery, detailsQuery, client);
+	}
+	if (action == MenuAction_End) { 
+    	delete menu; 
 	}
 }
 

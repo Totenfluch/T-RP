@@ -748,6 +748,9 @@ public int showInventoryHandler(Handle menu, MenuAction action, int client, int 
 	if (action == MenuAction_Select) {
 		
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public Action cmdOpenInventory(int client, const char[] command, int argc) {
@@ -820,6 +823,9 @@ public int inventoryMenuHandler(Handle menu, MenuAction action, int client, int 
 			DisplayMenu(m, client, 60);
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void transferItemToContainer(int client, int slot, char containerBuffer[64]) {
@@ -858,6 +864,9 @@ public int defaultItemHandleHandler(Handle menu, MenuAction action, int client, 
 			if (takePlayerItem(client, tempItem, amount, "Throwed all away"))
 				PrintToConsole(client, "Successfully removed items");
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 

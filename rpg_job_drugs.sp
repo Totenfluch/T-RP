@@ -137,6 +137,9 @@ public int papaverItemHandler(Handle menu, MenuAction action, int client, int it
 			jobs_startProgressBar(client, 10, "Crush Papaver");
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public int defaultItemHandleHandler(Handle menu, MenuAction action, int client, int item) {
@@ -152,6 +155,9 @@ public int defaultItemHandleHandler(Handle menu, MenuAction action, int client, 
 		} else if (StrEqual(info, "plant")) {
 			cmdPlantCommand(client, 0);
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -241,6 +247,9 @@ public int drugMenuHandler(Handle menu, MenuAction action, int client, int item)
 			tConomy_removeCurrency(client, 250, "Bought Skin");
 			inventory_givePlayerItem(client, "Niko", 0, "", "Skin", "Skin", 1, "Bought from Drug Vendor");
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 

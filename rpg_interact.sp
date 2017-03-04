@@ -134,13 +134,11 @@ public int interactMenuHandler(Handle menu, MenuAction action, int client, int i
 		Call_PushString(display);
 		Call_Finish();
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
-public bool isValidClient(int client) {
-	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
-		return false;
-	
-	return true;
-}
-
-
+stock bool isValidClient(int client) {
+	return (1 <= client <= MaxClients && IsClientInGame(client));
+} 

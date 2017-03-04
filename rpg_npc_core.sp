@@ -224,6 +224,9 @@ public int editMenuHandler(Handle menu, MenuAction action, int client, int item)
 			openTypeMenu(client);
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void openPositionMenu(int client) {
@@ -321,6 +324,9 @@ public int editPositionMenuHandler(Handle menu, MenuAction action, int client, i
 			SQL_TQuery(g_DB, SQLErrorCheckCallback, updatePositionQuery);
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void openAnglesMenu(int client) {
@@ -389,6 +395,9 @@ public int editAnglesMenuHandler(Handle menu, MenuAction action, int client, int
 			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateAnglesQuery);
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void openBasePropertyMenu(int client) {
@@ -414,6 +423,9 @@ public int editBasePropertyMenuHandler(Handle menu, MenuAction action, int clien
 			SetEntProp(g_eNpcEdit[client][nNpcId], Prop_Send, "m_nSolidType", 0);
 			openBasePropertyMenu(client);
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -717,6 +729,9 @@ public int typeChooserHandler(Handle menu, MenuAction action, int client, int it
 		char updateTypeQuery[512];
 		Format(updateTypeQuery, sizeof(updateTypeQuery), "UPDATE t_rpg_npcs SET type = '%s' WHERE uniqueId = '%s'", cValue, g_iNpcList[id][gUniqueId]);
 		SQL_TQuery(g_DB, SQLErrorCheckCallback, updateTypeQuery);
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 

@@ -633,6 +633,9 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 		}
 		DisplayMenu(nextMenu, client, 60);
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public int nextMenuHandler(Handle menu, MenuAction action, int client, int item) {
@@ -777,6 +780,8 @@ public int nextMenuHandler(Handle menu, MenuAction action, int client, int item)
 				addPerk(client, "Drug Seed Boost");
 			}
 		}
-		
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 } 

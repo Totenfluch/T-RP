@@ -190,11 +190,11 @@ public int BackpackMenuHandler(Handle menu, MenuAction action, int client, int i
 			}
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 stock bool isValidClient(int client) {
-	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
-		return false;
-	
-	return true;
-}
+	return (1 <= client <= MaxClients && IsClientInGame(client));
+} 

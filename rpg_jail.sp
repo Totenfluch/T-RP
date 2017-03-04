@@ -418,10 +418,8 @@ public Action addJailCellsMenu(int client, int args)
 	return Plugin_Handled;
 }
 
-public int addJailCellsMenuHandler(Handle menu, MenuAction action, int client, int item)
-{
-	if (action == MenuAction_Select)
-	{
+public int addJailCellsMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
 		if (item == 1) {
 			AddJailPoints(client);
 			addJailCellsMenu(client, 0);
@@ -429,6 +427,9 @@ public int addJailCellsMenuHandler(Handle menu, MenuAction action, int client, i
 			ShowSpawns();
 			addJailCellsMenu(client, 0);
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 

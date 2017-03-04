@@ -74,13 +74,13 @@ public int KeyMenuHandler(Handle menu, MenuAction action, int client, int item) 
 			}
 		}
 	}
+	if (action == MenuAction_End) { 
+    	delete menu; 
+	}
 }
 
-public bool isValidClient(int client) {
-	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
-		return false;
-	
-	return true;
+stock bool isValidClient(int client) {
+	return (1 <= client <= MaxClients && IsClientInGame(client));
 }
 
 public void OnPlayerInteract(int client, int target, char interaction[64]) {

@@ -312,7 +312,7 @@ public void doorAction(int client, char zone[128], int doorEnt) {
 	strcopy(zone2, sizeof(zone2), zone);
 	ReplaceString(zone2, sizeof(zone2), "apartment_", "");
 	ReplaceString(doorname, sizeof(doorname), "apartment_", "");
-	if(StrContains(doorname, zone2) == -1)
+	if (StrContains(doorname, zone2) == -1)
 		return;
 	int apartmentId;
 	int ownedId;
@@ -364,6 +364,9 @@ public int lockpickActionHandler(Handle menu, MenuAction action, int client, int
 			jobs_startProgressBar(client, 100, "Lockpicking Apartment");
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void jobs_OnProgressBarFinished(int client, char info[64]) {
@@ -406,6 +409,9 @@ public int apartmentDoorHandler(Handle menu, MenuAction action, int client, int 
 			PrintToChat(client, "Unlocked Doors");
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void raidAction(int client, char zone[128]) {
@@ -426,6 +432,9 @@ public int apartmentDoorRaidHandler(Handle menu, MenuAction action, int client, 
 			changeDoorLock(client, 0);
 			PrintToChat(client, "Raided Apartment");
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -486,6 +495,9 @@ public int apartmentMenuHandler(Handle menu, MenuAction action, int client, int 
 		}
 		apartmentCommand(client, 0);
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void apartmentAction(int client) {
@@ -524,6 +536,9 @@ public int buyApartmentHandler(Handle menu, MenuAction action, int client, int i
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		int apartmentId = StringToInt(cValue);
 		buyApartment(client, apartmentId);
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -624,6 +639,9 @@ public int createApartmentHandler(Handle menu, MenuAction action, int client, in
 			// TODO
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void openEditApartment(int client, char[] apartmentid) {
@@ -650,6 +668,9 @@ public int editApartmentMenuHandler(Handle menu, MenuAction action, int client, 
 			playerProperties[client][ppInEdit] = 4;
 			PrintToChat(client, "Enter the new Apartment Flags OR 'abort' to cancel");
 		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -710,6 +731,9 @@ public int deleteApartmentMenuHandler(Handle menu, MenuAction action, int client
 		deleteApartment(cValue);
 		
 		loadMenuForDeletion(client);
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -1109,6 +1133,9 @@ public int chooserMenuHandler(Handle menu, MenuAction action, int client, int it
 		char cValue[128];
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		allowPlayerToApartment(client, g_iPlayerTargetKey[client], cValue);
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 

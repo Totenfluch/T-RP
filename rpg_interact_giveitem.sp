@@ -70,7 +70,9 @@ public int giveItemMenuHandler(Handle menu, MenuAction action, int client, int i
 		if (inventory_isValidItem(client, theId)) {
 			inventory_transferItemToPlayerBySlot(client, g_iPlayerTarget[client], theId, reason);
 		}
-		
+	}
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -84,6 +86,4 @@ public void OnPlayerInteractionStarted(int client, int target) {
 
 stock bool isValidClient(int client) {
 	return (1 <= client <= MaxClients && IsClientInGame(client));
-}
-
-
+} 

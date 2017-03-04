@@ -929,6 +929,9 @@ public Menu_Car(Handle:car, MenuAction:action, param1, param2)
 			DisplayMenu(g_VIPInfoMenu, param1, MENU_TIME_FOREVER); \
 		}
 	}
+	if (action == MenuAction_End) {
+		delete car;
+	}
 }
 
 
@@ -1045,6 +1048,9 @@ public Menu_Inventory(Handle:inv, MenuAction:action, param1, param2)
 			return;
 		}
 	}
+	if (action == MenuAction_End) {
+		delete inv;
+	}
 }
 public Menu_NotStowed(Handle:tempmenu_a, MenuAction:action, param1, param2)
 {
@@ -1089,6 +1095,9 @@ public Menu_NotStowed(Handle:tempmenu_a, MenuAction:action, param1, param2)
 			PrintToChat(param1, "\x04[Car] %T", "Already_Spawned", param1);
 			return;
 		}
+	}
+	if (action == MenuAction_End) {
+		delete tempmenu_a;
 	}
 	return;
 }
@@ -1175,6 +1184,9 @@ public Menu_Stowed(Handle:tempmenu_a, MenuAction:action, param1, param2)
 			DisplayMenu(givemenu, param1, MENU_TIME_FOREVER);
 			return;
 		}
+	}
+	if (action == MenuAction_End) {
+		delete tempmenu_a;
 	}
 }
 public Action:Stow_Timer(Handle:Timer, any:client)
@@ -1317,6 +1329,9 @@ public Menu_Give(Handle:givemenu, MenuAction:action, param1, param2)
 			}
 		}
 	}
+	if (action == MenuAction_End) {
+		delete givemenu;
+	}
 }
 public Menu_Verify(Handle:verifymenu, MenuAction:action, param1, param2)
 {
@@ -1357,6 +1372,9 @@ public Menu_Verify(Handle:verifymenu, MenuAction:action, param1, param2)
 			return;
 		}
 	}
+	if (action == MenuAction_End) {
+		delete verifymenu;
+	}
 }
 public Menu_CarInfo(Handle:info_menu, MenuAction:action, param1, param2)
 {
@@ -1364,6 +1382,9 @@ public Menu_CarInfo(Handle:info_menu, MenuAction:action, param1, param2)
 	{
 		Reset_Car_Selection(param1);
 		return;
+	}
+	if (action == MenuAction_End) {
+		delete info_menu;
 	}
 }
 public Menu_CarSkin(Handle:skin_menu, MenuAction:action, param1, param2)
@@ -1381,6 +1402,9 @@ public Menu_CarSkin(Handle:skin_menu, MenuAction:action, param1, param2)
 		Reset_Car_Selection(param1);
 		return;
 	}
+	if (action == MenuAction_End) {
+		delete skin_menu;
+	}
 }
 public Menu_CarHelp(Handle:help_menu, MenuAction:action, param1, param2)
 {
@@ -1388,6 +1412,9 @@ public Menu_CarHelp(Handle:help_menu, MenuAction:action, param1, param2)
 	{
 		Reset_Car_Selection(param1);
 		return;
+	}
+	if (action == MenuAction_End) {
+		delete help_menu;
 	}
 }
 
@@ -1579,6 +1606,9 @@ public Menu_Buy(Handle:menu, MenuAction:action, param1, param2)
 		}
 		else PrintToChat(param1, "\x04[Car] %T", "Expensive", param1, car_price[t]);
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 Handle:BuildGasMenu()
 {
@@ -1683,6 +1713,9 @@ public Menu_Gas(Handle:menu, MenuAction:action, param1, param2)
 		else PrintToChat(param1, "\x04[Car] %T", "Youre_Dead", param1);
 		return;
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 public Action:Gas_Time(Handle:timer, any:client)
 {
@@ -1762,6 +1795,9 @@ public Menu_Info(Handle:info, MenuAction:action, param1, param2)
 	if (action == MenuAction_Select)
 	{
 		return;
+	}
+	if (action == MenuAction_End) {
+		delete info;
 	}
 }
 

@@ -199,6 +199,9 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			jobs_giveJob(client, "Gardener");
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 
 public void addZone(char[] zone) {

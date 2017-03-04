@@ -70,6 +70,9 @@ public int chooserMenuHandler(Handle menu, MenuAction action, int client, int it
 			openChestForClient(client, g_iLastInteractedWith[client]);
 		}
 	}
+	if (action == MenuAction_End) { 
+    	delete menu; 
+	}
 }
 
 public void openChestForClient(int client, int ent) {
@@ -125,6 +128,9 @@ public int takeItemMenuHandler(Handle menu, MenuAction action, int client, int i
 		CPrintToChat(client, "{lightgreen}You have recieved: {grey2}%s {blue}({grey2}%s{blue})", name, "Taken from Chest");
 		inventory_transferItemFromContainer(client, containerName, itemid);
 		openChestForClient(client, g_iLastInteractedWith[client]);
+	}
+	if (action == MenuAction_End) { 
+    	delete menu; 
 	}
 }
 
@@ -201,7 +207,9 @@ public int storeItemMenuHandler(Handle menu, MenuAction action, int client, int 
 			//openStoreChooserForClient(client, g_iLastInteractedWith[client]);
 			getItemsInChest(client, g_iLastInteractedWith[client]);
 		}
-		
+	}
+	if (action == MenuAction_End) { 
+    	delete menu; 
 	}
 }
 

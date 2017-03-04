@@ -306,6 +306,14 @@ public int Zone_OnClientLeave(int client, char[] zone) {
 public void doorAction(int client, char zone[128], int doorEnt) {
 	if (!apartmentExists(zone))
 		return;
+	char doorname[64];
+	GetEntPropString(doorEnt, Prop_Data, "m_iName", doorname, sizeof(doorname));
+	char zone2[128];
+	strcopy(zone2, sizeof(zone2), zone);
+	ReplaceString(zone2, sizeof(zone2), "apartment_", "");
+	ReplaceString(doorname, sizeof(doorname), "apartment_", "");
+	if(StrContains(doorname, zone2) == -1)
+		return;
 	int apartmentId;
 	int ownedId;
 	if ((apartmentId = getLoadedIdFromApartmentId(zone)) != -1) {

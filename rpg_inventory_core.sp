@@ -871,9 +871,11 @@ public void transferItemBySlot(int client, int target, int slot, char reason[256
 	strcopy(flags, sizeof(flags), g_ePlayerInventory[client][slot][iFlags]);
 	strcopy(category, sizeof(category), g_ePlayerInventory[client][slot][iCategory]);
 	strcopy(category2, sizeof(category2), g_ePlayerInventory[client][slot][iCategory2]);
+	int weightcopy = g_ePlayerInventory[client][slot][iWeight];
+	int raritycopy = g_ePlayerInventory[client][slot][iRarity];
 	
 	if (takePlayerItem(client, itemName, 1, reason)) {
-		givePlayerItem(target, itemName, g_ePlayerInventory[client][slot][iWeight], flags, category, category2, g_ePlayerInventory[client][slot][iRarity], reason);
+		givePlayerItem(target, itemName, weightcopy, flags, category, category2, raritycopy, reason);
 	}
 }
 

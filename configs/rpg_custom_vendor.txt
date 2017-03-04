@@ -1,0 +1,59 @@
+"rpg_custom_vendor"
+{
+	"C4"
+	{
+		"vendor"	"Black Market Vendor"
+		"category2"	"Criminal"
+		"category"	"Explosives"
+		"price"		"5000"
+		"buy"		"1"
+	}
+	"Papaver"
+	{
+		"vendor"	"Black Market Vendor"
+		"category2"	"Criminal"
+		"category"	"Drugs"
+		"price"		"100"
+		"buy"		"0"
+	}
+	"Papaver"
+	{
+		"vendor"	"Black Market Vendor"
+		"category2"	"Criminal"
+		"category"	"Drugs"
+		"price"		"300"
+		"buy"		"1"
+	}
+	"Morphine"
+	{
+		"vendor"	"Black Market Vendor"
+		"category2"	"Criminal"
+		"category"	"Drugs"
+		"price"		"300"
+		"buy"		"1"
+	}
+	"Heroin"
+	{
+		"vendor"	"Black Market Vendor"
+		"category2"	"Criminal"
+		"category"	"Drugs"
+		"price"		"1000"
+		"buy"		"0"
+	}
+	"Stolen Money"
+	{
+		"vendor"	"Black Market Vendor"
+		"category2"	"Criminal"
+		"category"	"Money"
+		"price"		"2500"
+		"buy"		"0"
+	}
+	"ziptie"
+	{
+		"vendor"	"Black Market Vendor"
+		"category2"	"Criminal"
+		"category"	"Ziptie"
+		"price"		"1500"
+		"buy"		"1"
+	}
+}

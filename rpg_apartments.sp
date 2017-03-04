@@ -11,6 +11,7 @@
 #include <rpg_jobs_core>
 #include <rpg_inventory_core>
 #include <tCrime>
+#include <sdkhooks>
 
 #pragma newdecls required
 
@@ -102,9 +103,15 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_apartment", apartmentCommand, "Opens the Apartment Menu");
 	RegAdminCmd("sm_apartmentlist", listAps, ADMFLAG_ROOT, "list aps");
 	RegAdminCmd("sm_postloadaps", postloadaps, ADMFLAG_ROOT, "postloads aps");
+	RegConsoleCmd("sm_az", checkZone);
 	HookEvent("round_start", onRoundStart);
 	RegConsoleCmd("say", chatHook);
 	resetAps();
+}
+
+public Action checkZone(int client, int args) {
+	PrintToChat(client, "Z:%s| OZ:%s|-|x:%.2f y:%.2f z:%.2f|", activeZone[client], prevZone[client], zone_pos[client][0], zone_pos[client][1], zone_pos[client][2]);
+	return Plugin_Handled;
 }
 
 public void resetAps() {
@@ -215,6 +222,10 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					GetEntityClassname(ent, itemName, sizeof(itemName));
 					if (StrContains(itemName, "door", false) != -1) {
 						doorAction(client, activeZone[client], ent);
+						DataPack overPack = CreateDataPack();
+						WritePackCell(overPack, EntIndexToEntRef(client));
+						WritePackCell(overPack, EntIndexToEntRef(ent));
+						CreateTimer(0.0, makeGlowCb, overPack);
 					}
 				}
 				//if (StrContains(activeZone[client], "apartment", false) != -1)
@@ -276,12 +287,19 @@ public int Zone_OnClientLeave(int client, char[] zone) {
 	GetClientAbsOrigin(client, pos);
 	if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2]))
 		return;
-	strcopy(prevZone[client], sizeof(prevZone), "");
-	strcopy(activeZone[client], sizeof(activeZone), "");
-	if (StrContains(zone, "apartment_", false) != -1) {
-		if (g_hClientTimers[client] != INVALID_HANDLE)
-			KillTimer(g_hClientTimers[client]);
-		g_hClientTimers[client] = INVALID_HANDLE;
+	if (Zone_isPositionInZone(prevZone[client], pos[0], pos[1], pos[2])) {
+		char tempZone[128];
+		strcopy(tempZone, sizeof(tempZone), activeZone[client]);
+		strcopy(activeZone[client], 128, prevZone[client]);
+		strcopy(prevZone[client], 128, tempZone);
+	} else {
+		strcopy(prevZone[client], sizeof(prevZone), "");
+		strcopy(activeZone[client], sizeof(activeZone), "");
+		if (StrContains(zone, "apartment_", false) != -1) {
+			if (g_hClientTimers[client] != INVALID_HANDLE)
+				KillTimer(g_hClientTimers[client]);
+			g_hClientTimers[client] = INVALID_HANDLE;
+		}
 	}
 }
 
@@ -514,7 +532,7 @@ public void buyApartment(int client, int id) {
 		GetCurrentMap(mapName, sizeof(mapName));
 		
 		char buyApartmentQuery[512];
-		Format(buyApartmentQuery, sizeof(buyApartmentQuery), "UPDATE t_rpg_apartments SET bought = 1 WHERE apartment_id = '%s' AND map = '%s';", activeZone[client], mapName);
+		Format(buyApartmentQuery, sizeof(buyApartmentQuery), "UPDATE t_rpg_apartments SET bought = 1 WHERE apartment_id = '%s' AND map = '%s';", existingApartments[id][eaApartment_Id], mapName);
 		SQL_TQuery(g_DB, SQLErrorCheckCallback, buyApartmentQuery);
 		
 		char playerid[20];
@@ -529,7 +547,7 @@ public void buyApartment(int client, int id) {
 		char apartment_name[255];
 		Format(apartment_name, sizeof(apartment_name), "%ss Apartment", clean_playername);
 		
-		Format(buyApartmentQuery, sizeof(buyApartmentQuery), "INSERT IGNORE INTO `t_rpg_boughtApartments` (`Id`, `time_of_purchase`, `price_of_purchase`, `apartment_id`, `playerid`, `playername`, `apartment_name`, `allowed_players`, `door_locked`, `map`) VALUES (NULL, CURRENT_TIMESTAMP, '%i', '%s', '%s', '%s', '%s', '', '0', '%s');", existingApartments[id][eaApartment_Price], activeZone[client], playerid, clean_playername, apartment_name, mapName);
+		Format(buyApartmentQuery, sizeof(buyApartmentQuery), "INSERT IGNORE INTO `t_rpg_boughtApartments` (`Id`, `time_of_purchase`, `price_of_purchase`, `apartment_id`, `playerid`, `playername`, `apartment_name`, `allowed_players`, `door_locked`, `map`) VALUES (NULL, CURRENT_TIMESTAMP, '%i', '%s', '%s', '%s', '%s', '', '0', '%s');", existingApartments[id][eaApartment_Price], existingApartments[id][eaApartment_Id], playerid, clean_playername, apartment_name, mapName);
 		SQL_TQuery(g_DB, SQLErrorCheckCallback, buyApartmentQuery);
 		
 		int firstFree = getFirstFreeOwnedApartmentSlot();
@@ -538,7 +556,7 @@ public void buyApartment(int client, int id) {
 		ownedApartments[firstFree][oaId] = firstFree;
 		strcopy(ownedApartments[firstFree][oaTime_of_purchase], 64, time);
 		ownedApartments[firstFree][oaPrice_of_purchase] = existingApartments[id][eaApartment_Price];
-		strcopy(ownedApartments[firstFree][oaApartment_Id], 128, activeZone[client]);
+		strcopy(ownedApartments[firstFree][oaApartment_Id], 128, existingApartments[id][eaApartment_Id]);
 		strcopy(ownedApartments[firstFree][oaPlayerid], 20, playerid);
 		strcopy(ownedApartments[firstFree][oaPlayername], 48, playername);
 		strcopy(ownedApartments[firstFree][oaApartmentName], 255, apartment_name);
@@ -1202,4 +1220,70 @@ public Action listAps(int client, int args) {
 		}
 	}
 	return Plugin_Handled;
+}
+
+int g_iClientGlow[MAXPLAYERS + 1];
+public Action makeGlowCb(Handle Timer, any datapack) {
+	ResetPack(datapack, false);
+	int client = EntRefToEntIndex(ReadPackCell(datapack));
+	int entity = EntRefToEntIndex(ReadPackCell(datapack));
+	if(!IsValidEntity(entity))
+		return;
+	char className[64];
+	GetEntityClassname(entity, className, sizeof(className));
+	if(!StrEqual(className, "prop_door_rotating"))
+		return;
+	CloseHandle(datapack);
+	char m_ModelName[PLATFORM_MAX_PATH];
+	GetEntPropString(entity, Prop_Data, "m_ModelName", m_ModelName, sizeof(m_ModelName));
+	//PrintToChatAll("%s <| s", m_ModelName);
+	float fPos[3];
+	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", fPos);
+	float fAngles[3];
+	GetEntPropVector(entity, Prop_Send, "m_angRotation", fAngles);
+	int doorGlow = CreateEntityByName("prop_dynamic_glow");
+	DispatchKeyValue(doorGlow, "model", m_ModelName);
+	DispatchKeyValue(doorGlow, "disablereceiveshadows", "1");
+	DispatchKeyValue(doorGlow, "disableshadows", "1");
+	DispatchKeyValue(doorGlow, "solid", "0");
+	DispatchKeyValue(doorGlow, "spawnflags", "256");
+	SetEntProp(doorGlow, Prop_Send, "m_CollisionGroup", 11);
+	DispatchSpawn(doorGlow);
+	SetEntPropFloat(doorGlow, Prop_Send, "m_flModelScale", 1.0);
+	TeleportEntity(doorGlow, fPos, fAngles, NULL_VECTOR);
+	SetEntProp(doorGlow, Prop_Send, "m_bShouldGlow", true, true);
+	SetEntPropFloat(doorGlow, Prop_Send, "m_flGlowMaxDist", 15000.0);
+	SetGlowColor(doorGlow, "111 0 255");
+	AcceptEntityInput(doorGlow, "SetGlowColor");
+	SetEntPropFloat(doorGlow, Prop_Send, "m_flModelScale", 1.0);
+	SetVariantString("!activator");
+	AcceptEntityInput(doorGlow, "SetParent", entity);
+	SDKHook(doorGlow, SDKHook_SetTransmit, Hook_SetTransmit);
+	g_iClientGlow[client] = EntIndexToEntRef(doorGlow);
+	CreateTimer(2.5, killGlow, EntIndexToEntRef(doorGlow));
+}
+
+public Action Hook_SetTransmit(int ent, int client){
+    if(ent != EntRefToEntIndex(g_iClientGlow[client]))
+        return Plugin_Handled;
+    return Plugin_Continue;
+}  
+
+public Action killGlow(Handle Timer, int ent){
+	if(IsValidEntity(EntRefToEntIndex(ent))){
+		SDKUnhook(EntRefToEntIndex(ent), SDKHook_SetTransmit, Hook_SetTransmit);
+		AcceptEntityInput(EntRefToEntIndex(ent), "kill");
+	}
+}
+
+stock void SetGlowColor(int entity, const char[] color)
+{
+	char colorbuffers[3][4];
+	ExplodeString(color, " ", colorbuffers, sizeof(colorbuffers), sizeof(colorbuffers[]));
+	int colors[4];
+	for (int i = 0; i < 3; i++)
+	colors[i] = StringToInt(colorbuffers[i]);
+	colors[3] = 255;
+	SetVariantColor(colors);
+	AcceptEntityInput(entity, "SetGlowColor");
 }

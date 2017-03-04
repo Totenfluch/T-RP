@@ -239,7 +239,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 						return;
 					}
 					
-				} else if (g_iTheSafe[ssOpened]) {
+				} else if (StrEqual(entName, "Bank Safe") && g_iTheSafe[ssOpened]) {
 					lootSafe(client);
 				}
 			}

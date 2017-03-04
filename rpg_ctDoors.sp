@@ -46,7 +46,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				if (HasEntProp(ent, Prop_Data, "m_iName")) {
 					char uniqueId[64];
 					GetEntPropString(ent, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
-					if ((StrContains(uniqueId, "ct_p_") != -1) || StrContains(uniqueId, "jail_door") != -1) {
+					if (/*(StrContains(uniqueId, "ct_p_") != -1) || */StrContains(uniqueId, "jail_door") != -1) {
 						if (jobs_isActiveJob(client, "Police")) {
 							ctDoorMenu(client, ent);
 						} else {

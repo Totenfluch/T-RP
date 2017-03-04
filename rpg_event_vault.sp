@@ -12,7 +12,7 @@
 
 #pragma newdecls required
 
-#define MAX_BOMB_TIME 20
+#define MAX_BOMB_TIME 300
 
 int g_iGateRef = -1;
 int g_iMoney1Ref = -1;
@@ -141,7 +141,15 @@ public void setupEvent() {
 	AcceptEntityInput(money2, "SetAnimation");
 }
 
-public void setupBomb() {
+public void setupBomb(int client) {
+	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
+	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
+	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
+	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
+	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
+	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
+	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
+	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
 	/* Create Bomb */
 	int bombEnt = CreateEntityByName("prop_dynamic_override");
 	if (bombEnt == -1)
@@ -249,7 +257,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 						if (!IsValidEntity(EntRefToEntIndex(g_iBombEnt)))
 							if (inventory_hasPlayerItem(client, "c4"))
 							if (inventory_removePlayerItems(client, "c4", 1, "planted c4"))
-							setupBomb();
+							setupBomb(client);
 					} else if (StrEqual(entName, "Vault Money")) {
 						if (IsValidEntity(ent)) {
 							jobs_startProgressBar(client, 300, "Steal Vault Money");

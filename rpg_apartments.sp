@@ -12,6 +12,7 @@
 #include <rpg_inventory_core>
 #include <tCrime>
 #include <sdkhooks>
+#include <tStocks>
 
 #pragma newdecls required
 
@@ -28,6 +29,8 @@ Database g_DB;
 
 float zone_pos[MAXPLAYERS + 1][3];
 Handle g_hClientTimers[MAXPLAYERS + 1] =  { INVALID_HANDLE, ... };
+
+int g_iActiveGlows[4096];
 
 enum existingApartment {
 	eaId, 
@@ -210,11 +213,12 @@ public bool isOwnedBy(int client, char apartmentId[128]) {
 public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
 	if (IsClientInGame(client) && IsPlayerAlive(client)) {
 		if (!(g_iPlayerPrevButtons[client] & IN_USE) && iButtons & IN_USE) {
-			int ent = GetClientAimTarget(client, false);
-			if (!IsValidEntity(ent)) {
+			int ent = getClientViewObject(client);
+			if (ent == -1) {
 				g_iPlayerPrevButtons[client] = iButtons;
 				return;
 			}
+			
 			if (Zone_CheckIfZoneExists(activeZone[client], true, true)) {
 				if (HasEntProp(ent, Prop_Data, "m_iName")) {
 					char itemName[128];
@@ -1187,6 +1191,8 @@ public void KnockbackSetVelocity(int client, const float startpoint[3], const fl
 
 public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 	setDoorLocks();
+	for (int i = 0; i < 4096; i++)
+	g_iActiveGlows[i] = false;
 }
 
 public void setDoorLocks() {
@@ -1262,18 +1268,20 @@ public Action makeGlowCb(Handle Timer, any datapack) {
 	ResetPack(datapack, false);
 	int client = EntRefToEntIndex(ReadPackCell(datapack));
 	int entity = EntRefToEntIndex(ReadPackCell(datapack));
+	CloseHandle(datapack);
 	if (!IsValidEntity(entity))
 		return;
 	char className[64];
 	GetEntityClassname(entity, className, sizeof(className));
 	if (!StrEqual(className, "prop_door_rotating"))
 		return;
-	CloseHandle(datapack);
 	char m_ModelName[PLATFORM_MAX_PATH];
 	GetEntPropString(entity, Prop_Data, "m_ModelName", m_ModelName, sizeof(m_ModelName));
 	//PrintToChatAll("%s <| s", m_ModelName);
 	float fPos[3];
 	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", fPos);
+	if (fPos[0] == 0.0 || g_iActiveGlows[entity])
+		return;
 	float fAngles[3];
 	GetEntPropVector(entity, Prop_Send, "m_angRotation", fAngles);
 	int doorGlow = CreateEntityByName("prop_dynamic_glow");
@@ -1295,7 +1303,12 @@ public Action makeGlowCb(Handle Timer, any datapack) {
 	AcceptEntityInput(doorGlow, "SetParent", entity);
 	SDKHook(doorGlow, SDKHook_SetTransmit, Hook_SetTransmit);
 	g_iClientGlow[client] = EntIndexToEntRef(doorGlow);
-	CreateTimer(2.5, killGlow, EntIndexToEntRef(doorGlow));
+	DataPack overPack = CreateDataPack();
+	WritePackCell(overPack, EntIndexToEntRef(doorGlow));
+	WritePackCell(overPack, EntIndexToEntRef(entity));
+	CreateTimer(2.5, killGlow, overPack);
+	g_iActiveGlows[entity] = true;
+	PrintToChatAll("triggerd 1 %i", entity);
 }
 
 public Action Hook_SetTransmit(int ent, int client) {
@@ -1304,10 +1317,15 @@ public Action Hook_SetTransmit(int ent, int client) {
 	return Plugin_Continue;
 }
 
-public Action killGlow(Handle Timer, int ent) {
-	if (IsValidEntity(EntRefToEntIndex(ent))) {
-		SDKUnhook(EntRefToEntIndex(ent), SDKHook_SetTransmit, Hook_SetTransmit);
-		AcceptEntityInput(EntRefToEntIndex(ent), "kill");
+public Action killGlow(Handle Timer, any datapack) {
+	ResetPack(datapack, false);
+	int glow = EntRefToEntIndex(ReadPackCell(datapack));
+	int entity = EntRefToEntIndex(ReadPackCell(datapack));
+	CloseHandle(datapack);
+	if (IsValidEntity(glow)) {
+		SDKUnhook(glow, SDKHook_SetTransmit, Hook_SetTransmit);
+		AcceptEntityInput(glow, "kill");
+		g_iActiveGlows[entity] = false;
 	}
 }
 

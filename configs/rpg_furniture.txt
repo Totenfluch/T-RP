@@ -380,15 +380,6 @@
 		"buff"		""
 	}
 
-  "Light"
-	{
-		"model"		"models/props_downtown/light02_32.mdl"
-		"size"		"1.0"
-		"price"		"500"
-		"flags"		"a"
-		"buff"		""
-	}
-
   "Barstool"
 	{
 		"model"		"models/props/cs_militia/barstool01.mdl"

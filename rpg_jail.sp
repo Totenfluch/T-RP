@@ -64,7 +64,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	RegConsoleCmd("sm_jailcells", addJailCells, "Opens the Menu to add Jail Cells");
+	RegAdminCmd("sm_jailcells", addJailCells, ADMFLAG_ROOT, "Opens the Menu to add Jail Cells");
 	RegConsoleCmd("sm_jstats", getJailStats, "lists stats");
 	
 	char error[255];

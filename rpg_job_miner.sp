@@ -244,10 +244,10 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 			AddMenuItem(panel, "SellGoldBars", sellAll);
 		}
 		
-		if (tConomy_getCurrency(client) >= 250)
-			AddMenuItem(panel, "skin", "Buy Barryv Skin (250)");
+		if (tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_getActiveJob(client, "Mining"))
+			AddMenuItem(panel, "skin", "Buy Barryv Skin (15000)[20]");
 		else
-			AddMenuItem(panel, "skin", "Buy Barryv Skin (250)", ITEMDRAW_DISABLED);
+			AddMenuItem(panel, "skin", "Buy Barryv Skin (15000)[20]", ITEMDRAW_DISABLED);
 	}
 	DisplayMenu(panel, client, 60);
 }
@@ -267,13 +267,13 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			}
 		} else if (StrEqual(cValue, "sellIronBar")) {
 			if (inventory_hasPlayerItem(client, "Iron Bar")) {
-				tConomy_addCurrency(client, 50, "Sold Iron Bar to Vendor");
+				tConomy_addCurrency(client, 60, "Sold Iron Bar to Vendor");
 				inventory_removePlayerItems(client, "Iron Bar", 1, "Sold to Vendor");
 			}
 		} else if (StrEqual(cValue, "SellIronBars")) {
 			int itemamount = inventory_getPlayerItemAmount(client, "Iron Bar");
 			if (inventory_removePlayerItems(client, "Iron Bar", itemamount, "Sold to Vendor (Mass Sell)"))
-				tConomy_addCurrency(client, 50 * itemamount, "Sold Iron Bar to Vendor");
+				tConomy_addCurrency(client, 60 * itemamount, "Sold Iron Bar to Vendor");
 		} else if (StrEqual(cValue, "sellFosil")) {
 			if (inventory_hasPlayerItem(client, "Fosil")) {
 				tConomy_addCurrency(client, 50, "Sold Fosil to Vendor");
@@ -313,8 +313,8 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			int itemamount = inventory_getPlayerItemAmount(client, "Gold Bar");
 			if (inventory_removePlayerItems(client, "Gold Bar", itemamount, "Sold to Vendor (Mass Sell)"))
 				tConomy_addCurrency(client, 850 * itemamount, "Sold Gold Bar to Vendor");
-		} else if (StrEqual(cValue, "skin")) {
-			tConomy_removeCurrency(client, 250, "Bought Skin");
+		} else if (tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_getActiveJob(client, "Mining")) {
+			tConomy_removeCurrency(client, 15000, "Bought Skin");
 			inventory_givePlayerItem(client, "Barryv", 0, "", "Skin", "Skin", 1, "Bought from Mining Recruiter");
 		}
 	}

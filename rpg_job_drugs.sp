@@ -203,12 +203,10 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		AddMenuItem(menu, "sellAllMarijuana", sellAll);
 	}
 	
-	if (jobs_isActiveJob(client, "Drug Planter") && jobs_getLevel(client) >= 1) {
-		if (tConomy_getCurrency(client) >= 250)
-			AddMenuItem(menu, "skin", "Buy Niko Skin (250)");
-		else
-			AddMenuItem(menu, "skin", "Buy Niko Skin (250)", ITEMDRAW_DISABLED);
-	}
+	if (tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_getActiveJob(client, "Drug Planter"))
+		AddMenuItem(menu, "skin", "Buy Niko Skin (15000)[20]");
+	else
+		AddMenuItem(menu, "skin", "Buy Niko Skin (15000)[20]", ITEMDRAW_DISABLED);
 	
 	DisplayMenu(menu, client, 60);
 }
@@ -234,17 +232,17 @@ public int drugMenuHandler(Handle menu, MenuAction action, int client, int item)
 			tConomy_removeCurrency(client, 100, "Bought Seeds");
 			inventory_givePlayerItem(client, "Marijuana Seeds", 1, "", "Plant seeds", "Drug Item", 1, "Bought from Vendor");
 		} else if (StrEqual(cValue, "lockpick")) {
-			tConomy_removeCurrency(client, 1500, "Bought Lockpick");
+			tConomy_removeCurrency(client, 2500, "Bought Lockpick");
 			inventory_givePlayerItem(client, "Lockpick", 1, "", "Criminal", "Apartment Stuff", 1, "Bought from Vendor");
 		} else if (StrEqual(cValue, "sellDrugs") && inventory_hasPlayerItem(client, "Fresh Marijuana")) {
-			tConomy_addCurrency(client, 50, "Sold Fresh Marijuana");
+			tConomy_addCurrency(client, 125, "Sold Fresh Marijuana");
 			inventory_removePlayerItems(client, "Fresh Marijuana", 1, "Sold to Drug Dealer");
 		} else if (StrEqual(cValue, "sellAllMarijuana")) {
 			int itemamount = inventory_getPlayerItemAmount(client, "Fresh Marijuana");
 			if (inventory_removePlayerItems(client, "Fresh Marijuana", itemamount, "Sold to Vendor (Mass Sell)"))
-				tConomy_addCurrency(client, 50 * itemamount, "Sold Fresh Marijuana to Vendor");
-		} else if (StrEqual(cValue, "skin")) {
-			tConomy_removeCurrency(client, 250, "Bought Skin");
+				tConomy_addCurrency(client, 125 * itemamount, "Sold Fresh Marijuana to Vendor");
+		} else if (StrEqual(cValue, "skin") && tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_getActiveJob(client, "Drug Planter")) {
+			tConomy_removeCurrency(client, 15000, "Bought Skin");
 			inventory_givePlayerItem(client, "Niko", 0, "", "Skin", "Skin", 1, "Bought from Drug Vendor");
 		}
 	}
@@ -498,18 +496,21 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 		char addCurrencyReason[256];
 		Format(addCurrencyReason, sizeof(addCurrencyReason), "Papaver Harvesting (Level %i)", jobs_getLevel(client));
 		inventory_givePlayerItem(client, "Papaver", 50, "", "Crafting Materials", "Papaver Harvesting", 1, addCurrencyReason);
+		tCrime_addCrime(client, 5);
 	}
 	if (StrEqual(info, "Crush Papaver")) {
 		if (inventory_hasPlayerItem(client, "Papaver"))
 			if (inventory_removePlayerItems(client, "Papaver", 1, "Crushed Papaver")) {
 			inventory_givePlayerItem(client, "Crushed Papaver", 2, "", "Heroin Production", "Criminal", 2, "Crushed Papaver");
 			jobs_addExperience(client, 5, "Drug Planter");
+			tCrime_addCrime(client, 5);
 		}
 	} else if (StrEqual(info, "Mix Heroin")) {
 		if (inventory_hasPlayerItem(client, "Crushed Papaver") && inventory_hasPlayerItem(client, "Morphine")) {
 			if (inventory_removePlayerItems(client, "Crushed Papaver", 1, "Mixed Heroin") && inventory_removePlayerItems(client, "Morphine", 1, "Mixed Heroin")) {
 				inventory_givePlayerItem(client, "Heroin", 1, "", "Drugs", "Criminal", 3, "Mixed Heroin");
 				jobs_addExperience(client, 40, "Drug Planter");
+				tCrime_addCrime(client, 50);
 			}
 		}
 	}
@@ -519,15 +520,15 @@ public void harvestPlant(int client, int ent, int plantId, int state) {
 	//tConomy_addCurrency(client, 200, "Harvest of Drug Plant");
 	
 	if (state == 1) {
-		for (int i = 0; i < 1; i++) {
-			inventory_givePlayerItem(client, "Fresh Marijuana", 2, "", "Plant", "Drug Item", 2, "Harvested Plant");
-		}
-	} else if (state == 2) {
 		for (int i = 0; i < 2; i++) {
 			inventory_givePlayerItem(client, "Fresh Marijuana", 2, "", "Plant", "Drug Item", 2, "Harvested Plant");
 		}
+	} else if (state == 2) {
+		for (int i = 0; i < 3; i++) {
+			inventory_givePlayerItem(client, "Fresh Marijuana", 2, "", "Plant", "Drug Item", 2, "Harvested Plant");
+		}
 	} else if (state == 3) {
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < 5; i++) {
 			inventory_givePlayerItem(client, "Fresh Marijuana", 2, "", "Plant", "Drug Item", 2, "Harvested Plant");
 		}
 	}

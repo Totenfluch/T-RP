@@ -370,10 +370,10 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 			AddMenuItem(panel, "recycleAll", sellAll);
 		}
 		
-		if (tConomy_getCurrency(client) >= 250)
-			AddMenuItem(panel, "skin", "Buy Ellis Skin (250)");
+		if (tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_getActiveJob(client, "Garbage Collector"))
+			AddMenuItem(panel, "skin", "Buy Ellis Skin (15000)[20]");
 		else
-			AddMenuItem(panel, "skin", "Buy Ellis Skin (250)", ITEMDRAW_DISABLED);
+			AddMenuItem(panel, "skin", "Buy Ellis Skin (15000)[20]", ITEMDRAW_DISABLED);
 	}
 	DisplayMenu(panel, client, 60);
 }
@@ -387,18 +387,18 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			jobs_giveJob(client, "Garbage Collector");
 		} else if (StrEqual(cValue, "recycle")) {
 			if (inventory_hasPlayerItem(client, "Garbage")) {
-				tConomy_addCurrency(client, 55, "Recycled Garbage");
+				tConomy_addCurrency(client, 75, "Recycled Garbage");
 				inventory_removePlayerItems(client, "Garbage", 1, "Recycled");
 				jobs_addExperience(client, 40, "Garbage Collector");
 			}
 		} else if (StrEqual(cValue, "recycleAll")) {
 			int itemamount = inventory_getPlayerItemAmount(client, "Garbage");
 			if (inventory_removePlayerItems(client, "Garbage", itemamount, "Recycled Garbage (Mass)")) {
-				tConomy_addCurrency(client, 55 * itemamount, "Recycled Garbage");
+				tConomy_addCurrency(client, 75 * itemamount, "Recycled Garbage");
 				jobs_addExperience(client, 40 * itemamount, "Garbage Collector");
 			}
-		} else if (StrEqual(cValue, "skin")) {
-			tConomy_removeCurrency(client, 250, "Bought Skin");
+		} else if (StrEqual(cValue, "skin") && tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_getActiveJob(client, "Garbage Collector")) {
+			tConomy_removeCurrency(client, 15000, "Bought Skin");
 			inventory_givePlayerItem(client, "Ellis", 0, "", "Skin", "Skin", 1, "Bought from Garbage Collector");
 		}
 	}

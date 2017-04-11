@@ -5,7 +5,7 @@
 		"vendor"	"Black Market Vendor"
 		"category2"	"Criminal"
 		"category"	"Explosives"
-		"price"		"5000"
+		"price"		"7500"
 		"buy"		"1"
 	}
 	"Papaver"
@@ -13,7 +13,7 @@
 		"vendor"	"Black Market Vendor"
 		"category2"	"Criminal"
 		"category"	"Drugs"
-		"price"		"100"
+		"price"		"25"
 		"buy"		"0"
 	}
 	"Papaver"

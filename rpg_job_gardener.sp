@@ -26,7 +26,7 @@ char g_cGardenerZones[MAX_ZONES][PLATFORM_MAX_PATH];
 int g_iGardenerZoneCooldown[MAXPLAYERS + 1][MAX_ZONES];
 int g_iLoadedZones = 0;
 
-int g_iZoneCooldown = 280;
+int g_iZoneCooldown = 320;
 int MAX_COLLECT = 5;
 
 char activeZone[MAXPLAYERS + 1][128];
@@ -115,7 +115,7 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 		g_iGardenerZoneCooldown[client][g_iPlayerZoneId[client]] = g_iZoneCooldown + GetRandomInt(0, 50);
 	char addCurrencyReason[256];
 	Format(addCurrencyReason, sizeof(addCurrencyReason), "Gardening (Level %i)", jobs_getLevel(client));
-	tConomy_addBankCurrency(client, 35 + jobs_getLevel(client) * 2, "Gardening");
+	tConomy_addBankCurrency(client, 50 + jobs_getLevel(client) * 3, "Gardening");
 	if (perks_hasPerk(client, "Gardener XP Boost4"))
 		jobs_addExperience(client, 45, "Gardener");
 	else if (perks_hasPerk(client, "Gardener XP Boost3"))

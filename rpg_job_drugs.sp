@@ -18,6 +18,7 @@
 #include <rpg_job_police>
 #include <devzones>
 #include <rpg_furniture>
+#include <tStocks>
 
 #pragma newdecls required
 
@@ -414,7 +415,7 @@ public void spawnPlant(char owner[20], int state, int time, float pos[3], char f
 public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
 	if (IsClientInGame(client) && IsPlayerAlive(client)) {
 		if (!(g_iPlayerPrevButtons[client] & IN_USE) && iButtons & IN_USE) {
-			int ent = GetClientAimTarget(client, false);
+			int ent = getClientViewObject(client);
 			if (IsValidEntity(ent)) {
 				if (HasEntProp(ent, Prop_Data, "m_iName") && HasEntProp(ent, Prop_Data, "m_iGlobalname")) {
 					char entName[256];
@@ -594,11 +595,6 @@ public int findLowestUnusedPlantSlot() {
 			return i;
 	}
 	return g_iPlantsActive;
-}
-
-
-stock bool isValidClient(int client) {
-	return (1 <= client <= MaxClients && IsClientInGame(client));
 }
 
 public int getActivePlantsOfPlayerAmount(int client) {

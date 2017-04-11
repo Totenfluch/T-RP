@@ -11,6 +11,7 @@
 #include <tConomy>
 #include <smlib>
 #include <devzones>
+#include <tStocks>
 
 #pragma newdecls required
 
@@ -918,7 +919,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 			}
 		} else {
 			if (!(g_iPlayerPrevButtons[client] & IN_USE) && iButtons & IN_USE) {
-				int target = GetClientAimTarget(client, false);
+				int target = getClientViewObject(client);
 				if (!isValidClient(target)) {
 					if (IsValidEntity(target)) {
 						float pos[3];
@@ -1039,11 +1040,6 @@ public int getLoadedIdByName(char name[64]) {
 			return i;
 	}
 	return -1;
-}
-
-
-stock bool isValidClient(int client) {
-	return (1 <= client <= MaxClients && IsClientInGame(client));
 }
 
 public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error, any data) {

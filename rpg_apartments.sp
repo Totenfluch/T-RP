@@ -1308,7 +1308,6 @@ public Action makeGlowCb(Handle Timer, any datapack) {
 	WritePackCell(overPack, EntIndexToEntRef(entity));
 	CreateTimer(2.5, killGlow, overPack);
 	g_iActiveGlows[entity] = true;
-	PrintToChatAll("triggerd 1 %i", entity);
 }
 
 public Action Hook_SetTransmit(int ent, int client) {

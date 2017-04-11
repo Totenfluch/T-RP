@@ -15,6 +15,8 @@ stock int getClientViewObject(int client){
 			return -1;
 		if (!IsValidEntity(pEntity))
 			return -1;
+		if(isValidClient(pEntity))
+			return -1;
 		float playerPos[3];
 		float entPos[3];
 		GetClientAbsOrigin(client, playerPos);

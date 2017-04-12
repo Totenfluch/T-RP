@@ -56,4 +56,146 @@
 		"price"		"1500"
 		"buy"		"1"
 	}
+	
+	"Tiny Backpack"
+	{
+		"vendor" 		"Backpack Vendor"
+		"category"		"Backpack"
+		"category2"		"Upgrade"
+		"buy"			"1"
+		"flags"			"uin"
+		"price"			"15000"
+	}
+	
+	"Small Backpack"
+	{
+		"vendor" 		"Backpack Vendor"
+		"category"		"Backpack"
+		"category2"		"Upgrade"
+		"buy"			"1"
+		"flags"			"uin"
+		"price"			"20000"
+	}
+	
+	"Medium Backpack"
+	{
+		"vendor" 		"Backpack Vendor"
+		"category"		"Backpack"
+		"category2"		"Upgrade"
+		"buy"			"1"
+		"flags"			"uin"
+		"price"			"25000"
+	}
+	
+	"Large Backpack"
+	{
+		"vendor" 		"Backpack Vendor"
+		"category"		"Backpack"
+		"category2"		"Upgrade"
+		"buy"			"1"
+		"flags"			"uin"
+		"price"			"30000"
+	}
+	
+	"Big Backpack"
+	{
+		"vendor" 		"Backpack Vendor"
+		"category"		"Backpack"
+		"category2"		"Upgrade"
+		"buy"			"1"
+		"flags"			"uin"
+		"price"			"50000"
+	}
+	
+	"Enormous Backpack"
+	{
+		"vendor" 		"Backpack Vendor"
+		"category"		"Backpack"
+		"category2"		"Upgrade"
+		"buy"			"1"
+		"flags"			"uin"
+		"price"			"75000"
+	}
+	
+	"Gigantic Backpack"
+	{
+		"vendor" 		"Backpack Vendor"
+		"category"		"Backpack"
+		"category2"		"Upgrade"
+		"buy"			"1"
+		"flags"			"uin"
+		"price"			"100000"
+	}
+	
+	"Pistol License"
+	{
+		"vendor" 		"License Vendor"
+		"category"		"License"
+		"category2"		"Weapon License"
+		"buy"			"1"
+		"price"			"15000"
+	}
+	
+	"SMG License"
+	{
+		"vendor" 		"License Vendor"
+		"category"		"License"
+		"category2"		"Weapon License"
+		"buy"			"1"
+		"price"			"20000"
+	}
+	
+	"Shotgun License"
+	{
+		"vendor" 		"License Vendor"
+		"category"		"License"
+		"category2"		"Weapon License"
+		"buy"			"1"
+		"price"			"25000"
+	}
+	
+	"Rifle License"
+	{
+		"vendor" 		"License Vendor"
+		"category"		"License"
+		"category2"		"Weapon License"
+		"buy"			"1"
+		"price"			"35000"
+	}
+	
+	"Special Weapon License"
+	{
+		"vendor" 		"License Vendor"
+		"category"		"License"
+		"category2"		"Weapon License"
+		"buy"			"1"
+		"price"			"35000"
+	}
+	
+	"Nade License"
+	{
+		"vendor" 		"License Vendor"
+		"category"		"License"
+		"category2"		"Weapon License"
+		"buy"			"1"
+		"price"			"15000"
+	}
+	
+	"Car License"
+	{
+		"vendor" 		"License Vendor"
+		"category"		"License"
+		"category2"		"Generic License"
+		"buy"			"1"
+		"price"			"45000"
+	}
+	
+	"Bike License"
+	{
+		"vendor" 		"License Vendor"
+		"category"		"License"
+		"category2"		"Generic License"
+		"buy"			"1"
+		"price"			"35000"
+	}	
 }

@@ -198,4 +198,13 @@
 		"buy"			"1"
 		"price"			"35000"
 	}	
+	
+	"Apartment Key"
+	{
+		"vendor" 		"Key Vendor"
+		"category"		"Key"
+		"category2"		"Apartment Item"
+		"buy"			"1"
+		"price"			"500"
+	}
 }

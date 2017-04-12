@@ -8,6 +8,7 @@
 #include <rpg_npc_core>
 #include <tConomy>
 #include <rpg_inventory_core>
+#include <rpg_jobs_core>
 
 #pragma newdecls required
 
@@ -26,6 +27,8 @@ enum ItemCollection {
 	*/
 	String:iCategory[64], 
 	String:iCategory2[64], 
+	String:iJob[64], 
+	iJobLevel, 
 	iRarity, 
 	bool:iBuyOrSell,  // Buy true
 	iItemPrice, 
@@ -116,6 +119,12 @@ public bool loadConfig() {
 		kv.GetString("buy", tempVars, 64, "1");
 		g_eLoadedItemCollection[g_iLoadedItems][iBuyOrSell] = StringToInt(tempVars) == 1;
 		
+		kv.GetString("job", tempVars, 64, "");
+		strcopy(g_eLoadedItemCollection[g_iLoadedItems][iJob], 64, tempVars);
+		
+		kv.GetString("level", tempVars, 64, "0");
+		g_eLoadedItemCollection[g_iLoadedItems][iJobLevel] = StringToInt(tempVars);
+		
 		char vendorTemp[128];
 		kv.GetString("vendor", vendorTemp, 128, "Custom Vendor");
 		if (tryToRegisterNewNpc(vendorTemp))
@@ -144,7 +153,7 @@ public bool tryToRegisterNewNpc(char npcName[128]) {
 	if (StrEqual(npcName, ""))
 		return false;
 	for (int i = 0; i < MAX_VENDORS; i++) {
-		if (StrEqual(npcName, g_cNpcNames[i]) || StrEqual(npcName, "Furniture Vendor"))
+		if (StrEqual(npcName, g_cNpcNames[i]))
 			contained = true;
 	}
 	if (!contained)
@@ -210,9 +219,19 @@ public int openVendorMenuHandler(Handle menu, MenuAction action, int client, int
 		char display[64];
 		Format(display, sizeof(display), "Price: %s", g_eLoadedItemCollection[id][iItemPrice]);
 		
-		if (g_eLoadedItemCollection[id][iBuyOrSell])
-			AddMenuItem(menu2, info, "Buy", tConomy_getCurrency(client) >= g_eLoadedItemCollection[id][iItemPrice] ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
-		else {
+		if (g_eLoadedItemCollection[id][iBuyOrSell]) {
+			bool hasMoney = tConomy_getCurrency(client) >= g_eLoadedItemCollection[id][iItemPrice];
+			char jobName[128];
+			strcopy(jobName, sizeof(jobName), g_eLoadedItemCollection[g_iLoadedItems][iJob]);
+			bool hasJob = jobs_isActiveJob(client, jobName) || StrEqual(jobName, "");
+			bool hasJobLevel = (jobs_getLevel(client) >= g_eLoadedItemCollection[g_iLoadedItems][iJobLevel]) || (g_eLoadedItemCollection[g_iLoadedItems][iJobLevel] == 0);
+			if(!hasJob || !hasJobLevel){
+				char requiresJobString[64];
+				Format(requiresJobString, sizeof(requiresJobString), "Requires Job: %s (lvl %i)", jobName, g_eLoadedItemCollection[g_iLoadedItems][iJobLevel]);
+				AddMenuItem(menu2, "x", requiresJobString, ITEMDRAW_DISABLED);
+			}
+			AddMenuItem(menu2, info, "Buy", hasMoney && hasJob && hasJobLevel ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+		} else {
 			char itemName2[128];
 			strcopy(itemName2, sizeof(itemName2), g_eLoadedItemCollection[id][iItemname]);
 			AddMenuItem(menu2, info, "Sell", inventory_hasPlayerItem(client, itemName2) ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
@@ -240,8 +259,6 @@ public int vendorItemMenuHandler(Handle menu, MenuAction action, int client, int
 		
 		if (g_eLoadedItemCollection[id][iBuyOrSell]) {
 			if (tConomy_getCurrency(client) >= g_eLoadedItemCollection[id][iItemPrice]) {
-				tConomy_removeCurrency(client, g_eLoadedItemCollection[id][iItemPrice], reason);
-				
 				char flags[64];
 				char category[64];
 				char category2[64];
@@ -249,7 +266,8 @@ public int vendorItemMenuHandler(Handle menu, MenuAction action, int client, int
 				strcopy(category, sizeof(category), g_eLoadedItemCollection[id][iCategory]);
 				strcopy(category2, sizeof(category2), g_eLoadedItemCollection[id][iCategory2]);
 				
-				inventory_givePlayerItem(client, itemName, g_eLoadedItemCollection[id][iWeight], flags, category, category2, g_eLoadedItemCollection[id][iRarity], reason);
+				if (inventory_givePlayerItem(client, itemName, g_eLoadedItemCollection[id][iWeight], flags, category, category2, g_eLoadedItemCollection[id][iRarity], reason))
+					tConomy_removeCurrency(client, g_eLoadedItemCollection[id][iItemPrice], reason);
 			}
 		} else {
 			if (inventory_hasPlayerItem(client, itemName)) {

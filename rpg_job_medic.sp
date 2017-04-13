@@ -145,6 +145,9 @@ public int infuseBloodBagMenuHandler(Handle menu, MenuAction action, int client,
 			}
 		}
 	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
 }
 public void jobs_OnProgressBarFinished(int client, char info[64]) {
 	if (!isValidClient(client))

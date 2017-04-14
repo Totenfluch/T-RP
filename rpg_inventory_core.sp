@@ -754,6 +754,39 @@ public int showInventoryHandler(Handle menu, MenuAction action, int client, int 
 }
 
 public Action cmdOpenInventory(int client, const char[] command, int argc) {
+	Handle menu = CreateMenu(inventoryTopMenuHandler);
+	char menuTitle[128];
+	Format(menuTitle, sizeof(menuTitle), "Your Inventory (%i/%i)", getPlayerItems(client), maxPlayerItems(client));
+	SetMenuTitle(menu, menuTitle);
+	AddMenuItem(menu, "inv", "Inventory");
+	AddMenuItem(menu, "weapons", "Weapons");
+	AddMenuItem(menu, "license", "Licenses");
+	AddMenuItem(menu, "bagpack", "Bagpacks");
+	DisplayMenu(menu, client, 60);
+	
+	return Plugin_Continue;
+}
+
+public int inventoryTopMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "inv")) {
+			openTheInventory(client);
+		} else if (StrEqual(cValue, "weapons")) {
+			showInventoryOfClientToOtherClientByCategory(client, client, "Weapon");
+		} else if (StrEqual(cValue, "license")) {
+			showInventoryOfClientToOtherClientByCategory(client, client, "License");
+		} else if (StrEqual(cValue, "bagpack")) {
+			showInventoryOfClientToOtherClientByCategory(client, client, "Backpack");
+		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
+}
+
+public void openTheInventory(int client) {
 	Handle menu = CreateMenu(inventoryMenuHandler);
 	char menuTitle[128];
 	Format(menuTitle, sizeof(menuTitle), "Your Inventory (%i/%i)", getPlayerItems(client), maxPlayerItems(client));
@@ -784,8 +817,6 @@ public Action cmdOpenInventory(int client, const char[] command, int argc) {
 	}
 	delete containedItems;
 	DisplayMenu(menu, client, 60);
-	
-	return Plugin_Continue;
 }
 
 public int inventoryMenuHandler(Handle menu, MenuAction action, int client, int item) {

@@ -9,6 +9,7 @@
 #include <smlib>
 #include <tCrime>
 #include <rpg_jobs_core>
+#include <tStocks>
 
 #pragma newdecls required
 
@@ -27,7 +28,18 @@ public void OnPluginStart() {
 
 public void OnMapStart() {
 	CreateTimer(0.2, updateHUD, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(1.0, updatePrintText, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
+
+public Action updatePrintText(Handle Timer) {
+	for (int client = 1; client < MAXPLAYERS; client++) {
+		if (!isValidClient(client))
+			continue;
+		
+		showAllHudMessages(client);
+	}
+}
+
 
 public Action updateHUD(Handle Timer) {
 	for (int client = 1; client < MAXPLAYERS; client++) {
@@ -85,7 +97,6 @@ public Action updateHUD(Handle Timer) {
 		if (!StrEqual(info, ""))
 			Format(printHudString, sizeof(printHudString), "%s%s\n", printHudString, info);
 		
-		
 		PrintHintText(client, printHudString);
 	}
 }
@@ -97,12 +108,21 @@ public Action cmdTestBar(int client, int args) {
 	jobs_startProgressBar(client, time, "testBar");
 }
 
-
-
-stock bool isValidClient(int client) {
-	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
-		return false;
-	
-	return true;
+void showAllHudMessages(int client) {
+	showHudMsg(client, "by ggc-base.de & painlessgaming.eu", 	0, 188, 212, 		0.01, 0.01, 1.05);
+	//showHudMsg(client, "Donator: No", 							103, 58, 183, 	0.01, 0.05, 1.05);
+	//showHudMsg(client, "In Steam Group: No", 					63, 81, 181, 	0.01,  0.1, 1.05);
 }
 
+public void showHudMsg(int client, char[] message, int r, int g, int b, float x, float y, float timeout) {
+	SetHudTextParams(x, y, timeout, r, g, b, 255, 0, 0.0, 0.0, 0.0);
+	ShowHudText(client, -1, message);
+}
+
+public bool isValidRef(int ref) {
+	int index = EntRefToEntIndex(ref);
+	if (index > MaxClients && IsValidEntity(index)) {
+		return true;
+	}
+	return false;
+} 

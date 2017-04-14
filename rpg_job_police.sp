@@ -1212,7 +1212,7 @@ public void giveTicketToClient(int officer, int client, int amount) {
 	Format(menuTitle, sizeof(menuTitle), "Pay ticket of %i$", amount);
 	SetMenuTitle(menu, menuTitle);
 	AddMenuItem(menu, "x", "Ignore");
-	if (tConomy_getCurrency(client) >= amount)
+	if (tConomy_getCurrency(client) >= amount || tConomy_getBankCurrency(client) >= amount)
 		AddMenuItem(menu, "pay", "Pay Ticket");
 	else
 		AddMenuItem(menu, "pay", "Pay Ticket", ITEMDRAW_DISABLED);
@@ -1226,10 +1226,14 @@ public int giveTicketmenuHandler(Handle menu, MenuAction action, int client, int
 		char cValue[32];
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		if (StrEqual(cValue, "pay")) {
-			if (tConomy_getCurrency(client) >= g_iTickpriceOvertake[client]) {
-				tConomy_removeCurrency(client, g_iTickpriceOvertake[client], "Paid Ticket");
+			if (tConomy_getCurrency(client) >= g_iTickpriceOvertake[client] || tConomy_getBankCurrency(client) >= g_iTickpriceOvertake[client]) {
+				if (tConomy_getCurrency(client) >= g_iTickpriceOvertake[client])
+					tConomy_removeCurrency(client, g_iTickpriceOvertake[client], "Paid Ticket");
+				else
+					tConomy_removeBankCurrency(client, g_iTickpriceOvertake[client], "Paid Ticket");
 				PrintToChat(g_iLatestTicket[client], "[-T-] %N has paid the Ticket of %i", client, g_iTickpriceOvertake[client]);
-				tConomy_addCurrency(g_iLatestTicket[client], RoundToNearest(g_iTickpriceOvertake[client] / 10.0), "Ticket Split");
+				tCrime_setCrime(client, 0);
+				tConomy_addCurrency(g_iLatestTicket[client], RoundToNearest(g_iTickpriceOvertake[client] / 2.0), "Ticket Split");
 			}
 		}
 	}
@@ -1322,6 +1326,8 @@ public int setCrimeMenuHandler(Handle menu, MenuAction action, int client, int i
 
 int g_iOfficerDeleteItemsTaget[MAXPLAYERS + 1];
 public void deleteItems(int officer, int client) {
+	if (!isValidClient(client))
+		return;
 	g_iOfficerDeleteItemsTaget[officer] = client;
 	int maxItems = inventory_getClientItemsAmount(client);
 	Menu deleteItemsMenu = CreateMenu(deleteItemsMenuHandler);
@@ -1351,6 +1357,7 @@ public int deleteItemsMenuHandler(Handle menu, MenuAction action, int client, in
 		char reason[256];
 		Format(reason, sizeof(reason), "Deleted By Police Officer %N", client);
 		inventory_deleteItemBySlot(g_iOfficerDeleteItemsTaget[client], id, reason);
+		deleteItems(client, g_iOfficerDeleteItemsTaget[client]);
 		g_iOfficerDeleteItemsTaget[client] = -1;
 	}
 	if (action == MenuAction_End) {

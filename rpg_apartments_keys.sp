@@ -26,7 +26,6 @@ public void OnPluginStart() {  }
 
 public void OnMapStart() {
 	interact_registerInteract(g_cInteraction);
-	inventory_addItemHandle("Apartment Key", 1);
 }
 
 stock bool isValidClient(int client) {

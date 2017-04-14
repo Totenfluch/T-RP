@@ -173,7 +173,7 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 				CPrintToChat(client, "{green}[-T-] Blood infusion of %N failed (Wrong Blood Group)", target);
 				CPrintToChat(target, "{green}[-T-] %N failed to infuse you (Wrong Blood Group)", client);
 				jobs_removeExperience(client, 1500, "Medic");
-				if (GetRandomInt(0, 3) == 1) {
+				if(GetRandomInt(0, 3) == 1){
 					FakeClientCommand(target, "kill");
 					CPrintToChat(target, "{green}[-T-] %N killed you with a false infusion", client);
 					tCrime_addCrime(client, 3000);
@@ -260,7 +260,7 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		SetMenuTitle(panel, "Do you want to be a Medic?");
 		AddMenuItem(panel, "x", "No thanks");
 		AddMenuItem(panel, "givejob", "Yes, teach me!");
-		if (!isMedicOnline())
+		if(!isMedicOnline())
 			AddMenuItem(panel, "bandageMe", "Get Bandaged (150$)", tConomy_getCurrency(client) >= 150 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 	} else if (jobs_isActiveJob(client, "Medic")) {
 		SetMenuTitle(panel, "Medic Shop");
@@ -316,14 +316,14 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 	if (action == MenuAction_End) {
 		delete menu;
 	}
-}
+} 
 
-public bool isMedicOnline() {
-	for (int i = 1; i < MAXPLAYERS; i++) {
-		if (!isValidClient(i))
+public bool isMedicOnline(){
+	for (int i = 1; i < MAXPLAYERS; i++){
+		if(!isValidClient(i))
 			continue;
-		if (jobs_isActiveJob(i, "Medic"))
+		if(jobs_isActiveJob(i, "Medic"))
 			return true;
 	}
 	return false;
-} 
+}

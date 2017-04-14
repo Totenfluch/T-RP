@@ -11,16 +11,8 @@
 #pragma newdecls required
 
 int g_iLatestWeight[MAXPLAYERS + 1];
-char g_cLastItemUsed[MAXPLAYERS + 1][128];
 
-/* 
-	CS:GO Grenades Indexes
-*/
-#define CSGO_HEGRENADE_AMMO 13
-#define CSGO_FLASH_AMMO 14
-#define CSGO_SMOKE_AMMO 15
-#define INCENDERY_AND_MOLOTOV_AMMO 16
-#define	DECOY_AMMO 17
+char g_cLastItemUsed[MAXPLAYERS + 1][128];
 
 public Plugin myinfo = 
 {
@@ -34,7 +26,6 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	RegConsoleCmd("sm_stash", cmdStashWeapon, "Stashes Weapon to inventory");
-	//AddCommandListener(dropCSGO, "drop");
 }
 
 public void OnMapStart() {
@@ -89,9 +80,8 @@ public int weaponMenuHandler(Handle menu, MenuAction action, int client, int ite
 		
 		if (StrEqual(cValue, "EquipAndStash")) {
 			int slot = getSlot(g_cLastItemUsed[client]);
-			if (slot != 3)
-				if (stashWeaponSlot(client, slot))
-				takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);
+			stashWeaponSlot(client, slot);
+			takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);
 		} else if (StrEqual(cValue, "GiveWeapon")) {
 			takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);
 		} else if (StrEqual(cValue, "Delete")) {
@@ -117,55 +107,42 @@ public void stashWeapon(int client, bool useOverride, char[] weapon) {
 		PrintToChat(client, "Can't stash this one");
 		return;
 	}
-	if (StrEqual(item, "")) {
-		int wpindex = GetEntPropEnt(client, Prop_Data, "m_hActiveWeapon");
-		GetEntityClassname(wpindex, item, sizeof(item));
-	}
-	
 	if (StrEqual(item, ""))
 		return;
 	
 	int slot = getSlot(item);
 	
-	if (slot != -1 && slot != 3) {
+	if (slot != -1) {
 		int weaponIndex = GetPlayerWeaponSlot(client, slot);
 		if (weaponIndex != -1) {
 			int primaryWeaponClip = Weapon_GetPrimaryClip(weaponIndex);
 			int primaryWeaponAmmo = GetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount");
-			if (inventory_givePlayerItem(client, item, primaryWeaponClip * 100 + primaryWeaponAmmo, "", "Weapon", "Weapon", 2, "Stashed Weapon")) {
-				RemovePlayerItem(client, weaponIndex);
-				RemoveEdict(weaponIndex);
-			}
+			RemovePlayerItem(client, weaponIndex);
+			RemoveEdict(weaponIndex);
+			inventory_givePlayerItem(client, item, primaryWeaponClip * 100 + primaryWeaponAmmo, "", "Weapon", "Weapon", 2, "Stashed Weapon");
 		}
-	} else if (slot == 3) {
-		if (inventory_givePlayerItem(client, item, 1, "", "Weapon", "Weapon", 2, "Stashed Grenade"))
-			Client_RemoveWeapon(client, item, true, true);
 	}
 	
 	if (GetPlayerWeaponSlot(client, 2) != -1)
 		EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, 2));
 }
 
-public bool stashWeaponSlot(int client, int slot) {
-	if (slot != -1 && slot != 3) {
+public void stashWeaponSlot(int client, int slot) {
+	if (slot != -1) {
 		int weaponIndex = GetPlayerWeaponSlot(client, slot);
 		if (weaponIndex != -1) {
 			int primaryWeaponClip = Weapon_GetPrimaryClip(weaponIndex);
 			int primaryWeaponAmmo = GetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount");
 			char item[128];
 			Entity_GetClassName(weaponIndex, item, sizeof(item));
-			if (inventory_givePlayerItem(client, item, primaryWeaponClip * 100 + primaryWeaponAmmo, "", "Weapon", "Weapon", 2, "Stashed Weapon")) {
-				RemovePlayerItem(client, weaponIndex);
-				RemoveEdict(weaponIndex);
-				if (GetPlayerWeaponSlot(client, 2) != -1)
-					EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, 2));
-				return true;
-			} else {
-				return false;
-			}
+			RemovePlayerItem(client, weaponIndex);
+			RemoveEdict(weaponIndex);
+			inventory_givePlayerItem(client, item, primaryWeaponClip * 100 + primaryWeaponAmmo, "", "Weapon", "Weapon", 2, "Stashed Weapon");
 		}
 	}
-	return true;
+	
+	if (GetPlayerWeaponSlot(client, 2) != -1)
+		EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, 2));
 }
 
 public void takeItemSuit(int client, char[] item) {
@@ -183,7 +160,7 @@ public void takeItem(int client, char[] item, int weight) {
 		GivePlayerItem(client, item);
 	
 	int slot = getSlot(item2);
-	if (GetPlayerWeaponSlot(client, slot) != -1 && slot != 3) {
+	if (GetPlayerWeaponSlot(client, slot) != -1) {
 		EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, slot));
 		int weaponIndex;
 		if ((weaponIndex = GetPlayerWeaponSlot(client, slot)) != -1) {
@@ -198,8 +175,6 @@ public int getSlot(char item[128]) {
 		return 1;
 	else if (isSMG(item) || isRifle(item) || isShotgun(item) || isSniper(item) || isMg(item))
 		return 0;
-	else if (isGrenade(item))
-		return 3;
 	return -1;
 }
 
@@ -251,10 +226,4 @@ public bool isMg(char[] weaponName) {
 	} else {
 		return false;
 	}
-}
-
-public bool isGrenade(char[] weaponName) {
-	if (StrContains(weaponName, "grenade") != -1 || StrContains(weaponName, "decoy") != -1 || StrContains(weaponName, "molotov") != -1 || StrContains(weaponName, "flashbang") != -1)
-		return true;
-	return false;
 } 

@@ -342,7 +342,7 @@ public void doorAction(int client, char zone[128], int doorEnt) {
 	if (!option && ownedId != -1) {
 		if (StrContains(ownedApartments[ownedId][oaAllowed_players], playerid) != -1) {
 			allowedAction(client, zone);
-		} else if (jobs_isActiveJob(client, "Police")) {
+		} else if (ownedApartments[ownedId][oaDoor_locked] && jobs_isActiveJob(client, "Police")) {
 			raidAction(client, zone);
 		} else if (ownedApartments[ownedId][oaDoor_locked] && inventory_hasPlayerItem(client, "Lockpick")) {
 			lockpickAction(client, zone);
@@ -424,7 +424,6 @@ public void raidAction(int client, char zone[128]) {
 	Format(menuTitle, sizeof(menuTitle), "Raid Apartment");
 	SetMenuTitle(apartmentMenu, menuTitle);
 	AddMenuItem(apartmentMenu, "raid", ">> RAID <<");
-	AddMenuItem(apartmentMenu, "seal", ">> SEAL <<");
 	DisplayMenu(apartmentMenu, client, 60);
 	strcopy(playerProperties[client][ppZone], 128, zone);
 }
@@ -436,9 +435,6 @@ public int apartmentDoorRaidHandler(Handle menu, MenuAction action, int client, 
 		if (StrEqual(cValue, "raid")) {
 			changeDoorLock(client, 0);
 			PrintToChat(client, "Raided Apartment");
-		} else if (StrEqual(cValue, "seal")) {
-			changeDoorLock(client, 1);
-			PrintToChat(client, "Sealed Apartment");
 		}
 	}
 	if (action == MenuAction_End) {

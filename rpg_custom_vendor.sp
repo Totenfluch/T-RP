@@ -217,20 +217,20 @@ public int openVendorMenuHandler(Handle menu, MenuAction action, int client, int
 		Format(menuTitle2, sizeof(menuTitle2), "%s %s", g_eLoadedItemCollection[id][iBuyOrSell] ? "Buy":"Sell", g_eLoadedItemCollection[id][iItemname]);
 		SetMenuTitle(menu2, menuTitle2);
 		char display[64];
-		Format(display, sizeof(display), "Price: %s", g_eLoadedItemCollection[id][iItemPrice]);
-		
+		Format(display, sizeof(display), "Price: %i", g_eLoadedItemCollection[id][iItemPrice]);
+		AddMenuItem(menu2, "x", display, ITEMDRAW_DISABLED);
 		if (g_eLoadedItemCollection[id][iBuyOrSell]) {
 			bool hasMoney = tConomy_getCurrency(client) >= g_eLoadedItemCollection[id][iItemPrice];
 			char jobName[128];
 			strcopy(jobName, sizeof(jobName), g_eLoadedItemCollection[g_iLoadedItems][iJob]);
 			bool hasJob = jobs_isActiveJob(client, jobName) || StrEqual(jobName, "");
 			bool hasJobLevel = (jobs_getLevel(client) >= g_eLoadedItemCollection[g_iLoadedItems][iJobLevel]) || (g_eLoadedItemCollection[g_iLoadedItems][iJobLevel] == 0);
-			if(!hasJob || !hasJobLevel){
+			if (!hasJob || !hasJobLevel) {
 				char requiresJobString[64];
 				Format(requiresJobString, sizeof(requiresJobString), "Requires Job: %s (lvl %i)", jobName, g_eLoadedItemCollection[g_iLoadedItems][iJobLevel]);
 				AddMenuItem(menu2, "x", requiresJobString, ITEMDRAW_DISABLED);
 			}
-			AddMenuItem(menu2, info, "Buy", hasMoney && hasJob && hasJobLevel ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+			AddMenuItem(menu2, info, "Confirm Purchase", hasMoney && hasJob && hasJobLevel ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 		} else {
 			char itemName2[128];
 			strcopy(itemName2, sizeof(itemName2), g_eLoadedItemCollection[id][iItemname]);

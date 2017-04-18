@@ -1067,7 +1067,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		{
 			int Target = GetClientAimTarget(client, true);
 			
-			if (isValidClient(Target) && (g_bCuffed[Target] == true))
+			if (isValidClient(Target) && g_bCuffed[Target])
 			{
 				float distance = Entity_GetDistance(client, Target);
 				distance = Math_UnitsToMeters(distance);
@@ -1077,7 +1077,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					float origin[3];
 					GetClientAbsOrigin(client, origin);
 					float origin2[3];
-					GetClientAbsOrigin(client, origin2);
+					GetClientAbsOrigin(Target, origin2);
 					origin2[2] += 5.0;
 					float location[3];
 					GetClientEyePosition(client, location);

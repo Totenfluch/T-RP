@@ -9,6 +9,7 @@
 #include <emitsoundany>
 #include <rpg_jobs_core>
 #include <rpg_inventory_core>
+#include <devzones>
 
 #pragma newdecls required
 
@@ -25,6 +26,9 @@ int g_iBombTimeLeft = -1;
 int g_iExplosionSprite = -1;
 
 int g_iPlayerPrevButtons[MAXPLAYERS + 1];
+
+bool g_bEventOver = false;
+int g_iEventOverSince;
 
 public Plugin myinfo = 
 {
@@ -51,12 +55,44 @@ public void OnMapStart() {
 	g_iGlow = -1;
 	g_iBombTimeLeft = -1;
 	g_iExplosionSprite = -1;
+	g_bEventOver = false;
 	
 	g_iGlow = PrecacheModel("sprites/ledglow.vmt");
 	PrecacheSoundAny("UI/beep07.wav", true);
 	PrecacheSoundAny("ambient/explosions/explode_8.wav", true);
 	CreateTimer(1.0, refreshTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	g_iExplosionSprite = PrecacheModel("sprites/sprite_fire01.vmt");
+}
+
+public void clearEvent(){
+	int gateEnt = EntRefToEntIndex(g_iGateRef);
+	int money1Ent = EntRefToEntIndex(g_iMoney1Ref);
+	int bombEnt = EntRefToEntIndex(g_iBombEnt);
+	int money2Ent = EntRefToEntIndex(g_iMoney2Ref);
+	if(IsValidEntity(gateEnt))
+		AcceptEntityInput(gateEnt, "kill");
+	if(IsValidEntity(money1Ent))
+		AcceptEntityInput(money1Ent, "kill");
+	if(IsValidEntity(bombEnt))
+		AcceptEntityInput(bombEnt, "kill");
+	if(IsValidEntity(money2Ent))
+		AcceptEntityInput(money2Ent, "kill");	
+	gateEnt = -1;
+	money1Ent = -1;
+	bombEnt = -1;
+	money2Ent = -1;
+}
+
+public void resetEvent(){
+	clearEvent();
+	for (int i = 1; i < MAXPLAYERS; i++){
+		if(!isValidClient(i))
+			continue;
+		if(Zone_IsClientInZone(i, "vault_event")){
+			// TODO: Teleport out
+		}
+	}
+	setupEvent();
 }
 
 public void setupEvent() {
@@ -139,6 +175,7 @@ public void setupEvent() {
 	
 	SetVariantString("idle");
 	AcceptEntityInput(money2, "SetAnimation");
+	g_bEventOver = false;
 }
 
 public void setupBomb(int client) {
@@ -184,6 +221,10 @@ public void setupBomb(int client) {
 }
 
 public Action refreshTimer(Handle Timer) {
+	if(g_bEventOver)
+		g_iEventOverSince++;
+	if(g_iEventOverSince == 7200)
+		resetEvent();
 	if (g_iBombEnt == -1)
 		return;
 	if (IsValidEdict(g_iBombEnt))
@@ -234,6 +275,7 @@ public void bombExplosion() {
 	if (IsValidEdict(g_iGateRef))
 		if (IsValidEntity(EntRefToEntIndex(g_iGateRef)))
 		AcceptEntityInput(EntRefToEntIndex(g_iGateRef), "kill");
+	g_bEventOver = true;
 }
 
 int g_iLastMoneyTarget[MAXPLAYERS + 1];

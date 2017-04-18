@@ -231,6 +231,9 @@ public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error,
 		char extern1[64];
 		SQL_FetchStringByName(hndl, "extern1", extern1, sizeof(extern1));
 		
+		char extern2[64];
+		SQL_FetchStringByName(hndl, "extern2", extern1, sizeof(extern1));
+		
 		if (Hp != 0)
 			SetEntityHealth(client, Hp);
 		if (Armor != 0)
@@ -265,6 +268,10 @@ public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error,
 		
 		if (StrContains(extern1, "taser") != -1)
 			GivePlayerItem(client, "weapon_taser");
+			
+		if(StrContains(extern2, "helmet") != -1 && Armor != 0)
+			SetEntProp(client, Prop_Send, "m_bHasHelmet", 1);
+			
 		CPrintToChat(client, "{orange}[{purple}-T-{orange}] {green}Sucessfully load you ({orange}%N{green})!", client);
 	}
 	g_bIsPlayerLoaded[client] = true;
@@ -360,6 +367,14 @@ public void savePlayer(int client) {
 	char extern1[64];
 	if (Client_HasWeapon(client, "weapon_taser"))
 		strcopy(extern1, sizeof(extern1), "taser");
+	else
+		strcopy(extern1, sizeof(extern1), "");
+		
+	char extern2[64];
+	if(GetEntProp(client, Prop_Send, "m_bHasHelmet") == 1)
+		strcopy(extern2, sizeof(extern2), "helmet");
+	else
+		strcopy(extern2, sizeof(extern2), "");
 	
 	char mapName[128];
 	GetCurrentMap(mapName, sizeof(mapName));
@@ -380,7 +395,7 @@ public void savePlayer(int client) {
 	
 	char insertDataQuery[4096];
 	Format(insertDataQuery, sizeof(insertDataQuery), "INSERT INTO `t_rpg_playercontroller` (`Id`, `playername`, `playerid`, `timestamp`, `map`, `hp`, `armor`, `speed`, `gravity`, `angles`, `pos_x`, `pos_y`, `pos_z`, `primaryWeapon`, `primaryWeaponClip`, `primaryWeaponAmmo`, `secondaryWeapon`, `secondaryWeaponClip`, `secondaryWeaponAmmo`, `nade1`, `nade2`, `nade3`, `nade4`, `nade5`, `flags`, `extern1`, `extern2`, `extern3`) VALUES (NULL, '%s', '%s', CURRENT_TIMESTAMP, '%s', '%i', '%i', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%s', '%i', '%i', '%s', '%i', '%i', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');", 
-		clean_playername, playerid, mapName, Hp, Armor, Speed, Gravity, Angles[1], Position[0], Position[1], Position[2], primaryWeapon, primaryWeaponClip, primaryWeaponAmmo, secondaryWeapon, secondaryWeaponClip, secondaryWeaponAmmo, nades[0], nades[1], nades[2], nades[3], nades[4], "FLAGS", extern1, "EXTERN2", "EXTERN3");
+		clean_playername, playerid, mapName, Hp, Armor, Speed, Gravity, Angles[1], Position[0], Position[1], Position[2], primaryWeapon, primaryWeaponClip, primaryWeaponAmmo, secondaryWeapon, secondaryWeaponClip, secondaryWeaponAmmo, nades[0], nades[1], nades[2], nades[3], nades[4], "FLAGS", extern1, extern2, "EXTERN3");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, insertDataQuery);
 	//PrintToServer("'%s', '%s', '%s', '%i', '%i', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%s', '%i', '%i', '%s', '%i', '%i', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", clean_playername, playerid, mapName, Hp, Armor, Speed, Gravity, Angles[1], Position[0], Position[1], Position[2], primaryWeapon, primaryWeaponClip, primaryWeaponAmmo, secondaryWeapon, secondaryWeaponClip, secondaryWeaponAmmo, nades[0], nades[1], nades[2], nades[3], nades[4], "FLAGS", "EXTERN1", "EXTERN2", "EXTERN3");
 	//PrintToServer("Saved!");

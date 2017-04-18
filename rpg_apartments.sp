@@ -486,11 +486,7 @@ public int apartmentMenuHandler(Handle menu, MenuAction action, int client, int 
 			playerProperties[client][ppInEdit] = 2;
 			PrintToChat(client, "Enter the Apartment Name OR 'abort' to cancel");
 		} else if (StrEqual(cValue, "revoke")) {
-			if (tConomy_getCurrency(client) >= 3000) {
-				tConomy_removeCurrency(client, 3000, "Changed Doorlock");
-				revokeAllAccess(client);
-				PrintToChat(client, "Revoked all Allowed Players");
-			}
+			revokeAllAccessConfirm(client);
 		} else if (StrEqual(cValue, "lock")) {
 			changeDoorLock(client, 1);
 			PrintToChat(client, "Locked Doors");
@@ -498,10 +494,57 @@ public int apartmentMenuHandler(Handle menu, MenuAction action, int client, int 
 			changeDoorLock(client, 0);
 			PrintToChat(client, "Unlocked Doors");
 		} else if (StrEqual(cValue, "sell")) {
-			sellApartment(client);
+			sellApartmentConfirm(client);
 			PrintToChat(client, "Sold Apartment");
 		}
 		apartmentCommand(client, 0);
+	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
+}
+
+public void revokeAllAccessConfirm(int client){
+	Menu m = new Menu(revokeAllAccessConfirmHandler);
+	SetMenuTitle(m, "Change doorlocks? (3000$)");
+	AddMenuItem(m, "no", "no");
+	AddMenuItem(m, "revoke", "Confirm");
+	DisplayMenu(m, client, 30);
+}
+
+public int revokeAllAccessConfirmHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "revoke")) {
+			if (tConomy_getCurrency(client) >= 3000) {
+				tConomy_removeCurrency(client, 3000, "Changed Doorlock");
+				revokeAllAccess(client);
+				PrintToChat(client, "Revoked all Allowed Players");
+			}
+		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
+}
+
+public void sellApartmentConfirm(int client){
+	Menu m = new Menu(confirmSellMenuHandler);
+	SetMenuTitle(m, "Do you realy want to sell your apartment?");
+	AddMenuItem(m, "no", "no");
+	AddMenuItem(m, "sell", "Confirm");
+	DisplayMenu(m, client, 30);
+}
+
+public int confirmSellMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "sell")) {
+			sellApartment(client);
+			PrintToChat(client, "Sold Apartment");
+		}
 	}
 	if (action == MenuAction_End) {
 		delete menu;

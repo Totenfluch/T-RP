@@ -64,31 +64,31 @@ public void OnMapStart() {
 	g_iExplosionSprite = PrecacheModel("sprites/sprite_fire01.vmt");
 }
 
-public void clearEvent(){
+public void clearEvent() {
 	int gateEnt = EntRefToEntIndex(g_iGateRef);
 	int money1Ent = EntRefToEntIndex(g_iMoney1Ref);
 	int bombEnt = EntRefToEntIndex(g_iBombEnt);
 	int money2Ent = EntRefToEntIndex(g_iMoney2Ref);
-	if(IsValidEntity(gateEnt))
+	if (IsValidEntity(gateEnt))
 		AcceptEntityInput(gateEnt, "kill");
-	if(IsValidEntity(money1Ent))
+	if (IsValidEntity(money1Ent))
 		AcceptEntityInput(money1Ent, "kill");
-	if(IsValidEntity(bombEnt))
+	if (IsValidEntity(bombEnt))
 		AcceptEntityInput(bombEnt, "kill");
-	if(IsValidEntity(money2Ent))
-		AcceptEntityInput(money2Ent, "kill");	
+	if (IsValidEntity(money2Ent))
+		AcceptEntityInput(money2Ent, "kill");
 	gateEnt = -1;
 	money1Ent = -1;
 	bombEnt = -1;
 	money2Ent = -1;
 }
 
-public void resetEvent(){
+public void resetEvent() {
 	clearEvent();
-	for (int i = 1; i < MAXPLAYERS; i++){
-		if(!isValidClient(i))
+	for (int i = 1; i < MAXPLAYERS; i++) {
+		if (!isValidClient(i))
 			continue;
-		if(Zone_IsClientInZone(i, "vault_event")){
+		if (Zone_IsClientInZone(i, "vault_event")) {
 			// TODO: Teleport out
 		}
 	}
@@ -179,14 +179,17 @@ public void setupEvent() {
 }
 
 public void setupBomb(int client) {
-	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
-	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
-	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
-	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
-	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
-	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
-	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
-	PrintToChatAll("%N tries to rob the BANK!!!!!!", client);
+	char robString[64];
+	Format(robString, sizeof(robString), "%N tries to rob the Bank!!!", client);
+	PrintToChatAll(robString, client);
+	PrintToChatAll(robString, client);
+	PrintToChatAll(robString, client);
+	PrintToChatAll(robString, client);
+	PrintToChatAll(robString, client);
+	PrintToChatAll(robString, client);
+	for (int i = 1; i < MAXPLAYERS; i++)
+	if (isValidClient(i))
+		showHudMsg(i, robString, 255, 0, 0, 0.0, 0.5, 5.0);
 	/* Create Bomb */
 	int bombEnt = CreateEntityByName("prop_dynamic_override");
 	if (bombEnt == -1)
@@ -221,9 +224,9 @@ public void setupBomb(int client) {
 }
 
 public Action refreshTimer(Handle Timer) {
-	if(g_bEventOver)
+	if (g_bEventOver)
 		g_iEventOverSince++;
-	if(g_iEventOverSince == 7200)
+	if (g_iEventOverSince == 7200)
 		resetEvent();
 	if (g_iBombEnt == -1)
 		return;
@@ -355,4 +358,9 @@ public int getPoliceCount() {
 
 stock bool isValidClient(int client) {
 	return (1 <= client <= MaxClients && IsClientInGame(client));
+}
+
+public void showHudMsg(int client, char[] message, int r, int g, int b, float x, float y, float timeout) {
+	SetHudTextParams(x, y, timeout, r, g, b, 255, 0, 0.0, 0.0, 0.0);
+	ShowHudText(client, -1, message);
 } 

@@ -10,6 +10,7 @@
 #include <rpg_interact>
 #include <tConomy>
 #include <tCrime>
+#include <smlib>
 
 #pragma newdecls required
 
@@ -24,9 +25,8 @@ public Plugin myinfo =
 	url = "http://ggc-base.de"
 };
 
-public void OnPluginStart()
-{
-	
+public void OnPluginStart() {
+	HookEvent("player_spawn", onPlayerSpawn);
 }
 
 public void OnClientPostAdminCheck(int client) {
@@ -43,7 +43,7 @@ public void OnPlayerInteract(int client, int target, char interact[64]) {
 	if (StrEqual(interact, "Criminal Actions")) {
 		Menu m = CreateMenu(criminalInteractionsMenuHandler);
 		SetMenuTitle(m, "Do something Criminal...");
-		AddMenuItem(m, "steal", "Steal Money", ITEMDRAW_DISABLED);
+		AddMenuItem(m, "steal", "Steal Money");
 		AddMenuItem(m, "ziptie", "Ziptie Player", inventory_hasPlayerItem(client, "ziptie") ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 		DisplayMenu(m, client, 30);
 		g_iPlayerTarget[client] = target;
@@ -64,7 +64,7 @@ public int criminalInteractionsMenuHandler(Handle menu, MenuAction action, int c
 		if (StrEqual(cValue, "steal")) {
 			if (isValidClient(g_iPlayerTarget[client]))
 				PrintToChat(g_iPlayerTarget[client], "[-T-] %N tries to steal your money!!!!", client);
-			jobs_startProgressBar(client, 50, "Steal Money");
+			jobs_startProgressBar(client, 75, "Steal Money");
 		} else if (StrEqual(cValue, "ziptie")) {
 			jobs_startProgressBar(client, 15, "Ziptie Player");
 		}
@@ -113,7 +113,9 @@ public void ziptiePlayer(int client, int initiator) {
 		return;
 	g_bIsZiptied[client] = true;
 	SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 0.0);
+	SetEntityMoveType(client, MOVETYPE_NONE);
 	PrintToChat(client, "[-T-] You were Ziptied by %N", initiator);
+	SetEntityRenderColor(client, 255, 0, 0, 255);
 }
 
 public void unzipPlayer(int client, int initiator) {
@@ -121,9 +123,73 @@ public void unzipPlayer(int client, int initiator) {
 		return;
 	g_bIsZiptied[client] = false;
 	SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 1.0);
+	SetEntityMoveType(client, MOVETYPE_WALK);
 	PrintToChat(client, "[-T-] You were freed by %N", initiator);
+	SetEntityRenderColor(client, 255, 255, 255, 255);
 }
 
 stock bool isValidClient(int client) {
 	return (1 <= client <= MaxClients && IsClientInGame(client));
+}
+
+public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon) {
+	char wName[128];
+	GetClientWeapon(client, wName, sizeof(wName));
+	if ((buttons & IN_ATTACK2)) {
+		int Target = GetClientAimTarget(client, true);
+		
+		if (isValidClient(Target) && g_bIsZiptied[client]) {
+			float distance = Entity_GetDistance(client, Target);
+			distance = Math_UnitsToMeters(distance);
+			
+			if ((5 > distance) && !Client_IsLookingAtWall(client, Entity_GetDistance(client, Target) + 40.0)) {
+				float origin[3];
+				GetClientAbsOrigin(client, origin);
+				float origin2[3];
+				GetClientAbsOrigin(Target, origin2);
+				origin2[2] += 5.0;
+				float location[3];
+				GetClientEyePosition(client, location);
+				float ang[3];
+				GetClientEyeAngles(client, ang);
+				float location2[3];
+				location2[0] = (location[0] + (100 * ((Cosine(DegToRad(ang[1]))) * (Cosine(DegToRad(ang[0]))))));
+				location2[1] = (location[1] + (100 * ((Sine(DegToRad(ang[1]))) * (Cosine(DegToRad(ang[0]))))));
+				ang[0] -= (2 * ang[0]);
+				location2[2] = origin[2] += 5.0;
+				
+				TeleportEntity(Target, location2, NULL_VECTOR, NULL_VECTOR);
+				if (IsPlayerStuck(Target))
+					TeleportEntity(Target, origin2, NULL_VECTOR, NULL_VECTOR);
+				
+			}
+		}
+	}
+}
+
+stock bool IsPlayerStuck(int client) {
+	float vecMin[3];
+	float vecMax[3];
+	float vecOrigin[3];
+	
+	GetClientMins(client, vecMin);
+	GetClientMaxs(client, vecMax);
+	
+	GetClientAbsOrigin(client, vecOrigin);
+	
+	TR_TraceHullFilter(vecOrigin, vecOrigin, vecMin, vecMax, MASK_PLAYERSOLID, TraceRayDontHitPlayerAndWorld);
+	return TR_GetEntityIndex() != -1;
+}
+
+public bool TraceRayDontHitPlayerAndWorld(int entityhit, int mask) {
+	return (entityhit < 1 || entityhit > MaxClients);
+}
+
+public Action onPlayerSpawn(Handle event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	if (!isValidClient(client))
+		return;
+	if (!IsPlayerAlive(client))
+		return;
+	SetEntityRenderColor(client, 255, 255, 255, 255);
 } 

@@ -434,7 +434,12 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 								jobs_startProgressBar(client, 50, "Confiscate Plant");
 								g_iHarvestIndex[client] = ent;
 							} else {
-								jobs_startProgressBar(client, 100, "Harvest Plant");
+								if(perks_hasPerk(client, "Drug Harvest Boost 2"))
+									jobs_startProgressBar(client, 60, "Harvest Plant");
+								else if(perks_hasPerk(client, "Drug Harvest Boost 1"))
+									jobs_startProgressBar(client, 80, "Harvest Plant");
+								else
+									jobs_startProgressBar(client, 100, "Harvest Plant");
 								g_iHarvestIndex[client] = ent;
 							}
 						} else {

@@ -107,6 +107,12 @@ int g_iGardener_xp_boost4;
 Handle g_hDrug_seed_boost;
 int g_iDrug_seed_boost;
 
+Handle g_hDrug_harvest_boost1;
+int g_iDrug_harvest_boost1;
+
+Handle g_hDrug_harvest_boost2;
+int g_iDrug_harvest_boost2;
+
 public Plugin myinfo = 
 {
 	name = "Perks for T-RP", 
@@ -159,6 +165,8 @@ public void OnPluginStart() {
 	
 	/* DRUG HARVESTER */
 	g_hDrug_seed_boost = AutoExecConfig_CreateConVar("perk_drug_seed_boost", "3000", "Price of the Drug Seed Boost");
+	g_hDrug_harvest_boost1 = AutoExecConfig_CreateConVar("perk_drug_harvest_boost1", "4500", "Price of the Drug Harvest boost 1");
+	g_hDrug_harvest_boost2 = AutoExecConfig_CreateConVar("perk_drug_harvest_boost1", "6500", "Price of the Drug Harvest boost 1");
 	
 	AutoExecConfig_CleanFile();
 	AutoExecConfig_ExecuteFile();
@@ -209,6 +217,8 @@ public void OnConfigsExecuted() {
 	g_iGardener_xp_boost4 = GetConVarInt(g_hGardener_xp_boost4);
 	
 	g_iDrug_seed_boost = GetConVarInt(g_hDrug_seed_boost);
+	g_iDrug_harvest_boost1 = GetConVarInt(g_hDrug_harvest_boost1);
+	g_iDrug_harvest_boost2 = GetConVarInt(g_hDrug_harvest_boost2);
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
@@ -531,6 +541,26 @@ public int topMenuHandler(Handle menu, MenuAction action, int client, int item) 
 				} else {
 					AddMenuItem(nextMenu, "x", "Marijuana Seed Boost | ^~Owned~^", ITEMDRAW_DISABLED);
 				}
+				
+				if (!hasPerk(client, "Drug Harvest Boost 1")) {
+					Format(display, sizeof(display), "Marijuana Harvest Speed Boost 1 [5](%i)", g_iDrug_harvest_boost1);
+					if (tConomy_getCurrency(client) >= g_iDrug_harvest_boost1 && jobs_getLevel(client) >= 5)
+						AddMenuItem(nextMenu, "drug_harvest_speed_boost1", display);
+					else
+						AddMenuItem(nextMenu, "drug_harvest_speed_boost1", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Marijuana Harvest Speed Boost | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
+				
+				if (!hasPerk(client, "Drug Harvest Boost 2")) {
+					Format(display, sizeof(display), "Marijuana Harvest Speed Boost 2 [6](%i)", g_iDrug_harvest_boost2);
+					if (tConomy_getCurrency(client) >= g_iDrug_harvest_boost1 && jobs_getLevel(client) >= 6)
+						AddMenuItem(nextMenu, "drug_harvest_speed_boost2", display);
+					else
+						AddMenuItem(nextMenu, "drug_harvest_speed_boost2", display, ITEMDRAW_DISABLED);
+				} else {
+					AddMenuItem(nextMenu, "x", "Marijuana Harvest Speed Boost 2 | ^~Owned~^", ITEMDRAW_DISABLED);
+				}
 			} else {
 				AddMenuItem(nextMenu, "x", "- You are not a Drug Planter -", ITEMDRAW_DISABLED);
 			}
@@ -779,7 +809,18 @@ public int nextMenuHandler(Handle menu, MenuAction action, int client, int item)
 				tConomy_removeCurrency(client, g_iDrug_seed_boost, "Bought Drug Seed Boost");
 				addPerk(client, "Drug Seed Boost");
 			}
+		} else if (StrEqual(cValue, "drug_harvest_speed_boost1")) {
+			if (tConomy_getCurrency(client) >= g_iDrug_harvest_boost1) {
+				tConomy_removeCurrency(client, g_iDrug_harvest_boost1, "Bought Drug Harvest Speed Boost 1");
+				addPerk(client, "Drug Harvest Boost 1");
+			}
+		} else if (StrEqual(cValue, "drug_harvest_speed_boost2")) {
+			if (tConomy_getCurrency(client) >= g_iDrug_harvest_boost2) {
+				tConomy_removeCurrency(client, g_iDrug_harvest_boost2, "Bought Drug Harvest Speed Boost 2");
+				addPerk(client, "Drug Harvest Boost 2");
+			}
 		}
+		
 	}
 	if (action == MenuAction_End) {
 		delete menu;

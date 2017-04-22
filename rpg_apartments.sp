@@ -485,26 +485,27 @@ public int apartmentMenuHandler(Handle menu, MenuAction action, int client, int 
 		if (StrEqual(cValue, "rename")) {
 			playerProperties[client][ppInEdit] = 2;
 			PrintToChat(client, "Enter the Apartment Name OR 'abort' to cancel");
+			apartmentCommand(client, 0);
 		} else if (StrEqual(cValue, "revoke")) {
 			revokeAllAccessConfirm(client);
 		} else if (StrEqual(cValue, "lock")) {
 			changeDoorLock(client, 1);
 			PrintToChat(client, "Locked Doors");
+			apartmentCommand(client, 0);
 		} else if (StrEqual(cValue, "unlock")) {
 			changeDoorLock(client, 0);
 			PrintToChat(client, "Unlocked Doors");
+			apartmentCommand(client, 0);
 		} else if (StrEqual(cValue, "sell")) {
 			sellApartmentConfirm(client);
-			PrintToChat(client, "Sold Apartment");
 		}
-		apartmentCommand(client, 0);
 	}
 	if (action == MenuAction_End) {
 		delete menu;
 	}
 }
 
-public void revokeAllAccessConfirm(int client){
+public void revokeAllAccessConfirm(int client) {
 	Menu m = new Menu(revokeAllAccessConfirmHandler);
 	SetMenuTitle(m, "Change doorlocks? (3000$)");
 	AddMenuItem(m, "no", "no");
@@ -529,7 +530,7 @@ public int revokeAllAccessConfirmHandler(Handle menu, MenuAction action, int cli
 	}
 }
 
-public void sellApartmentConfirm(int client){
+public void sellApartmentConfirm(int client) {
 	Menu m = new Menu(confirmSellMenuHandler);
 	SetMenuTitle(m, "Do you realy want to sell your apartment?");
 	AddMenuItem(m, "no", "no");

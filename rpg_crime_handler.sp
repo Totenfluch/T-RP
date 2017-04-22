@@ -83,6 +83,9 @@ public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 	if (client == victim)
 		return;
 	
+	if(!isValidClient(victim))
+		return;
+	
 	char gangName[64];
 	
 	if (Gangs_HasGang(client)) {

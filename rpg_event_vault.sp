@@ -10,6 +10,7 @@
 #include <rpg_jobs_core>
 #include <rpg_inventory_core>
 #include <devzones>
+#include <tStocks>
 
 #pragma newdecls required
 
@@ -29,6 +30,7 @@ int g_iPlayerPrevButtons[MAXPLAYERS + 1];
 
 bool g_bEventOver = false;
 int g_iEventOverSince;
+bool doorState = false;
 
 public Plugin myinfo = 
 {
@@ -45,6 +47,7 @@ public void OnPluginStart() {
 
 public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 	setupEvent();
+	doorState = false;
 }
 
 public void OnMapStart() {
@@ -81,6 +84,8 @@ public void clearEvent() {
 	money1Ent = -1;
 	bombEnt = -1;
 	money2Ent = -1;
+	g_iBombTimeLeft = -1;
+	g_bEventOver = false;
 }
 
 public void resetEvent() {
@@ -184,9 +189,6 @@ public void setupBomb(int client) {
 	PrintToChatAll(robString, client);
 	PrintToChatAll(robString, client);
 	PrintToChatAll(robString, client);
-	PrintToChatAll(robString, client);
-	PrintToChatAll(robString, client);
-	PrintToChatAll(robString, client);
 	for (int i = 1; i < MAXPLAYERS; i++)
 	if (isValidClient(i))
 		showHudMsg(i, robString, 255, 0, 0, 0.0, 0.5, 5.0);
@@ -285,7 +287,7 @@ int g_iLastMoneyTarget[MAXPLAYERS + 1];
 public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
 	if (IsClientInGame(client) && IsPlayerAlive(client)) {
 		if (!(g_iPlayerPrevButtons[client] & IN_USE) && iButtons & IN_USE) {
-			int ent = GetClientAimTarget(client, false);
+			int ent = getClientViewObject(client);
 			if (!IsValidEntity(ent)) {
 				g_iPlayerPrevButtons[client] = iButtons;
 				return;
@@ -298,6 +300,8 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				if (GetVectorDistance(ppos, pos) < 100.0) {
 					char entName[256];
 					Entity_GetGlobalName(ent, entName, sizeof(entName));
+					if (StrEqual(entName, ""))
+						GetEntPropString(ent, Prop_Data, "m_iName", entName, sizeof(entName));
 					if (StrEqual(entName, "Vault Gate")) {
 						if (!IsValidEntity(EntRefToEntIndex(g_iBombEnt))) {
 							if (inventory_hasPlayerItem(client, "c4")) {
@@ -306,7 +310,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 										jobs_startProgressBar(client, 600, "Plant Bomb");
 									}
 								} else {
-									PrintToChat(client, "[-T-] No enough Police online");
+									PrintToChat(client, "[-T-] Not enough Police Officers online");
 								}
 							}
 						}
@@ -314,6 +318,16 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 						if (IsValidEntity(ent)) {
 							jobs_startProgressBar(client, 300, "Steal Vault Money");
 							g_iLastMoneyTarget[client] = EntIndexToEntRef(ent);
+						}
+					} else if (StrEqual(entName, "vault_door_01")) {
+						if (!doorState) {
+							SetVariantString("vault_open");
+							AcceptEntityInput(ent, "SetAnimation");
+							doorState = true;
+						} else {
+							SetVariantString("vault_close");
+							AcceptEntityInput(ent, "SetAnimation");
+							doorState = false;
 						}
 					}
 				}
@@ -354,10 +368,6 @@ public int getPoliceCount() {
 		if (jobs_isActiveJob(i, "Police"))
 		count++;
 	return count;
-}
-
-stock bool isValidClient(int client) {
-	return (1 <= client <= MaxClients && IsClientInGame(client));
 }
 
 public void showHudMsg(int client, char[] message, int r, int g, int b, float x, float y, float timeout) {

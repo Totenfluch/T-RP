@@ -138,7 +138,7 @@ new String:player_ip[MAXPLAYERS + 1][32];
 new started = 0;
 
 int g_iLastInteractedWith[MAXPLAYERS + 1];
-char npctype[] = "Car Vendor";
+char npctype[128] = "Car Vendor";
 
 public Plugin:myinfo = 
 {
@@ -292,6 +292,7 @@ public NativeSpawnChair(Handle:plugin, numParams)
 
 public OnMapStart()
 {
+	npc_registerNpcType(npctype);
 	if (GetConVarInt(g_Cvar_Enable))
 	{
 		g_BuyMenu = BuildBuyMenu();

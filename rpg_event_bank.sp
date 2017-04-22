@@ -281,6 +281,7 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 
 public void loadSafeSpawnPoints()
 {
+	g_iLoadedSafe = 0;
 	char sRawMap[PLATFORM_MAX_PATH];
 	char sMap[64];
 	GetCurrentMap(sRawMap, sizeof(sRawMap));

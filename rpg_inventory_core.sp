@@ -9,6 +9,7 @@
 #include <multicolors>
 #include <rpg_licensing>
 #include <sha1>
+#include <tStocks>
 
 #pragma newdecls required
 
@@ -720,6 +721,8 @@ public void showInventoryOfClientToOtherClient(int client1, int client2) {
 }
 
 public void showInventoryOfClientToOtherClientByCategory(int client1, int client2, char category[64]) {
+	if(!isValidClient(client1) || !isValidClient(client2))
+		return;
 	Handle menu;
 	if (client1 != client2)
 		menu = CreateMenu(showInventoryHandler);
@@ -761,7 +764,7 @@ public Action cmdOpenInventory(int client, const char[] command, int argc) {
 	AddMenuItem(menu, "inv", "Inventory");
 	AddMenuItem(menu, "weapons", "Weapons");
 	AddMenuItem(menu, "license", "Licenses");
-	AddMenuItem(menu, "bagpack", "Bagpacks");
+	AddMenuItem(menu, "bagpack", "Backpack");
 	DisplayMenu(menu, client, 60);
 	
 	return Plugin_Continue;

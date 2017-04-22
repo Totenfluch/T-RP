@@ -230,6 +230,8 @@ public void OnClientDisconnect(int client) {
 }
 
 public Action loadCrime(Handle Timer, int client) {
+	if(!isValidClient(client))
+		return;
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	

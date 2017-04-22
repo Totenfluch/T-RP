@@ -7,6 +7,7 @@
 #include <sdktools>
 #include <tCrime>
 #include <rpg_jobs_core>
+#include <hl_gangs>
 #include <autoexecconfig>
 
 #pragma newdecls required
@@ -18,6 +19,8 @@ Handle g_hCrimeForDamage;
 float g_fCrimeForDamage;
 
 int g_iSprite;
+
+char noCrimeOnKillName[64] = "No Crime when all nearby people are Gangmembers";
 
 public Plugin myinfo = 
 {
@@ -78,6 +81,12 @@ public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 	
 	if (client == victim)
 		return;
+		
+	char gangName[64];
+	
+	if (Gangs_HasGang(client)){
+		Gangs_GetGangName(client, gangName, sizeof(gangName));
+	}
 	
 	bool witnessed = false;
 	for (int i = 1; i < MAXPLAYERS; i++) {
@@ -85,6 +94,12 @@ public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 			continue;
 		if (i == client || i == victim)
 			continue;
+		if(Gangs_HasGang(client) && Gangs_HasGang(i)){
+			char tempGangName[64];
+			Gangs_GetGangName(i, tempGangName, sizeof(tempGangName));
+			if(StrEqual(gangName, tempGangName, true) && Gangs_getFeatureLevel(client, noCrimeOnKillName) > 0)
+			continue;
+		}
 		if (isWitness(i, client)) {
 			PrintToChat(i, "[-T-] You have witnessed %N killing %N - Auto Reported[BETA only]", client, victim);
 			witnessed = true;

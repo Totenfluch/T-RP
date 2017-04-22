@@ -45,6 +45,10 @@ public void OnPluginStart() {
 	AutoExecConfig_ExecuteFile();
 }
 
+public void onMapStart() {
+	Gangs_RegisterFeature(noCrimeOnKillName, 1, 500, 0, false);
+}
+
 public void OnConfigsExecuted() {
 	g_iCrimeForKill = GetConVarInt(g_hCrimeForKill);
 	g_fCrimeForDamage = GetConVarFloat(g_hCrimeForDamage);

@@ -33,6 +33,11 @@ public Plugin myinfo =
 
 public void OnPluginStart() {
 	HookEvent("player_hurt", onPlayerHurt);
+	HookEvent("player_death", onPlayerDeath);
+	
+	for (int i = 1; i < MAXPLAYERS; i++)
+	if (isValidClient(i))
+		loadPlayerVariables(i);
 }
 
 public void OnMapStart() {
@@ -45,6 +50,10 @@ public void OnMapStart() {
 }
 
 public void OnClientAuthorized(int client) {
+	loadPlayerVariables(client);
+}
+
+public void loadPlayerVariables(int client) {
 	g_iBleedingLevel[client] = 0;
 	g_iBleedGraceTime[client] = 0;
 	g_iBloodGroup[client] = -1;
@@ -54,13 +63,18 @@ public void OnClientAuthorized(int client) {
 	char pId[12];
 	strcopy(pId, sizeof(pId), playerid[8]);
 	int bGroup = StringToInt(pId);
-	if (bGroup % 2 == 0 && StrContains(pId, "2") != -1)
+	if (bGroup % 2 == 0 && StrContains(pId, "2") != -1 && StrContains(pId, "7") != -1)
 		g_iBloodGroup[client] = 0; // AB
 	else if (bGroup % 2 == 0)
 		g_iBloodGroup[client] = 1; // A
 	else
 		g_iBloodGroup[client] = 2; // B
-	
+}
+
+public Action onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	g_iBleedingLevel[client] = 0;
+	g_iBleedGraceTime[client] = 0;
 }
 
 public void OnPlayerInteract(int client, int target, char interaction[64]) {
@@ -96,11 +110,11 @@ public void OnPlayerInteract(int client, int target, char interaction[64]) {
 			if (inventory_hasPlayerItem(client, "Bloodtest")) {
 				if (inventory_removePlayerItems(client, "Bloodtest", 1, "Made Blood Test")) {
 					if (g_iBloodGroup[target] == 0) {
-						CPrintToChat(client, "{green}[-T-] %N has the Blood Group AB");
+						CPrintToChat(client, "{green}[-T-] %N has the Blood Group AB", target);
 					} else if (g_iBloodGroup[target] == 1) {
-						CPrintToChat(client, "{green}[-T-] %N has the Blood Group A");
+						CPrintToChat(client, "{green}[-T-] %N has the Blood Group A", target);
 					} else if (g_iBloodGroup[target] == 2) {
-						CPrintToChat(client, "{green}[-T-] %N has the Blood Group B");
+						CPrintToChat(client, "{green}[-T-] %N has the Blood Group B", target);
 					}
 				}
 			}
@@ -156,12 +170,12 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 		int target = GetClientOfUserId(g_iPlayerTarget[client]);
 		if (isValidClient(target)) {
 			CPrintToChat(client, "{green}[-T-] You bandaged %N", target);
-			CPrintToChat(target, "{green}[-T-] You were bandaged by %N", client);
+			CPrintToChat(target, "{green}[-T-] You were bandaged by %N (Bleeding stopped)", client);
 			jobs_addExperience(client, 2 * g_iBleedingLevel[target] + 20, "Medic");
 			g_iBleedingLevel[target] = 0;
 			g_iPlayerTarget[client] = -1;
 		}
-	} else if (StrContains(info, "Infuseing Bloodbag") != -1) {
+	} else if (StrContains(info, "Infuseing Blood Bag") != -1) {
 		int target = GetClientOfUserId(g_iPlayerTarget[client]);
 		if (isValidClient(target)) {
 			if (g_iTypeOverTake[client] == g_iBloodGroup[target]) {
@@ -173,7 +187,7 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 				CPrintToChat(client, "{green}[-T-] Blood infusion of %N failed (Wrong Blood Group)", target);
 				CPrintToChat(target, "{green}[-T-] %N failed to infuse you (Wrong Blood Group)", client);
 				jobs_removeExperience(client, 1500, "Medic");
-				if (GetRandomInt(0, 3) == 1) {
+				if (GetRandomInt(0, 1) == 1) {
 					FakeClientCommand(target, "kill");
 					CPrintToChat(target, "{green}[-T-] %N killed you with a false infusion", client);
 					tCrime_addCrime(client, 3000);
@@ -195,7 +209,7 @@ public void onPlayerHurt(Handle event, const char[] name, bool dontBroadcast) {
 	GetClientWeapon(attacker, weapon, sizeof(weapon));
 	
 	
-	if ((GetRandomInt(0, 6) * hurtdmg) > 80) {
+	if ((GetRandomInt(0, 12) * hurtdmg) > 80) {
 		g_iBleedingLevel[victim] = hurtdmg;
 		if (hurtdmg < 100)
 			g_iBleedGraceTime[victim] = 100 - hurtdmg;
@@ -254,7 +268,7 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 	if (!StrEqual(npcType, "Medic Recruiter"))
 		return;
 	char activeJob[128];
-	jobs_isActiveJob(client, activeJob);
+	jobs_getActiveJob(client, activeJob);
 	Menu panel = CreateMenu(JobPanelHandler);
 	if (StrEqual(activeJob, "") || !jobs_isActiveJob(client, "Medic")) {
 		SetMenuTitle(panel, "Do you want to be a Medic?");
@@ -262,7 +276,8 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		AddMenuItem(panel, "givejob", "Yes, teach me!");
 		if (!isMedicOnline())
 			AddMenuItem(panel, "bandageMe", "Get Bandaged (150$)", tConomy_getCurrency(client) >= 150 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-	} else if (jobs_isActiveJob(client, "Medic")) {
+	}
+	if (jobs_isActiveJob(client, "Medic")) {
 		SetMenuTitle(panel, "Medic Shop");
 		AddMenuItem(panel, "bandage", "Buy Bandage (40$)", tConomy_getCurrency(client) >= 40 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 		AddMenuItem(panel, "bt", "Buy Bloodtest (20$)", tConomy_getCurrency(client) >= 20 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
@@ -309,7 +324,7 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			if (tConomy_getCurrency(client) >= 150) {
 				tConomy_removeCurrency(client, 150, "Bandaged by Npc");
 				g_iBleedingLevel[client] = 0;
-				CPrintToChat(client, "{green}[-T-] You were bandaged by the Medic Recruiter");
+				CPrintToChat(client, "{green}[-T-] You were bandaged by the Medic Recruiter (Bleeding stopped)");
 			}
 		}
 	}

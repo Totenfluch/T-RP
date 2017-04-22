@@ -89,9 +89,13 @@ public int weaponMenuHandler(Handle menu, MenuAction action, int client, int ite
 		
 		if (StrEqual(cValue, "EquipAndStash")) {
 			int slot = getSlot(g_cLastItemUsed[client]);
-			if (slot != 3)
-				if (stashWeaponSlot(client, slot))
+			if (slot != 3) {
+				if (stashWeaponSlot(client, slot)) {
+					takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);
+				}
+			} else {
 				takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);
+			}
 		} else if (StrEqual(cValue, "GiveWeapon")) {
 			takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);
 		} else if (StrEqual(cValue, "Delete")) {

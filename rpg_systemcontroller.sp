@@ -268,10 +268,10 @@ public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error,
 		
 		if (StrContains(extern1, "taser") != -1)
 			GivePlayerItem(client, "weapon_taser");
-			
-		if(StrContains(extern2, "helmet") != -1 && Armor != 0)
+		
+		if (StrContains(extern2, "helmet") != -1 && Armor != 0)
 			SetEntProp(client, Prop_Send, "m_bHasHelmet", 1);
-			
+		
 		CPrintToChat(client, "{orange}[{purple}-T-{orange}] {green}Sucessfully load you ({orange}%N{green})!", client);
 	}
 	g_bIsPlayerLoaded[client] = true;
@@ -369,9 +369,9 @@ public void savePlayer(int client) {
 		strcopy(extern1, sizeof(extern1), "taser");
 	else
 		strcopy(extern1, sizeof(extern1), "");
-		
+	
 	char extern2[64];
-	if(GetEntProp(client, Prop_Send, "m_bHasHelmet") == 1)
+	if (GetEntProp(client, Prop_Send, "m_bHasHelmet") == 1)
 		strcopy(extern2, sizeof(extern2), "helmet");
 	else
 		strcopy(extern2, sizeof(extern2), "");

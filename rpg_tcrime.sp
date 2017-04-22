@@ -230,7 +230,7 @@ public void OnClientDisconnect(int client) {
 }
 
 public Action loadCrime(Handle Timer, int client) {
-	if(!isValidClient(client))
+	if (!isValidClient(client))
 		return;
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
@@ -342,8 +342,7 @@ public void setFlags(int client, char flags[64]) {
 
 
 stock bool isValidClient(int client) {
-	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
+	if (!(1 <= client <= MaxClients) || !IsClientAuthorized(client))
 		return false;
-	
 	return true;
 } 

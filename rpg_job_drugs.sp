@@ -204,10 +204,15 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		AddMenuItem(menu, "sellAllMarijuana", sellAll);
 	}
 	
-	if (tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_getActiveJob(client, "Drug Planter"))
+	if (tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_isActiveJob(client, "Drug Planter"))
 		AddMenuItem(menu, "skin", "Buy Niko Skin (15000)[20]");
 	else
 		AddMenuItem(menu, "skin", "Buy Niko Skin (15000)[20]", ITEMDRAW_DISABLED);
+	
+	if (tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_isActiveJob(client, "Drug Planter"))
+		AddMenuItem(menu, "skin2", "Buy Gangster Skin (15000)[20]");
+	else
+		AddMenuItem(menu, "skin2", "Buy Gangster Skin (15000)[20]", ITEMDRAW_DISABLED);
 	
 	DisplayMenu(menu, client, 60);
 }
@@ -242,9 +247,12 @@ public int drugMenuHandler(Handle menu, MenuAction action, int client, int item)
 			int itemamount = inventory_getPlayerItemAmount(client, "Fresh Marijuana");
 			if (inventory_removePlayerItems(client, "Fresh Marijuana", itemamount, "Sold to Vendor (Mass Sell)"))
 				tConomy_addCurrency(client, 125 * itemamount, "Sold Fresh Marijuana to Vendor");
-		} else if (StrEqual(cValue, "skin") && tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_getActiveJob(client, "Drug Planter")) {
+		} else if (StrEqual(cValue, "skin") && tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_isActiveJob(client, "Drug Planter")) {
 			tConomy_removeCurrency(client, 15000, "Bought Skin");
 			inventory_givePlayerItem(client, "Niko", 0, "", "Skin", "Skin", 1, "Bought from Drug Vendor");
+		} else if (StrEqual(cValue, "skin2") && tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_isActiveJob(client, "Drug Planter")) {
+			tConomy_removeCurrency(client, 15000, "Bought Skin");
+			inventory_givePlayerItem(client, "Gangster I", 0, "", "Skin", "Skin", 1, "Bought from Drug Vendor");
 		}
 	}
 	if (action == MenuAction_End) {
@@ -434,9 +442,9 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 								jobs_startProgressBar(client, 50, "Confiscate Plant");
 								g_iHarvestIndex[client] = ent;
 							} else {
-								if(perks_hasPerk(client, "Drug Harvest Boost 2"))
+								if (perks_hasPerk(client, "Drug Harvest Boost 2"))
 									jobs_startProgressBar(client, 60, "Harvest Plant");
-								else if(perks_hasPerk(client, "Drug Harvest Boost 1"))
+								else if (perks_hasPerk(client, "Drug Harvest Boost 1"))
 									jobs_startProgressBar(client, 80, "Harvest Plant");
 								else
 									jobs_startProgressBar(client, 100, "Harvest Plant");

@@ -83,7 +83,7 @@ public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 	if (client == victim)
 		return;
 	
-	if(!isValidClient(victim))
+	if (!isValidClient(victim))
 		return;
 	
 	char gangName[64];
@@ -103,6 +103,7 @@ public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 			Gangs_GetGangName(i, tempGangName, sizeof(tempGangName));
 			if (StrEqual(gangName, tempGangName, true) && Gangs_getFeatureLevel(client, noCrimeOnKillName) > 0)
 				continue;
+			
 		}
 		if (isWitness(i, client)) {
 			PrintToChat(i, "[-T-] You have witnessed %N killing %N - Auto Reported[BETA only]", client, victim);
@@ -176,7 +177,6 @@ public bool isWitness(int client, int target) {
 			return false;
 		}
 	}
-	PrintToChatAll("Did not hit");
 	CloseHandle(trace);
 	// Didn't hit at all - Distance is clear between both - could have witnessed
 	return true;

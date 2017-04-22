@@ -721,7 +721,7 @@ public void showInventoryOfClientToOtherClient(int client1, int client2) {
 }
 
 public void showInventoryOfClientToOtherClientByCategory(int client1, int client2, char category[64]) {
-	if(!isValidClient(client1) || !isValidClient(client2))
+	if (!isValidClient(client1) || !isValidClient(client2))
 		return;
 	Handle menu;
 	if (client1 != client2)

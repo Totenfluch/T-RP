@@ -95,7 +95,7 @@ public int BulletMenuHandler(Handle menu, MenuAction action, int client, int ite
 				int newClip = GetEntProp(windex, Prop_Send, "m_iPrimaryReserveAmmoCount");
 				if (Gangs_HasGang(client) && Gangs_getFeatureLevel(client, bulletDiscountName) > 0) {
 					char discountReason[256];
-					Format(discountReason, sizeof(discountReason), "Bought Generic Bullet with Gang Discount (%.2f%s)", RoundToNearest(float(Gangs_getFeatureLevel(client, bulletDiscountName)) * g_fDiscountPerLevel * 100.0), "%");
+					Format(discountReason, sizeof(discountReason), "Bought Generic Bullet with Gang Discount (%i%s)", RoundToNearest(float(Gangs_getFeatureLevel(client, bulletDiscountName)) * g_fDiscountPerLevel * 100.0), "%");
 					tConomy_removeCurrency(client, RoundToNearest(float(g_iGenericBulletCost) * (1.0 - (float(Gangs_getFeatureLevel(client, bulletDiscountName)) * g_fDiscountPerLevel))), discountReason);
 				} else {
 					tConomy_removeCurrency(client, g_iGenericBulletCost, "Bought Generic Bullet");

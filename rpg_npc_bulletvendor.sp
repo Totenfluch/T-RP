@@ -18,7 +18,7 @@
 char bulletDiscountName[64] = "Get Discounts for Bullets at the Bulletvendor";
 char my_npcType[128] = "Bullet Vendor";
 int g_iGenericBulletCost = 500;
-int g_iDiscountPerLevel = 0.03;
+float g_fDiscountPerLevel = 0.03;
 
 int g_iLastInteractedWith[MAXPLAYERS + 1];
 
@@ -40,7 +40,7 @@ public void OnPluginStart() {
 }
 
 public void onMapStart() {
-	Gangs_RegisterFeature(bulletDiscountName, 10, 100, 1.10, false);	
+	Gangs_RegisterFeature(bulletDiscountName, 10, 100, 1.10, false);
 }
 
 public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int entIndex) {
@@ -93,22 +93,22 @@ public int BulletMenuHandler(Handle menu, MenuAction action, int client, int ite
 					}
 				}
 				int newClip = GetEntProp(windex, Prop_Send, "m_iPrimaryReserveAmmoCount");
-				if(Gangs_HasGang(client) && Gangs_getFeatureLevel(client, bulletDiscountName) > 0){
+				if (Gangs_HasGang(client) && Gangs_getFeatureLevel(client, bulletDiscountName) > 0) {
 					char discountReason[256];
-					Format(discountReason, sizeof(discountReason), "Bought Generic Bullet with Gang Discount (%i%s)", Gangs_getFeatureLevel(client, bulletDiscountName) * g_iDiscountPerLevel*100, "%");
-					tConomy_removeCurrency(client, g_iGenericBulletCost*(1-(Gangs_getFeatureLevel(client, bulletDiscountName)*g_iDiscountPerLevel)), discountReason);	
-				}else{
-					tConomy_removeCurrency(client, g_iGenericBulletCost, "Bought Generic Bullet");	
+					Format(discountReason, sizeof(discountReason), "Bought Generic Bullet with Gang Discount (%.2f%s)", RoundToNearest(float(Gangs_getFeatureLevel(client, bulletDiscountName)) * g_fDiscountPerLevel * 100.0), "%");
+					tConomy_removeCurrency(client, RoundToNearest(float(g_iGenericBulletCost) * (1.0 - (float(Gangs_getFeatureLevel(client, bulletDiscountName)) * g_fDiscountPerLevel))), discountReason);
+				} else {
+					tConomy_removeCurrency(client, g_iGenericBulletCost, "Bought Generic Bullet");
 				}
 				SetEntProp(windex, Prop_Send, "m_iPrimaryReserveAmmoCount", newClip + 1);
 			}
 		}
 	}
-	if (action == MenuAction_End) { 
-    	delete menu; 
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
 stock bool isValidClient(int client) {
 	return (1 <= client <= MaxClients && IsClientInGame(client));
-}
+} 

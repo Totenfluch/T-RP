@@ -46,7 +46,7 @@ public void OnPluginStart() {
 }
 
 public void onMapStart() {
-	Gangs_RegisterFeature(noCrimeOnKillName, 1, 500, 0, false);
+	Gangs_RegisterFeature(noCrimeOnKillName, 1, 500, 1.0, false);
 }
 
 public void OnConfigsExecuted() {
@@ -85,10 +85,10 @@ public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 	
 	if (client == victim)
 		return;
-		
+	
 	char gangName[64];
 	
-	if (Gangs_HasGang(client)){
+	if (Gangs_HasGang(client)) {
 		Gangs_GetGangName(client, gangName, sizeof(gangName));
 	}
 	
@@ -98,11 +98,11 @@ public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
 			continue;
 		if (i == client || i == victim)
 			continue;
-		if(Gangs_HasGang(client) && Gangs_HasGang(i)){
+		if (Gangs_HasGang(client) && Gangs_HasGang(i)) {
 			char tempGangName[64];
 			Gangs_GetGangName(i, tempGangName, sizeof(tempGangName));
-			if(StrEqual(gangName, tempGangName, true) && Gangs_getFeatureLevel(client, noCrimeOnKillName) > 0)
-			continue;
+			if (StrEqual(gangName, tempGangName, true) && Gangs_getFeatureLevel(client, noCrimeOnKillName) > 0)
+				continue;
 		}
 		if (isWitness(i, client)) {
 			PrintToChat(i, "[-T-] You have witnessed %N killing %N - Auto Reported[BETA only]", client, victim);

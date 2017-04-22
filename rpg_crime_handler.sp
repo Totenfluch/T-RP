@@ -45,10 +45,6 @@ public void OnPluginStart() {
 	AutoExecConfig_ExecuteFile();
 }
 
-public void onMapStart() {
-	Gangs_RegisterFeature(noCrimeOnKillName, 1, 500, 1.0, false);
-}
-
 public void OnConfigsExecuted() {
 	g_iCrimeForKill = GetConVarInt(g_hCrimeForKill);
 	g_fCrimeForDamage = GetConVarFloat(g_hCrimeForDamage);
@@ -56,6 +52,7 @@ public void OnConfigsExecuted() {
 
 public void OnMapStart() {
 	g_iSprite = PrecacheModel("materials/sprites/laser.vmt");
+	Gangs_RegisterFeature(noCrimeOnKillName, 1, 500, 1.0, false);
 }
 
 public void onPlayerHurt(Handle event, const char[] name, bool dontBroadcast) {

@@ -39,7 +39,7 @@ public void OnPluginStart() {
 	npc_registerNpcType(my_npcType);
 }
 
-public void onMapStart() {
+public void OnMapStart() {
 	Gangs_RegisterFeature(bulletDiscountName, 10, 100, 1.10, false);
 }
 

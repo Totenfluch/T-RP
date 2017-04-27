@@ -343,7 +343,7 @@ public void doorAction(int client, char zone[128], int doorEnt) {
 		if (StrContains(ownedApartments[ownedId][oaAllowed_players], playerid) != -1) {
 			allowedAction(client, zone);
 		} else if (jobs_isActiveJob(client, "Police")) {
-			raidAction(client, zone);
+			raidAction(client, zone, ownedApartments[ownedId][oaDoor_locked]);
 		} else if (ownedApartments[ownedId][oaDoor_locked] && inventory_hasPlayerItem(client, "Lockpick")) {
 			lockpickAction(client, zone);
 		}
@@ -418,13 +418,13 @@ public int apartmentDoorHandler(Handle menu, MenuAction action, int client, int 
 	}
 }
 
-public void raidAction(int client, char zone[128]) {
+public void raidAction(int client, char zone[128], bool locked) {
 	Menu apartmentMenu = CreateMenu(apartmentDoorRaidHandler);
 	char menuTitle[128];
 	Format(menuTitle, sizeof(menuTitle), "Raid Apartment");
 	SetMenuTitle(apartmentMenu, menuTitle);
-	AddMenuItem(apartmentMenu, "raid", ">> RAID <<");
-	AddMenuItem(apartmentMenu, "seal", ">> SEAL <<");
+	AddMenuItem(apartmentMenu, "raid", ">> RAID <<", locked ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+	AddMenuItem(apartmentMenu, "seal", ">> SEAL <<", locked ? ITEMDRAW_DISABLED:ITEMDRAW_DEFAULT);
 	DisplayMenu(apartmentMenu, client, 60);
 	strcopy(playerProperties[client][ppZone], 128, zone);
 }

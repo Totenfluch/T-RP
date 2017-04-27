@@ -7,6 +7,7 @@
 #include <sdktools>
 #include <smlib>
 #include <multicolors>
+#include <cstrike>
 
 #pragma newdecls required
 
@@ -486,6 +487,7 @@ public void SetServerConvars() {
 	ConVar mp_death_drop_gun = FindConVar("mp_death_drop_gun");
 	ConVar sv_ladder_scale_speed = FindConVar("sv_ladder_scale_speed");
 	ConVar g_hMaxRounds = FindConVar("mp_maxrounds");
+	ConVar mp_round_restart_delay = FindConVar("mp_round_restart_delay");
 	
 	SetConVarBool(cvWinConditions, true);
 	SetConVarInt(g_hMaxRounds, 1);
@@ -514,6 +516,9 @@ public void SetServerConvars() {
 	SetConVarBool(mp_teammates_are_enemies, true);
 	SetConVarBool(mp_death_drop_gun, true);
 	SetConVarFloat(sv_ladder_scale_speed, 1.0);
+	SetConVarInt(mp_round_restart_delay, 0);
+	ServerCommand("sm_cvar mp_tagging_scale 20");
+	ServerCommand("mp_warmup_end");
 	
 	SetConVarBounds(FindConVar("mp_roundtime"), ConVarBound_Upper, true, 1501102101.0);
 	

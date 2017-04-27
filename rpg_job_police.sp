@@ -264,7 +264,7 @@ public void OnPluginStart() {
 	gc_sSoundBreakCuffsPath = AutoExecConfig_CreateConVar("rpg_sounds_breakcuffs", "music/MyJailbreak/breakcuffs.mp3", "Path to the soundfile which should be played for break cuffs.");
 	gc_sSoundUnLockCuffsPath = AutoExecConfig_CreateConVar("rpg_sounds_unlock", "music/MyJailbreak/unlock.mp3", "Path to the soundfile which should be played for unlocking cuffs.");
 	
-	gc_bSounds = AutoExecConfig_CreateConVar("rpg_sounds_enable", "1", "0 - disabled, 1 - enable sounds ", _, true, 0.1, true, 1.0);
+	gc_bSounds = AutoExecConfig_CreateConVar("rpg_sounds_enable", "0", "0 - disabled, 1 - enable sounds ", _, true, 0.1, true, 1.0);
 	
 	g_hSkin1Value = AutoExecConfig_CreateConVar("rpg_police_skin_1_cost", "250", "Cost of 'Police 1' Skin");
 	g_hSkin2Value = AutoExecConfig_CreateConVar("rpg_police_skin_2_cost", "250", "Cost of 'Police 2' Skin");
@@ -1165,6 +1165,7 @@ public void openPunishMenu(int officer, int target) {
 	else
 		AddMenuItem(punishMenu, "setTicket", "Set Ticket (In Chat)", ITEMDRAW_DISABLED);
 	AddMenuItem(punishMenu, "deleteIllegal", "Delete Items");
+	AddMenuItem(punishMenu, "deleteAllIllegal", "Delete Items (by Group)");
 	AddMenuItem(punishMenu, "deleteAll", "Delete Active Weapons");
 	DisplayMenu(punishMenu, officer, 60);
 	overtake[officer] = target;
@@ -1189,6 +1190,8 @@ public int punishMenuHandler(Handle menu, MenuAction action, int client, int ite
 			putInJail(client, overtake[client]);
 		} else if (StrEqual(cValue, "deleteIllegal")) {
 			deleteItems(client, overtake[client]);
+		} else if (StrEqual(cValue, "deleteAllIllegal")) {
+			deleteItemsByGroup(client, overtake[client]);
 		} else if (StrEqual(cValue, "setCrime")) {
 			openSetCrimeMenu(client, overtake[client]);
 		} else if (StrEqual(cValue, "setTicket")) {
@@ -1356,9 +1359,54 @@ public int deleteItemsMenuHandler(Handle menu, MenuAction action, int client, in
 			return;
 		char reason[256];
 		Format(reason, sizeof(reason), "Deleted By Police Officer %N", client);
+		char itemBuffer[128];
+		inventory_getItemNameBySlotAndClient(g_iOfficerDeleteItemsTaget[client], id, itemBuffer, "");
+		CPrintToChat(client, "{olive}[POLICE]{darkred}Removed {olive}1x{darkred} {olive}%s{darkred} from {olive}%N{darkred} Inventory.", itemBuffer, g_iOfficerDeleteItemsTaget[client]);
 		inventory_deleteItemBySlot(g_iOfficerDeleteItemsTaget[client], id, reason);
 		deleteItems(client, g_iOfficerDeleteItemsTaget[client]);
-		g_iOfficerDeleteItemsTaget[client] = -1;
+	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
+}
+
+public void deleteItemsByGroup(int officer, int client) {
+	if (!isValidClient(client))
+		return;
+	g_iOfficerDeleteItemsTaget[officer] = client;
+	int maxItems = inventory_getClientItemsAmount(client);
+	Menu deleteItemsMenu = CreateMenu(deleteItemsByGroupMenuHandler);
+	SetMenuTitle(deleteItemsMenu, "Delete Item Group");
+	for (int i = 0; i <= maxItems; i++) {
+		if (inventory_isValidItem(client, i)) {
+			char itemName[128];
+			if (inventory_getItemNameBySlotAndClient(client, i, itemName, "")) {
+				char cId[8];
+				IntToString(i, cId, sizeof(cId));
+				AddMenuItem(deleteItemsMenu, cId, itemName);
+			}
+		}
+	}
+	DisplayMenu(deleteItemsMenu, officer, 60);
+}
+
+public int deleteItemsByGroupMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[8];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		int id = StringToInt(cValue);
+		if (!isValidClient(g_iOfficerDeleteItemsTaget[client]))
+			return;
+		if (!inventory_isValidItem(g_iOfficerDeleteItemsTaget[client], id))
+			return;
+		char reason[256];
+		Format(reason, sizeof(reason), "Deleted By Police Officer %N (Group delete)", client);
+		char itemBuffer[128];
+		inventory_getItemNameBySlotAndClient(g_iOfficerDeleteItemsTaget[client], id, itemBuffer, "");
+		int amount = inventory_getPlayerItemAmount(g_iOfficerDeleteItemsTaget[client], itemBuffer);
+		inventory_removePlayerItems(g_iOfficerDeleteItemsTaget[client], itemBuffer, amount, "Deleted by Police Officer");
+		CPrintToChat(client, "{olive}[POLICE]{darkred}Removed {olive}%ix{darkred} {olive}%s{darkred} from {olive}%N{darkred} Inventory.", amount, itemBuffer, g_iOfficerDeleteItemsTaget[client]);
+		deleteItemsByGroup(client, g_iOfficerDeleteItemsTaget[client]);
 	}
 	if (action == MenuAction_End) {
 		delete menu;
@@ -1474,8 +1522,8 @@ public Action CuffsEm(int client, int attacker) {
 		g_iCuffed++;
 		g_iCuffedBy[client] = attacker;
 		g_iCuffedTimeLeft[client] = MAX_CUFF_TIME;
-		if (g_bSounds)
-			EmitSoundToAllAny(g_sSoundCuffsPath);
+		//if (g_bSounds)
+		//	EmitSoundAny(g_sSoundCuffsPath);
 		tConomy_addCurrency(attacker, 20, "Police Control");
 		
 		//CPrintToChatAll("%t %t", "warden_tag", "warden_cuffson", attacker, client);

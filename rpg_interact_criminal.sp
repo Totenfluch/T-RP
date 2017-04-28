@@ -137,8 +137,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	GetClientWeapon(client, wName, sizeof(wName));
 	if ((buttons & IN_ATTACK2)) {
 		int Target = GetClientAimTarget(client, true);
-		
-		if (isValidClient(Target) && g_bIsZiptied[client]) {
+		if (isValidClient(Target) && g_bIsZiptied[Target]) {
 			float distance = Entity_GetDistance(client, Target);
 			distance = Math_UnitsToMeters(distance);
 			
@@ -153,18 +152,47 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				float ang[3];
 				GetClientEyeAngles(client, ang);
 				float location2[3];
-				location2[0] = (location[0] + (100 * ((Cosine(DegToRad(ang[1]))) * (Cosine(DegToRad(ang[0]))))));
-				location2[1] = (location[1] + (100 * ((Sine(DegToRad(ang[1]))) * (Cosine(DegToRad(ang[0]))))));
+				location2[0] = (location[0] + (50 * ((Cosine(DegToRad(ang[1]))) * (Cosine(DegToRad(ang[0]))))));
+				location2[1] = (location[1] + (50 * ((Sine(DegToRad(ang[1]))) * (Cosine(DegToRad(ang[0]))))));
 				ang[0] -= (2 * ang[0]);
 				location2[2] = origin[2] += 5.0;
 				
 				TeleportEntity(Target, location2, NULL_VECTOR, NULL_VECTOR);
-				if (IsPlayerStuck(Target))
+				if (IsPlayerStuck(Target) && IsPlayerOnUpperStuck(Target)) {
+					origin2[2] -= 5.0;
 					TeleportEntity(Target, origin2, NULL_VECTOR, NULL_VECTOR);
+				} else if (!IsPlayerOnUpperStuck(Target) && IsPlayerStuck(Target)) {
+					location2[2] += 21.0;
+					TeleportEntity(Target, location2, NULL_VECTOR, NULL_VECTOR);
+				}
 				
 			}
 		}
+		buttons = buttons & ~IN_ATTACK2;
+		return Plugin_Changed;
+	} else if (buttons & IN_USE) {
+		if (g_bIsZiptied[client]) {
+			buttons = buttons & ~IN_USE;
+			return Plugin_Changed;
+		}
 	}
+	return Plugin_Continue;
+}
+
+stock bool IsPlayerOnUpperStuck(int client) {
+	float vecMin[3];
+	float vecMax[3];
+	float vecOrigin[3];
+	
+	GetClientMins(client, vecMin);
+	GetClientMaxs(client, vecMax);
+	
+	vecMin[2] += 26.0;
+	
+	GetClientAbsOrigin(client, vecOrigin);
+	
+	TR_TraceHullFilter(vecOrigin, vecOrigin, vecMin, vecMax, MASK_PLAYERSOLID, TraceRayDontHitPlayerAndWorld);
+	return TR_GetEntityIndex() != -1;
 }
 
 stock bool IsPlayerStuck(int client) {

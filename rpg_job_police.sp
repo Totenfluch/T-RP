@@ -20,7 +20,7 @@
 
 #pragma newdecls required
 
-#define MAX_CUFF_TIME 30
+#define MAX_CUFF_TIME 90
 
 Handle g_hPlayTimeNeededForPolice;
 int g_iPlayTimeNeededForPolice = 18000;
@@ -1084,19 +1084,28 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					float ang[3];
 					GetClientEyeAngles(client, ang);
 					float location2[3];
-					location2[0] = (location[0] + (100 * ((Cosine(DegToRad(ang[1]))) * (Cosine(DegToRad(ang[0]))))));
-					location2[1] = (location[1] + (100 * ((Sine(DegToRad(ang[1]))) * (Cosine(DegToRad(ang[0]))))));
+					location2[0] = (location[0] + (50 * ((Cosine(DegToRad(ang[1]))) * (Cosine(DegToRad(ang[0]))))));
+					location2[1] = (location[1] + (50 * ((Sine(DegToRad(ang[1]))) * (Cosine(DegToRad(ang[0]))))));
 					ang[0] -= (2 * ang[0]);
 					location2[2] = origin[2] += 5.0;
 					
 					TeleportEntity(Target, location2, NULL_VECTOR, NULL_VECTOR);
-					if (IsPlayerStuck(Target))
+					if (IsPlayerStuck(Target) && IsPlayerOnUpperStuck(Target)) {
+						origin2[2] -= 5.0;
 						TeleportEntity(Target, origin2, NULL_VECTOR, NULL_VECTOR);
+					} else if (!IsPlayerOnUpperStuck(Target) && IsPlayerStuck(Target)) {
+						location2[2] += 21.0;
+						TeleportEntity(Target, location2, NULL_VECTOR, NULL_VECTOR);
+					}
 					
 				}
 			}
 		}
 	} else if (buttons & IN_USE) {
+		if (g_bCuffed[client]) {
+			buttons = buttons & ~IN_USE;
+			return Plugin_Changed;
+		}
 		if (StrContains(wName, "taser") != -1 && jobs_isActiveJob(client, "Police")) {
 			int Target = GetClientAimTarget(client, true);
 			
@@ -1122,6 +1131,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			}
 		}
 	}
+	return Plugin_Continue;
 }
 
 public int searchMenuHandler(Handle menu, MenuAction action, int client, int item) {
@@ -1743,6 +1753,22 @@ stock bool IsPlayerStuck(int client) {
 	
 	GetClientMins(client, vecMin);
 	GetClientMaxs(client, vecMax);
+	
+	GetClientAbsOrigin(client, vecOrigin);
+	
+	TR_TraceHullFilter(vecOrigin, vecOrigin, vecMin, vecMax, MASK_PLAYERSOLID, TraceRayDontHitPlayerAndWorld);
+	return TR_GetEntityIndex() != -1;
+}
+
+stock bool IsPlayerOnUpperStuck(int client) {
+	float vecMin[3];
+	float vecMax[3];
+	float vecOrigin[3];
+	
+	GetClientMins(client, vecMin);
+	GetClientMaxs(client, vecMax);
+	
+	vecMin[2] += 26.0;
 	
 	GetClientAbsOrigin(client, vecOrigin);
 	

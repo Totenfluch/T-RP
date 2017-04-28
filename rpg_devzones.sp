@@ -1,6 +1,7 @@
 #pragma semicolon 1
 #include <sourcemod>
 #include <sdktools>
+#include <smlib>
 
 
 #define VERSION "2.2.2"
@@ -33,7 +34,7 @@ enum g_eList {
 	bool:liThis
 };
 
-int g_iZones[MAXPLAYERS + 1][192][g_eList]; // max zones = 192
+int g_iZones[MAXPLAYERS + 1][256][g_eList]; // max zones = 192
 
 
 // cvars
@@ -112,7 +113,7 @@ public Action Event_OnRoundStart(Handle event, const char[] name, bool dontBroad
 		RefreshZones();
 }
 
-public void CreateZoneEntity(float fMins[3], float fMaxs[3], char sZoneName[64]) {
+public int CreateZoneEntity(float fMins[3], float fMaxs[3], char sZoneName[64]) {
 	float fMiddle[3];
 	int iEnt = CreateEntityByName("trigger_multiple");
 	
@@ -129,6 +130,7 @@ public void CreateZoneEntity(float fMins[3], float fMaxs[3], char sZoneName[64])
 	
 	TeleportEntity(iEnt, fMiddle, NULL_VECTOR, NULL_VECTOR);
 	SetEntityModel(iEnt, model);
+	
 	
 	// Have the mins always be negative
 	fMins[0] = fMins[0] - fMiddle[0];
@@ -162,6 +164,8 @@ public void CreateZoneEntity(float fMins[3], float fMaxs[3], char sZoneName[64])
 	
 	HookSingleEntityOutput(iEnt, "OnStartTouch", EntOut_OnStartTouch);
 	HookSingleEntityOutput(iEnt, "OnEndTouch", EntOut_OnEndTouch);
+	
+	return iEnt;
 }
 
 public void EntOut_OnStartTouch(const char[] output, int caller, int activator, float delay) {
@@ -176,8 +180,12 @@ public void EntOut_OnStartTouch(const char[] output, int caller, int activator, 
 	
 	
 	// entra
-	//g_iZones[activator][caller][liThis] = true;
-	//Format(g_iZones[activator][caller][liName], 64, sTargetName);
+	char nBuf[64];
+	Entity_GetGlobalName(caller, nBuf, sizeof(nBuf));
+	int callerId = StringToInt(nBuf);
+	g_iZones[activator][callerId][liThis] = true;
+	Format(g_iZones[activator][callerId][liName], 64, sTargetName);
+	//PrintToChatAll("E::%i::%s::", callerId, sTargetName);
 	Call_StartForward(hOnClientEntry);
 	Call_PushCell(activator);
 	Call_PushString(sTargetName);
@@ -196,8 +204,12 @@ public void EntOut_OnEndTouch(const char[] output, int caller, int activator, fl
 	
 	
 	// sale
-	//g_iZones[activator][caller][liThis] = false;
-	//Format(g_iZones[activator][caller][liName], 64, sTargetName);
+	char nBuf[64];
+	Entity_GetGlobalName(caller, nBuf, sizeof(nBuf));
+	int callerId = StringToInt(nBuf);
+	g_iZones[activator][callerId][liThis] = false;
+	Format(g_iZones[activator][callerId][liName], 64, "");
+	//PrintToChatAll("EX::%i::%s::", callerId, sTargetName);
 	Call_StartForward(hOnClientLeave);
 	Call_PushCell(activator);
 	Call_PushString(sTargetName);
@@ -404,6 +416,13 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("Zone_GetZonePosition", Native_Teleport);
 	CreateNative("Zone_CheckIfZoneExists", Native_ZoneExist);
 	CreateNative("Zone_isPositionInZone", Native_isPositionInZone);
+	/*
+		@Param1 -> int client
+		@Param2 -> char[64] zoneBuffer
+	
+		@return true if zone found false if not
+	*/
+	CreateNative("Zone_getMostRecentActiveZone", Native_getMostRecentActiveZone);
 	
 	return APLRes_Success;
 }
@@ -429,6 +448,19 @@ public int Native_InZone(Handle plugin, int argc) {
 				return true;
 		}
 		
+	}
+	return false;
+}
+
+public int Native_getMostRecentActiveZone(Handle plugin, int argc) {
+	int client = GetNativeCell(1);
+
+	int size = GetArraySize(g_Zones);
+	for (int i = 0; i < size; ++i){
+		if (g_iZones[client][i][liThis]){
+			SetNativeString(2, g_iZones[client][i][liName], 64);
+			return true;
+		}
 	}
 	return false;
 }
@@ -1235,7 +1267,10 @@ stock void RefreshZones() {
 		GetTrieArray(trie, "corda", posA, sizeof(posA));
 		GetTrieArray(trie, "cordb", posB, sizeof(posB));
 		GetTrieString(trie, "name", nombre, 64);
-		CreateZoneEntity(posA, posB, nombre);
+		int zone = CreateZoneEntity(posA, posB, nombre);
+		char id[8];
+		IntToString(i, id, sizeof(id));
+		Entity_SetGlobalName(zone, id);
 	}
 }
 

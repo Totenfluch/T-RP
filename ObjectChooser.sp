@@ -8,7 +8,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <smlib>
-#include <devzones>
+#include <rpg_devzones>
 
 bool g_bObjectChooserEnabled[MAXPLAYERS + 1];
 
@@ -26,12 +26,20 @@ int g_iPlayerPrevButtons[MAXPLAYERS + 1];
 public void OnPluginStart()
 {
 	RegConsoleCmd("sm_oc", ocCb);
+	RegConsoleCmd("sm_czone", czone);
 }
 
 
 public Action ocCb(int client, int args) {
 	g_bObjectChooserEnabled[client] = !g_bObjectChooserEnabled[client];
 	PrintToChat(client, "Changed Objectchooser to %d", g_bObjectChooserEnabled[client]);
+	return Plugin_Handled;
+}
+
+public Action czone(int client, int args){
+	char tbuffer[64];
+	bool found = Zone_getMostRecentActiveZone(client, tbuffer);
+	PrintToChat(client, ":: Zone:|%s|", found ? tbuffer : "No Active Zone");
 	return Plugin_Handled;
 }
 

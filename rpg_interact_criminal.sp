@@ -43,7 +43,7 @@ public void OnPlayerInteract(int client, int target, char interact[64]) {
 	if (StrEqual(interact, "Criminal Actions")) {
 		Menu m = CreateMenu(criminalInteractionsMenuHandler);
 		SetMenuTitle(m, "Do something Criminal...");
-		AddMenuItem(m, "steal", "Steal Money");
+		AddMenuItem(m, "steal", "Steal Money (beeing reworked)", ITEMDRAW_DISABLED);
 		AddMenuItem(m, "ziptie", "Ziptie Player", inventory_hasPlayerItem(client, "ziptie") ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 		DisplayMenu(m, client, 30);
 		g_iPlayerTarget[client] = target;

@@ -191,7 +191,7 @@ public void setupBomb(int client) {
 	PrintToChatAll(robString, client);
 	for (int i = 1; i < MAXPLAYERS; i++)
 	if (isValidClient(i))
-		showHudMsg(i, robString, 255, 0, 0, 0.0, 0.5, 5.0);
+		showHudMsg(i, robString, 255, 0, 0, 0.0, 3.0, 5.0);
 	/* Create Bomb */
 	int bombEnt = CreateEntityByName("prop_dynamic_override");
 	if (bombEnt == -1)

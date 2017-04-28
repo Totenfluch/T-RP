@@ -31,6 +31,7 @@ Database g_DB;
 char dbconfig[] = "gsxh_multiroot";
 bool g_bIsPlayerLoaded[MAXPLAYERS + 1];
 bool g_bIsStarted = false;
+Handle g_hOnGameStarted;
 
 public void OnPluginStart() {
 	char error[255];
@@ -60,6 +61,43 @@ public void OnPluginStart() {
 	RegConsoleCmd("sm_loaded", amILoaded, "shows if loaded");
 	
 	SetServerConvars();
+}
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
+	/*
+		Returns if a client is loaded
+		
+		@Param1 -> int client
+		
+		@return boolean loaded or not
+	*/
+	CreateNative("rpg_isClientLoaded", Native_isClientLoaded);
+	
+	/*
+		Returns if game has started
+		
+		@Param none
+		
+		@return boolean started or not
+	*/
+	CreateNative("rpg_hasGameStarted", Native_hasGameStarted);
+	
+	/*
+		Forward when the game starts
+		
+		@Params none
+		
+		@return -
+	*/
+	g_hOnGameStarted = CreateGlobalForward("OnRpStarted", ET_Ignore);
+}
+
+public int Native_isClientLoaded(Handle plugin, int numParams) {
+	return g_bIsPlayerLoaded[GetNativeCell(1)];
+}
+
+public int Native_hasGameStarted(Handle plugin, int numParams) {
+	return g_bIsStarted;
 }
 
 public Action onGameRestart(Handle event, const char[] name, bool dontBroadcast) {
@@ -462,6 +500,9 @@ public Action reloadPlayers(Handle Timer) {
 		loadPlayer(i);
 	}
 	g_bIsStarted = true;
+	PrintToChatAll("[-T-] RP has been fully loaded");
+	Call_StartForward(g_hOnGameStarted);
+	Call_Finish();
 }
 
 

@@ -9,6 +9,7 @@
 #include <tStocks>
 #include <autoexecconfig>
 #include <rpg_jobs_core>
+#include <rpg_system>
 
 #pragma newdecls required
 
@@ -23,7 +24,6 @@ Handle g_hSpawnZ;
 Handle g_hTeleportDelay;
 
 int g_iPlayerDelay[MAXPLAYERS + 1];
-bool g_bCanTeleport;
 
 
 public Plugin myinfo = 
@@ -42,7 +42,7 @@ public void OnPluginStart()
 	
 	g_hSpawnX = AutoExecConfig_CreateConVar("spawn_teleportPositionX", "-2920.29", "X-Position where the spawn teleporter leads to");
 	g_hSpawnY = AutoExecConfig_CreateConVar("spawn_teleportPositionY", "-276.88", "Y-Position where the spawn teleporter leads to");
-	g_hSpawnZ = AutoExecConfig_CreateConVar("spawn_teleportPositionUz", "-50.79", "Z-Position where the spawn teleporter leads to");
+	g_hSpawnZ = AutoExecConfig_CreateConVar("spawn_teleportPositionz", "-50.79", "Z-Position where the spawn teleporter leads to");
 	g_hTeleportDelay = AutoExecConfig_CreateConVar("spawn_delay", "300", "Delay in Seconds to block teleport for a Player");
 	
 	AutoExecConfig_CleanFile();
@@ -50,6 +50,7 @@ public void OnPluginStart()
 	
 	HookEvent("player_death", onPlayerDeath);
 	RegConsoleCmd("sm_ttr", timetoRespawnCommand);
+	RegConsoleCmd("sm_enter", enterGameCommand);
 }
 
 public Action onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
@@ -58,6 +59,18 @@ public Action onPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 		g_iPlayerDelay[client] = g_iTeleportDelay;
 		PrintToChat(client, "[-T-] You can enter the game in %is again. Type !ttr to check the remaining time", g_iTeleportDelay);
 	}
+}
+
+public Action enterGameCommand(int client, int args) {
+	float pos[3];
+	GetClientAbsOrigin(client, pos);
+	if (!Zone_isPositionInZone("spawn_teleporter", pos[0], pos[1], pos[2])) {
+		PrintToChat(client, "Move to the teleporter...");
+		return Plugin_Handled;
+	}
+	if (g_iPlayerDelay[client] == 0)
+		teleportPlayer(client);
+	return Plugin_Handled;
 }
 
 public Action timetoRespawnCommand(int client, int args) {
@@ -78,18 +91,12 @@ public void OnClientPostAdminCheck(int client) {
 }
 
 public void OnMapStart() {
-	g_bCanTeleport = false;
 	CreateTimer(1.0, refreshTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
-	CreateTimer(20.0, startTimer);
-}
-
-public Action startTimer(Handle Timer) {
-	g_bCanTeleport = true;
 }
 
 public Action refreshTimer(Handle Timer) {
 	for (int i = 0; i < MAXPLAYERS; i++) {
-		if (!g_bCanTeleport)
+		if (!rpg_hasGameStarted())
 			continue;
 		if (!isValidClient(i))
 			continue;
@@ -99,13 +106,22 @@ public Action refreshTimer(Handle Timer) {
 			g_iPlayerDelay[i]--;
 			char info[128];
 			Format(info, sizeof(info), "> Teleport in %is", g_iPlayerDelay[i]);
-			if (Zone_IsClientInZone(i, "spawn_teleporter"))
+			float pos[3];
+			GetClientAbsOrigin(i, pos);
+			if (Zone_isPositionInZone("spawn_teleporter", pos[0], pos[1], pos[2]))
 				jobs_setCurrentInfo(i, info);
+			
 		}
 		if (g_iPlayerDelay[i] == 0) {
-			jobs_setCurrentInfo(i, "");
-			if (Zone_IsClientInZone(i, "spawn_teleporter"))
+			float pos[3];
+			GetClientAbsOrigin(i, pos);
+			if (Zone_isPositionInZone("spawn_teleporter", pos[0], pos[1], pos[2])) {
 				teleportPlayer(i);
+				jobs_setCurrentInfo(i, "");
+			} else {
+				jobs_setCurrentInfo(i, "> Teleport Rdy <");
+				PrintToChat(i, "Type !enter or reenter the teleporter to join the game!!!");
+			}
 		}
 	}
 }
@@ -121,7 +137,9 @@ public int Zone_OnClientEntry(int client, char[] zone) {
 public void teleportPlayer(int client) {
 	if (!isValidClient(client))
 		return;
-	if (!g_bCanTeleport)
+	if (!rpg_isClientLoaded(client))
+		return;
+	if (!rpg_hasGameStarted())
 		return;
 	g_iPlayerDelay[client] = g_iTeleportDelay;
 	float pos[3];

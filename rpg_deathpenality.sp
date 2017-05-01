@@ -9,6 +9,7 @@
 #include <tCrime>
 #include <tConomy>
 #include <rpg_jobs_core>
+#include <rpg_lootdrop>
 
 #pragma newdecls required
 
@@ -39,6 +40,10 @@ public Action onPlayerDeath(Handle event, const char[] name, bool dontBroadcast)
 	
 	if (!isValidClient(client))
 		return;
+	
+	float pos[3];
+	GetClientAbsOrigin(client, pos);
+	rpg_spawnMoneyLoot(pos[0], pos[1], pos[2], tConomy_getCurrency(client));
 	
 	tConomy_setCurrency(client, 0, "You died...");
 	int maxItems = inventory_getClientItemsAmount(client);

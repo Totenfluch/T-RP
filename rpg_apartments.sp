@@ -102,6 +102,10 @@ public void OnPluginStart()
 	Format(createBoughtApartmentsTable, sizeof(createBoughtApartmentsTable), "CREATE TABLE IF NOT EXISTS `t_rpg_boughtApartments` ( `Id` BIGINT NULL DEFAULT NULL AUTO_INCREMENT , `time_of_purchase` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `price_of_purchase` INT NOT NULL , `apartment_id` VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `playerid` VARCHAR(20) NOT NULL , `playername` VARCHAR(48) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `apartment_name` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `allowed_players` VARCHAR(550) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `door_locked` BOOLEAN NOT NULL , `map` varchar(128) COLLATE utf8_bin NOT NULL , UNIQUE KEY `apartment_id` (`apartment_id`), PRIMARY KEY (`Id`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createBoughtApartmentsTable);
 	
+	char createRentsTable[4096];
+	Format(createRentsTable, sizeof(createRentsTable), "CREATE TABLE IF NOT EXISTS `t_rpg_apartment_rent` ( `cId` BIGINT AUTO_INCREMENT NOT NULL PRIMARY KEY, `Id` BIGINT NOT NULL , `playerid` VARCHAR(20) NOT NULL , `startrent` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `endrent` TIMESTAMP NOT NULL, FOREIGN KEY (Id) REFERENCES t_rpg_apartments(Id)) ENGINE = InnoDB;");
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, createRentsTable);
+	
 	RegAdminCmd("sm_apartmentadmin", createApartmentCallback, ADMFLAG_ROOT, "Opens the Apartment Admin Menu");
 	RegConsoleCmd("sm_apartment", apartmentCommand, "Opens the Apartment Menu");
 	RegAdminCmd("sm_apartmentlist", listAps, ADMFLAG_ROOT, "list aps");
@@ -137,6 +141,7 @@ public void resetAps() {
 
 public void OnMapStart() {
 	loadApartments();
+	CreateTimer(180.0, evictTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public Action postloadaps(int client, int args) {
@@ -219,7 +224,11 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				return;
 			}
 			
-			if (Zone_CheckIfZoneExists(activeZone[client], true, true)) {
+			char rZone[64];
+			Zone_getMostRecentActiveZone(client, rZone);
+			if (Zone_CheckIfZoneExists(activeZone[client], true, true) || Zone_CheckIfZoneExists(rZone, true, true)) {
+				if (StrEqual(activeZone[client], "") && !StrEqual(rZone, ""))
+					strcopy(activeZone[client], 64, rZone);
 				if (HasEntProp(ent, Prop_Data, "m_iName")) {
 					char itemName[128];
 					//GetEntPropString(ent, Prop_Data, "m_iName", itemName, sizeof(itemName));
@@ -316,8 +325,12 @@ public void doorAction(int client, char zone[128], int doorEnt) {
 	strcopy(zone2, sizeof(zone2), zone);
 	ReplaceString(zone2, sizeof(zone2), "apartment_", "");
 	ReplaceString(doorname, sizeof(doorname), "apartment_", "");
-	if (StrContains(doorname, zone2) == -1)
+	if (StrContains(doorname, zone2) == -1) {
+		char rZone[64];
+		Zone_getMostRecentActiveZone(client, rZone);
+		PrintToChat(client, ":: not in zone but found :: %s ::", rZone);
 		return;
+	}
 	int apartmentId;
 	int ownedId;
 	if ((apartmentId = getLoadedIdFromApartmentId(zone)) != -1) {
@@ -467,7 +480,8 @@ public Action apartmentCommand(int client, int args) {
 				AddMenuItem(apartmentMenu, "unlock", "Unlock Door");
 				char sellPriceDisplay[128];
 				Format(sellPriceDisplay, sizeof(sellPriceDisplay), "Sell Apartment for %.1f", ownedApartments[ownedId][oaPrice_of_purchase] * 0.80);
-				AddMenuItem(apartmentMenu, "sell", sellPriceDisplay);
+				AddMenuItem(apartmentMenu, "sell", sellPriceDisplay, ITEMDRAW_DISABLED);
+				AddMenuItem(apartmentMenu, "rentInfos", "Rent Informations");
 				strcopy(playerProperties[client][ppZone], 128, activeZone[client]);
 				DisplayMenu(apartmentMenu, client, 60);
 			} else {
@@ -498,12 +512,120 @@ public int apartmentMenuHandler(Handle menu, MenuAction action, int client, int 
 			apartmentCommand(client, 0);
 		} else if (StrEqual(cValue, "sell")) {
 			sellApartmentConfirm(client);
+		} else if (StrEqual(cValue, "rentInfos")) {
+			displayRentInfosToClient(client);
 		}
 	}
 	if (action == MenuAction_End) {
 		delete menu;
 	}
 }
+
+public void displayRentInfosToClient(int client) {
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	char getRentInfoQuery[2048];
+	Format(getRentInfoQuery, sizeof(getRentInfoQuery), "SELECT startrent,endrent,TIMEDIFF(endrent, CURRENT_TIMESTAMP()) as diff, apartment_id FROM t_rpg_apartments INNER JOIN t_rpg_apartment_rent ON t_rpg_apartment_rent.Id = t_rpg_apartments.Id WHERE apartment_id = '%s' AND t_rpg_apartment_rent.playerid = '%s';", activeZone[client], playerid);
+	SQL_TQuery(g_DB, SQLGetRentInfoCallback, getRentInfoQuery, client);
+}
+
+public void SQLGetRentInfoCallback(Handle owner, Handle hndl, const char[] error, any data) {
+	int client = data;
+	if (!isValidClient(client))
+		return;
+	while (SQL_FetchRow(hndl)) {
+		char startTime[40];
+		char endTime[40];
+		char thediff[40];
+		char q_aptId[64];
+		SQL_FetchStringByName(hndl, "startrent", startTime, sizeof(startTime));
+		SQL_FetchStringByName(hndl, "endrent", endTime, sizeof(endTime));
+		SQL_FetchStringByName(hndl, "diff", thediff, sizeof(thediff));
+		SQL_FetchStringByName(hndl, "apartment_id", q_aptId, sizeof(q_aptId));
+		
+		Menu m = CreateMenu(rentMenuHandler);
+		char startDisplay[64];
+		char endDisplay[64];
+		char timediffDisplay[64];
+		char q_aptIdDisplay[70];
+		Format(q_aptIdDisplay, sizeof(q_aptIdDisplay), "Apartment: %s", q_aptId);
+		Format(startDisplay, sizeof(startDisplay), "Rented: %s", startTime);
+		Format(endDisplay, sizeof(endDisplay), "End of Rent: %s", endTime);
+		Format(timediffDisplay, sizeof(timediffDisplay), "Time left to eviciton: %s", thediff);
+		
+		char splinters[4][12];
+		ExplodeString(thediff, ":", splinters, 4, 12);
+		int hoursLeft = StringToInt(splinters[0]);
+		
+		SetMenuTitle(m, q_aptIdDisplay);
+		AddMenuItem(m, "x", startDisplay, ITEMDRAW_DISABLED);
+		AddMenuItem(m, "x", endDisplay, ITEMDRAW_DISABLED);
+		AddMenuItem(m, "x", timediffDisplay, ITEMDRAW_DISABLED);
+		AddMenuItem(m, "increase", "Extend Rent by 2 Weeks", hoursLeft < 168 ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+		DisplayMenu(m, client, 30);
+	}
+}
+
+int increaseRentZoneId[MAXPLAYERS + 1];
+public int rentMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "increase")) {
+			int zoneId;
+			if ((zoneId = getLoadedIdFromApartmentId(activeZone[client])) != -1) {
+				int ownedId;
+				if ((ownedId = ApartmentIdToOwnedId(zoneId)) != -1) {
+					increaseRentZoneId[client] = zoneId;
+					char playerid[20];
+					GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+					if (StrEqual(ownedApartments[ownedId][oaPlayerid], playerid)) {
+						Menu apartmentMenu = CreateMenu(doRentMenuHandler);
+						char menuTitle[256];
+						Format(menuTitle, sizeof(menuTitle), "Extend Rent of: %s", ownedApartments[ownedId][oaApartmentName]);
+						SetMenuTitle(apartmentMenu, menuTitle);
+						char extendRentDisplay[70];
+						Format(extendRentDisplay, sizeof(extendRentDisplay), "Extend Rent by 7 Days for %i", RoundToNearest(existingApartments[zoneId][eaApartment_Price] * 0.1));
+						AddMenuItem(apartmentMenu, "x", "Do nothing");
+						bool hasMoney = float(existingApartments[zoneId][eaApartment_Price]) < RoundToNearest(tConomy_getCurrency(client) * 0.1);
+						AddMenuItem(apartmentMenu, "extendRent", extendRentDisplay, hasMoney ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+						
+						DisplayMenu(apartmentMenu, client, 60);
+					} else {
+						PrintToChat(client, "This Apartment does not belong to you");
+					}
+				}
+			}
+		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
+}
+
+public int doRentMenuHandler(Handle menu, MenuAction action, int client, int item) {
+	if (action == MenuAction_Select) {
+		char cValue[32];
+		GetMenuItem(menu, item, cValue, sizeof(cValue));
+		if (StrEqual(cValue, "extendRent")) {
+			if (float(tConomy_getCurrency(client)) >= RoundToNearest(existingApartments[increaseRentZoneId[client]][eaApartment_Price] * 0.1)) {
+				char takeReason[256];
+				Format(takeReason, sizeof(takeReason), "Rented Apartment: %s for 7 Days", existingApartments[increaseRentZoneId[client]][eaApartment_Id]);
+				tConomy_removeCurrency(client, RoundToNearest(existingApartments[increaseRentZoneId[client]][eaApartment_Price] * 0.1), takeReason);
+				char updateRentQuery[1024];
+				Format(updateRentQuery, sizeof(updateRentQuery), "UPDATE t_rpg_apartment_rent SET endrent = TIMESTAMPADD(DAY,7,endrent) WHERE Id = (SELECT Id FROM t_rpg_apartments WHERE apartment_id = '%s');", existingApartments[increaseRentZoneId[client]][eaApartment_Id]);
+				SQL_TQuery(g_DB, SQLErrorCheckCallback, updateRentQuery);
+				PrintToChat(client, "Extended %s by 7 Days for %i$", existingApartments[increaseRentZoneId[client]][eaApartment_Id], float(RoundToNearest(existingApartments[increaseRentZoneId[client]][eaApartment_Price] * 0.1)));
+				displayRentInfosToClient(client);
+			}
+		}
+	}
+	if (action == MenuAction_End) {
+		delete menu;
+	}
+}
+
 
 public void revokeAllAccessConfirm(int client) {
 	Menu m = new Menu(revokeAllAccessConfirmHandler);
@@ -558,15 +680,16 @@ public void apartmentAction(int client) {
 		if (existingApartments[apartmentId][eaBuyable] && !existingApartments[apartmentId][eaBought]) {
 			char val[8];
 			IntToString(apartmentId, val, sizeof(val));
-			
+			char tempAdd[64];
+			Format(tempAdd, sizeof(tempAdd), "Apartment (%s)", activeZone[client]);
 			Menu buyApartmentMenu = CreateMenu(buyApartmentHandler);
-			SetMenuTitle(buyApartmentMenu, "Apartment Menu");
+			SetMenuTitle(buyApartmentMenu, tempAdd);
 			char buyApartmentText[512];
 			if (tConomy_getCurrency(client) >= existingApartments[apartmentId][eaApartment_Price] && getOwnedApartments(client) < MAX_OWNED) {
-				Format(buyApartmentText, sizeof(buyApartmentText), "Buy Apartment for %i", existingApartments[apartmentId][eaApartment_Price]);
+				Format(buyApartmentText, sizeof(buyApartmentText), "Rent Apartment (7 Days) for %i", existingApartments[apartmentId][eaApartment_Price]);
 				AddMenuItem(buyApartmentMenu, val, buyApartmentText);
 			} else {
-				Format(buyApartmentText, sizeof(buyApartmentText), "Buy Apartment for %i (no Money | %i/%i Aps)", existingApartments[apartmentId][eaApartment_Price], getOwnedApartments(client), MAX_OWNED);
+				Format(buyApartmentText, sizeof(buyApartmentText), "Rent Apartment (7 Days) for %i (no Money | %i/%i Aps)", existingApartments[apartmentId][eaApartment_Price], getOwnedApartments(client), MAX_OWNED);
 				AddMenuItem(buyApartmentMenu, val, buyApartmentText, ITEMDRAW_DISABLED);
 			}
 			
@@ -623,6 +746,9 @@ public void buyApartment(int client, int id) {
 		Format(apartment_name, sizeof(apartment_name), "%ss Apartment", clean_playername);
 		
 		Format(buyApartmentQuery, sizeof(buyApartmentQuery), "INSERT IGNORE INTO `t_rpg_boughtApartments` (`Id`, `time_of_purchase`, `price_of_purchase`, `apartment_id`, `playerid`, `playername`, `apartment_name`, `allowed_players`, `door_locked`, `map`) VALUES (NULL, CURRENT_TIMESTAMP, '%i', '%s', '%s', '%s', '%s', '', '0', '%s');", existingApartments[id][eaApartment_Price], existingApartments[id][eaApartment_Id], playerid, clean_playername, apartment_name, mapName);
+		SQL_TQuery(g_DB, SQLErrorCheckCallback, buyApartmentQuery);
+		
+		Format(buyApartmentQuery, sizeof(buyApartmentQuery), "INSERT INTO `t_rpg_apartment_rent` SELECT NULL, Id, '%s', CURRENT_TIMESTAMP, TIMESTAMPADD(Day,7,CURRENT_TIMESTAMP) FROM t_rpg_apartments WHERE apartment_id = '%s';", playerid, existingApartments[id][eaApartment_Id]);
 		SQL_TQuery(g_DB, SQLErrorCheckCallback, buyApartmentQuery);
 		
 		int firstFree = getFirstFreeOwnedApartmentSlot();
@@ -1275,6 +1401,50 @@ public void setDoorLocks() {
 			}
 		}
 	}
+}
+
+public Action evictTimer(Handle Timer) {
+	char findToEvict[1024];
+	Format(findToEvict, sizeof(findToEvict), "SELECT apartment_id FROM t_rpg_apartments INNER JOIN t_rpg_apartment_rent ON t_rpg_apartment_rent.Id = t_rpg_apartments.Id WHERE endrent < CURRENT_TIMESTAMP();");
+	SQL_TQuery(g_DB, SQLFindToEvictApartments, findToEvict);
+}
+
+public void SQLFindToEvictApartments(Handle owner, Handle hndl, const char[] error, any data) {
+	while (SQL_FetchRow(hndl)) {
+		char evictapartmentId[128];
+		SQL_FetchStringByName(hndl, "apartment_id", evictapartmentId, sizeof(evictapartmentId));
+		evictApartment(evictapartmentId);
+	}
+}
+
+public void evictApartment(char apartmentId[128]) {
+	int aptId = getOwnedApartmentFromKey(apartmentId);
+	char mapName[128];
+	GetCurrentMap(mapName, sizeof(mapName));
+	
+	char sellApartmentQuery[4096];
+	Format(sellApartmentQuery, sizeof(sellApartmentQuery), "DELETE FROM `t_rpg_boughtApartments` WHERE apartment_id = '%s' AND map = '%s';", apartmentId, mapName);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, sellApartmentQuery);
+	
+	Format(sellApartmentQuery, sizeof(sellApartmentQuery), "UPDATE `t_rpg_apartments` SET bought = 0 WHERE apartment_id = '%s' AND map = '%s';", apartmentId, mapName);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, sellApartmentQuery);
+	
+	Format(sellApartmentQuery, sizeof(sellApartmentQuery), "DELETE FROM `t_rpg_apartment_rent` WHERE Id = (SELECT Id from t_rpg_apartments WHERE apartment_id = '%s');", apartmentId);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, sellApartmentQuery);
+	
+	existingApartments[getLoadedIdFromApartmentId(ownedApartments[aptId][oaApartment_Id])][eaBuyable] = true;
+	existingApartments[getLoadedIdFromApartmentId(ownedApartments[aptId][oaApartment_Id])][eaBought] = false;
+	
+	ownedApartments[aptId][oaId] = -1;
+	strcopy(ownedApartments[aptId][oaTime_of_purchase], 64, "");
+	ownedApartments[aptId][oaPrice_of_purchase] = -1;
+	strcopy(ownedApartments[aptId][oaApartment_Id], 128, "");
+	strcopy(ownedApartments[aptId][oaPlayerid], 20, "");
+	strcopy(ownedApartments[aptId][oaPlayername], 48, "");
+	strcopy(ownedApartments[aptId][oaApartmentName], 255, "");
+	strcopy(ownedApartments[aptId][oaAllowed_players], 550, "");
+	ownedApartments[aptId][oaDoor_locked] = false;
+	// TODO delete Furniture
 }
 
 public Action listAps(int client, int args) {

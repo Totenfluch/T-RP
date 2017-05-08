@@ -355,7 +355,7 @@ public void doorAction(int client, char zone[128], int doorEnt) {
 	if (!option && ownedId != -1) {
 		if (StrContains(ownedApartments[ownedId][oaAllowed_players], playerid) != -1) {
 			allowedAction(client, zone);
-		} else if (jobs_isActiveJob(client, "Police")) {
+		} else if (jobs_isActiveJob(client, "Police") && jobs_getLevel(client) >= 4) {
 			raidAction(client, zone, ownedApartments[ownedId][oaDoor_locked]);
 		} else if (ownedApartments[ownedId][oaDoor_locked] && inventory_hasPlayerItem(client, "Lockpick")) {
 			lockpickAction(client, zone);

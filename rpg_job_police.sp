@@ -194,7 +194,7 @@ public Plugin myinfo =
 };
 
 public void OnPluginStart() {
-	jobs_registerJob("Police", "Stop the criminals from beeing criminal", 3, 100, 12.0);
+	jobs_registerJob("Police", "Stop the criminals from beeing criminal", 7, 400, 6.0);
 	npc_registerNpcType("Police Recruiter");
 	npc_registerNpcType("Police Weapon Vendor");
 	
@@ -369,17 +369,10 @@ public void showTopPanelToClient(int client) {
 		SetPanelTitle(wPanel, "Police Weapon Vendor");
 		DrawPanelText(wPanel, "^-.-^-.-^-.-^-.-^");
 		DrawPanelItem(wPanel, "Pistols");
-		if (jobs_getLevel(client) >= 2) {
-			DrawPanelItem(wPanel, "SMGs");
-			DrawPanelItem(wPanel, "Shotguns");
-			DrawPanelItem(wPanel, "Rifles");
-			DrawPanelItem(wPanel, "Special Weapons");
-		} else {
-			DrawPanelItem(wPanel, "SMGs", ITEMDRAW_DISABLED);
-			DrawPanelItem(wPanel, "Shotguns", ITEMDRAW_DISABLED);
-			DrawPanelItem(wPanel, "Rifles", ITEMDRAW_DISABLED);
-			DrawPanelItem(wPanel, "Special Weapons", ITEMDRAW_DISABLED);
-		}
+		DrawPanelItem(wPanel, "SMGs [2]", jobs_getLevel(client) >= 2 ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+		DrawPanelItem(wPanel, "Shotguns [3]", jobs_getLevel(client) >= 3 ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+		DrawPanelItem(wPanel, "Rifles [5]", jobs_getLevel(client) >= 5 ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+		DrawPanelItem(wPanel, "Special Weapons [6]", jobs_getLevel(client) >= 6 ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 		DrawPanelItem(wPanel, "Nades & Armour");
 		DrawPanelText(wPanel, "^-.-^-.-^-.-^-.-^");
 		DrawPanelItem(wPanel, "Exit");
@@ -1247,6 +1240,7 @@ public int giveTicketmenuHandler(Handle menu, MenuAction action, int client, int
 				PrintToChat(g_iLatestTicket[client], "[-T-] %N has paid the Ticket of %i", client, g_iTickpriceOvertake[client]);
 				tCrime_setCrime(client, 0);
 				tConomy_addCurrency(g_iLatestTicket[client], RoundToNearest(g_iTickpriceOvertake[client] / 2.0), "Ticket Split");
+				jobs_addExperience(g_iLatestTicket[client], RoundToNearest(g_iTickpriceOvertake[client] / 10.0), "Police");
 			}
 		}
 	}
@@ -1374,6 +1368,7 @@ public int deleteItemsMenuHandler(Handle menu, MenuAction action, int client, in
 		CPrintToChat(client, "{olive}[POLICE]{darkred}Removed {olive}1x{darkred} {olive}%s{darkred} from {olive}%N{darkred} Inventory.", itemBuffer, g_iOfficerDeleteItemsTaget[client]);
 		inventory_deleteItemBySlot(g_iOfficerDeleteItemsTaget[client], id, reason);
 		deleteItems(client, g_iOfficerDeleteItemsTaget[client]);
+		jobs_addExperience(client, 10, "Police");
 	}
 	if (action == MenuAction_End) {
 		delete menu;
@@ -1425,7 +1420,7 @@ public int deleteItemsByGroupMenuHandler(Handle menu, MenuAction action, int cli
 
 public void putInJail(int initiator, int target) {
 	FreeEm(target, initiator);
-	int amount = RoundToNearest(tCrime_getCrime(target) / 5.0);
+	int amount = RoundToNearest(tCrime_getCrime(target) / 10.0);
 	jobs_addExperience(initiator, amount, "Police");
 	jail_putInJail(initiator, target);
 }

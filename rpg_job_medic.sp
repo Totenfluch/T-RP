@@ -280,10 +280,11 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 	if (jobs_isActiveJob(client, "Medic")) {
 		SetMenuTitle(panel, "Medic Shop");
 		AddMenuItem(panel, "bandage", "Buy Bandage (40$)", tConomy_getCurrency(client) >= 40 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-		AddMenuItem(panel, "bt", "Buy Bloodtest (20$)", tConomy_getCurrency(client) >= 20 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-		AddMenuItem(panel, "bba", "Buy Blood Bag -A- (120$)", tConomy_getCurrency(client) >= 120 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-		AddMenuItem(panel, "bbb", "Buy Blood Bag -B- (120$)", tConomy_getCurrency(client) >= 120 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-		AddMenuItem(panel, "bbab", "Buy Blood Bag -AB- (140$)", tConomy_getCurrency(client) >= 120 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "bt", "Buy Bloodtest [2](20$)", tConomy_getCurrency(client) >= 20 && jobs_getLevel(client) >= 2 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "bba", "Buy Blood Bag -A- [3](120$)", tConomy_getCurrency(client) >= 120 && jobs_getLevel(client) >= 3 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "bbb", "Buy Blood Bag -B- [3](120$)", tConomy_getCurrency(client) >= 120 && jobs_getLevel(client) >= 3 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "bbab", "Buy Blood Bag -AB- [3](140$)", tConomy_getCurrency(client) >= 120 && jobs_getLevel(client) >= 3 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "heal", "Heal to full 100Hp [5](450$)", tConomy_getCurrency(client) >= 450 && jobs_getLevel(client) >= 5 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 	}
 	DisplayMenu(panel, client, 60);
 }
@@ -325,6 +326,13 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 				tConomy_removeCurrency(client, 150, "Bandaged by Npc");
 				g_iBleedingLevel[client] = 0;
 				CPrintToChat(client, "{green}[-T-] You were bandaged by the Medic Recruiter (Bleeding stopped)");
+			}
+		} else if (StrEqual(cValue, "heal")) {
+			if (tConomy_getCurrency(client) >= 450) {
+				tConomy_removeCurrency(client, 450, "Healed by Npc");
+				CPrintToChat(client, "{green}[-T-] You were healed by the Medic Recruiter");
+				if (isValidClient(client) && IsPlayerAlive(client))
+					SetEntityHealth(client, 100);
 			}
 		}
 	}

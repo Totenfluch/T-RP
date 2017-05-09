@@ -931,7 +931,6 @@ public int policeRecruiterHandler(Handle menu, MenuAction action, int client, in
 		char cValue[32];
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		if (StrEqual(cValue, "join")) {
-			jobs_quitJob(client);
 			jobs_giveJob(client, "Police");
 		}
 	}

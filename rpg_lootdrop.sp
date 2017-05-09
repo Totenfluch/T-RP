@@ -21,7 +21,7 @@ enum Item {
 	Float:gZPos, 
 	bool:gIsActive, 
 	gAuraRef, 
-	gItemRef,
+	gItemRef, 
 	gAmount
 }
 
@@ -57,10 +57,10 @@ float g_fZAxisOffset;
 
 public Plugin myinfo = 
 {
-	name = "RPG Lootdrop",
-	author = PLUGIN_AUTHOR,
-	description = "Lootdrop for T-RP",
-	version = PLUGIN_VERSION,
+	name = "RPG Lootdrop", 
+	author = PLUGIN_AUTHOR, 
+	description = "Lootdrop for T-RP", 
+	version = PLUGIN_VERSION, 
 	url = "http://ggc-base.de"
 };
 
@@ -107,6 +107,7 @@ public int Native_spawnMoneyLoot(Handle plugin, int numParams) {
 
 public void OnConfigsExecuted() {
 	GetConVarString(g_hItemPath, g_cItemPath, sizeof(g_cItemPath));
+	PrecacheModel(g_cItemPath, true);
 	GetConVarString(g_hAuraPath, g_cAuraPath, sizeof(g_cAuraPath));
 	GetConVarString(g_hPickupEffectPath, g_cPickupEffectPath, sizeof(g_cPickupEffectPath));
 	GetConVarString(g_hPickupSoundPath, g_cPickupSoundPath, sizeof(g_cPickupSoundPath));
@@ -197,9 +198,9 @@ public int spawnItem(float pos[3], int amount) {
 	SetEntPropString(eventEnt, Prop_Data, "m_iName", cId);
 	SetEntPropFloat(eventEnt, Prop_Send, "m_flModelScale", g_fModelScale);
 	DispatchSpawn(eventEnt);
-
+	
 	g_eActiveItems[id][gAmount] = amount;
-
+	
 	g_eActiveItems[id][gXPos] = pos[0];
 	g_eActiveItems[id][gYPos] = pos[1];
 	g_eActiveItems[id][gZPos] = pos[2];
@@ -304,7 +305,7 @@ public Action clearEffect(Handle Timer, any ent) {
 }
 
 public Action Timer_Run(Handle Timer, any ent) {
-	if (ent > 0 && IsValidEntity(ent)){
+	if (ent > 0 && IsValidEntity(ent)) {
 		AcceptEntityInput(ent, "Start");
 	}
-}
+} 

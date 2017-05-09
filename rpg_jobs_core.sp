@@ -72,6 +72,9 @@ public void OnPluginStart()
 	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS `t_rpg_jobs` ( `Id` BIGINT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP on update CURRENT_TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `playername` VARCHAR(36) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `jobname` VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `level` INT NOT NULL , `experience` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , `special_flags` VARCHAR(64) NOT NULL , PRIMARY KEY (`Id`), UNIQUE (`playerid`, `jobname`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
 	
+	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS `t_rpg_jobs_cooldowns` ( `playerid` VARCHAR(20) NOT NULL , `startcd` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `endcd` TIMESTAMP NOT NULL , PRIMARY KEY (`playerid`)) ENGINE = InnoDB;");
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
+	
 	RegAdminCmd("sm_givexp", cmdGiveXp, ADMFLAG_ROOT, "Gives XP for the currently Active Job");
 }
 
@@ -482,6 +485,45 @@ public void resetJob(int client) {
 }
 
 public void acceptJob(int client, char jobname[128]) {
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	char deleteOldDataQuery[512];
+	Format(deleteOldDataQuery, sizeof(deleteOldDataQuery), "DELETE FROM t_rpg_jobs_cooldowns WHERE endcd < CURRENT_TIMESTAMP();");
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, deleteOldDataQuery);
+	
+	char findCooldownQuery[512];
+	Format(findCooldownQuery, sizeof(findCooldownQuery), "SELECT TIMEDIFF(endcd, CURRENT_TIMESTAMP()) as timeleft FROM t_rpg_jobs_cooldowns WHERE playerid = '%s';", playerid);
+	
+	DataPack prepInfos;
+	prepInfos = CreateDataPack();
+	prepInfos.WriteCell(GetClientUserId(client));
+	prepInfos.WriteString(jobname);
+	
+	SQL_TQuery(g_DB, SQLFindCooldownQuery, findCooldownQuery, prepInfos);
+}
+
+public void SQLFindCooldownQuery(Handle owner, Handle hndl, const char[] error, DataPack prepInfos) {
+	prepInfos.Reset();
+	int client = GetClientOfUserId(prepInfos.ReadCell());
+	char jobname[128];
+	prepInfos.ReadString(jobname, sizeof(jobname));
+	if(!isValidClient(client))
+		return;
+	
+	bool canAcceptJob = true;
+	while (SQL_FetchRow(hndl)) {
+		char timediff[64];
+		SQL_FetchStringByName(hndl, "timeleft", timediff, sizeof(timediff));
+		PrintToChat(client, "[-T-] You have to wait %s until you can take another job", timediff);
+		canAcceptJob = false;
+	}
+
+	if(canAcceptJob)
+		performAcceptJob(client, jobname);
+}
+
+public void performAcceptJob(int client, char jobname[128]){
 	leaveJob(client);
 	
 	char playerid[20];
@@ -514,6 +556,9 @@ public void acceptJob(int client, char jobname[128]) {
 	Call_PushString(g_ePlayerJob[client][pjJobname]);
 	Call_Finish();
 	
+	char setCooldownQuery[1024];
+	Format(setCooldownQuery, sizeof(setCooldownQuery), "INSERT IGNORE INTO `t_rpg_jobs_cooldowns` (`playerid`, `startcd`, `endcd`) VALUES ('%s', CURRENT_TIMESTAMP, TIMESTAMPADD(HOUR,1,CURRENT_TIMESTAMP))", playerid);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, setCooldownQuery);
 	loadClientJob(client);
 }
 

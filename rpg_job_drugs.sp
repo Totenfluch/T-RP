@@ -232,7 +232,6 @@ public int drugMenuHandler(Handle menu, MenuAction action, int client, int item)
 		char cValue[32];
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		if (StrEqual(cValue, "takejob")) {
-			jobs_quitJob(client);
 			jobs_giveJob(client, "Drug Planter");
 		} else if (StrEqual(cValue, "seeds")) {
 			tConomy_removeCurrency(client, 100, "Bought Seeds");

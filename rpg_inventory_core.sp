@@ -82,7 +82,8 @@ public void OnPluginStart() {
 	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_inventory_log ( `Id` BIGINT NOT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `item` VARCHAR(64) NOT NULL , `category` VARCHAR(64) NOT NULL , `category2` VARCHAR(64) NOT NULL , `reason` VARCHAR(128) NOT NULL , `type` VARCHAR(20) NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
 	
-	RegConsoleCmd("sm_sinv", cmdSInvCallback, "Inventory by category");
+	RegAdminCmd("sm_sinv", cmdSInvCallback, ADMFLAG_GENERIC, "Inventory by category");
+	RegAdminCmd("sm_tableinv", cmdTableInvCb, ADMFLAG_GENERIC, "Lists inventory as table in console");
 	
 	if (g_aHandledItems == INVALID_HANDLE) {
 		g_aHandledItems = CreateArray(400, 200);
@@ -236,6 +237,16 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("inventory_getItemCategoryBySlotAndClient", Native_getItemCategoryBySlotAndClient);
 	
 	/*
+		Return the Weight of an Item Slot
+		
+		@Param1 -> int client
+		@Param2 -> int slot
+		
+		return weight of item if exists otherwise -1
+	*/
+	CreateNative("inventory_getItemWeightBySlot", Native_getItemWeightBySlot);
+	
+	/*
 		Transfer Item to Container
 		
 		@Param1 -> int client
@@ -290,9 +301,10 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		@Param5 -> category2[64]
 		@Param6 -> int rarity
 		@Param7 -> char timestamp[64]
+		@Param8 -> int slot
 	
 	*/
-	g_hOnItemUsed = CreateGlobalForward("inventory_onItemUsed", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_String, Param_String, Param_Cell, Param_String);
+	g_hOnItemUsed = CreateGlobalForward("inventory_onItemUsed", ET_Ignore, Param_Cell, Param_String, Param_Cell, Param_String, Param_String, Param_Cell, Param_String, Param_Cell);
 	
 	
 	
@@ -407,7 +419,7 @@ public int Native_deleteItemBySlot(Handle plugin, int numParams) {
 	int slot = GetNativeCell(2);
 	char reason[256];
 	GetNativeString(3, reason, sizeof(reason));
-	deleteItemBySlot(client, slot, reason);
+	takePlayerItemBySlot(client, slot, reason);
 }
 
 public int Native_getItemCategoryBySlotAndClient(Handle plugin, int numParams) {
@@ -421,6 +433,12 @@ public int Native_getItemCategoryBySlotAndClient(Handle plugin, int numParams) {
 	if ((StrContains(flags, "l") == -1) && (StrContains(g_ePlayerInventory[client][slot][iFlags], "l") != -1))
 		return false;
 	return true;
+}
+
+public int Native_getItemWeightBySlot(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	int slot = GetNativeCell(2);
+	return g_ePlayerInventory[client][slot][iWeight];
 }
 
 public int Native_getItemNameBySlotAndClient(Handle plugin, int numParams) {
@@ -634,6 +652,27 @@ public bool hasPlayerItem(int client, char itemname[128]) {
 	return false;
 }
 
+public void takePlayerItemBySlot(int client, int slot, char reason[256]) {
+	char itemname[128];
+	char itemid[64];
+	strcopy(itemname, 128, g_ePlayerInventory[client][slot][iItemname]);
+	strcopy(itemid, 64, g_ePlayerInventory[client][slot][iItemid]);
+	
+	CPrintToChat(client, "{darkred}Removed {olive}1x{darkred} {olive}%s{darkred} from your Inventory {purple}({darkred}%s{purple})", itemname, reason);
+	
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	char removeItemQuery[1024];
+	Format(removeItemQuery, sizeof(removeItemQuery), "DELETE FROM t_rpg_items WHERE playerid = '%s' AND itemid = '%s' AND container = '';", playerid, itemid);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, removeItemQuery);
+	
+	Format(removeItemQuery, sizeof(removeItemQuery), "INSERT INTO `t_rpg_inventory_log` (`Id`, `timestamp`, `playerid`, `item`, `category`, `category2`, `reason`, `type`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s');", playerid, itemname, "", "", reason, "TAKEN");
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, removeItemQuery);
+	
+	resetLocalInventorySlot(client, slot);
+}
+
 public bool takePlayerItem(int client, char itemname[128], int amount, char reason[256]) {
 	if (amount > getItemOwnedAmount(client, itemname))
 		return false;
@@ -838,6 +877,7 @@ public int inventoryMenuHandler(Handle menu, MenuAction action, int client, int 
 		Call_PushString(g_ePlayerInventory[client][id][iCategory2]);
 		Call_PushCell(g_ePlayerInventory[client][id][iRarity]);
 		Call_PushString(g_ePlayerInventory[client][id][iTimestamp]);
+		Call_PushCell(id);
 		Call_Finish();
 		
 		if (FindStringInArray(g_aHandledItems, g_ePlayerInventory[client][id][iItemname]) == -1 && FindStringInArray(g_aHandledCategories, g_ePlayerInventory[client][id][iCategory]) == -1 && FindStringInArray(g_aHandledCategories2, g_ePlayerInventory[client][id][iCategory2]) == -1) {
@@ -874,12 +914,6 @@ public void transferItemToContainer(int client, int slot, char containerBuffer[6
 	char updateContainerQuery[1024];
 	Format(updateContainerQuery, sizeof(updateContainerQuery), "UPDATE t_rpg_items SET container = '%s' WHERE playerid = '%s' AND container = '' AND itemname = '%s' LIMIT 1;", containerBuffer, playerid, iName);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateContainerQuery);
-}
-
-public void deleteItemBySlot(int client, int slot, char reason[256]) {
-	char iName[128];
-	strcopy(iName, sizeof(iName), g_ePlayerInventory[client][slot][iItemname]);
-	takePlayerItem(client, iName, 1, reason);
 }
 
 public int defaultItemHandleHandler(Handle menu, MenuAction action, int client, int item) {
@@ -944,6 +978,17 @@ public void transferItemFromContainer(int client, char containerName[64], char u
 	
 	Format(updateContainerQuery, sizeof(updateContainerQuery), "UPDATE t_rpg_items SET container = '' WHERE itemid = '%s' AND container = '%s';", uniqueId, containerName);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateContainerQuery);
+}
+
+public Action cmdTableInvCb(int client, int args){
+	for (int i = 0; i < MAX_ITEMS; i++) {
+		if (g_ePlayerInventory[client][i][iIsActive]) {
+			char output[512];
+			Format(output, sizeof(output), "Slot: %i | Name: %s | Weight: %i", i, g_ePlayerInventory[client][i][iItemname], g_ePlayerInventory[client][i][iWeight]);
+			PrintToConsole(client, output);
+		}
+	}
+	return Plugin_Handled;
 }
 
 public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error, any data) {

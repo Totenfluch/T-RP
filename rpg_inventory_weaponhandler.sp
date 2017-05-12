@@ -10,7 +10,7 @@
 
 #pragma newdecls required
 
-int g_iLatestWeight[MAXPLAYERS + 1];
+int g_iLatestSlotUsed[MAXPLAYERS + 1];
 char g_cLastItemUsed[MAXPLAYERS + 1][128];
 
 /* 
@@ -44,7 +44,7 @@ public void OnMapStart() {
 }
 
 public void OnClientAuthorized(int client) {
-	g_iLatestWeight[client] = 0;
+	g_iLatestSlotUsed[client] = -1;
 	strcopy(g_cLastItemUsed[client], 128, "");
 }
 
@@ -53,14 +53,14 @@ public Action cmdStashWeapon(int client, int args) {
 	return Plugin_Handled;
 }
 
-public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]) {
+public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64], int slot) {
 	if (!(StrContains(category, "Weapon") != -1 || StrEqual(itemname, "item_kevlar") || StrEqual(itemname, "item_assaultsuit")))
 		return;
 	Menu wMenu = CreateMenu(weaponMenuHandler);
 	strcopy(g_cLastItemUsed[client], 128, itemname);
-	g_iLatestWeight[client] = weight;
+	g_iLatestSlotUsed[client] = slot;
 	char out[512];
-	Format(out, sizeof(out), "Used: %s (Weight: %i|Category: %s|Category2: %s|rarity: %i)", itemname, weight, category, category2, rarity);
+	Format(out, sizeof(out), "Used: %s (Weight: %i|Category: %s|Category2: %s|rarity: %i | Slot: %i)", itemname, weight, category, category2, rarity, slot);
 	PrintToConsole(client, out);
 	SetMenuTitle(wMenu, "What do you want to do?");
 	if (StrContains(itemname, "weapon_") != -1) {
@@ -91,13 +91,13 @@ public int weaponMenuHandler(Handle menu, MenuAction action, int client, int ite
 			int slot = getSlot(g_cLastItemUsed[client]);
 			if (slot != 3) {
 				if (stashWeaponSlot(client, slot)) {
-					takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);
+					takeItem(client, g_cLastItemUsed[client], g_iLatestSlotUsed[client]);
 				}
 			} else {
-				takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);
+				takeItem(client, g_cLastItemUsed[client], g_iLatestSlotUsed[client]);
 			}
 		} else if (StrEqual(cValue, "GiveWeapon")) {
-			takeItem(client, g_cLastItemUsed[client], g_iLatestWeight[client]);
+			takeItem(client, g_cLastItemUsed[client], g_iLatestSlotUsed[client]);
 		} else if (StrEqual(cValue, "Delete")) {
 			inventory_removePlayerItems(client, g_cLastItemUsed[client], 1, "Deleted from Inventory");
 		} else if (StrEqual(cValue, "eqSuit")) {
@@ -136,7 +136,7 @@ public void stashWeapon(int client, bool useOverride, char[] weapon) {
 		if (weaponIndex != -1) {
 			int primaryWeaponClip = Weapon_GetPrimaryClip(weaponIndex);
 			int primaryWeaponAmmo = GetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount");
-			if (inventory_givePlayerItem(client, item, primaryWeaponClip * 100 + primaryWeaponAmmo, "", "Weapon", "Weapon", 2, "Stashed Weapon")) {
+			if (inventory_givePlayerItem(client, item, primaryWeaponClip * 1000 + primaryWeaponAmmo, "", "Weapon", "Weapon", 2, "Stashed Weapon")) {
 				RemovePlayerItem(client, weaponIndex);
 				RemoveEdict(weaponIndex);
 			}
@@ -158,7 +158,7 @@ public bool stashWeaponSlot(int client, int slot) {
 			int primaryWeaponAmmo = GetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount");
 			char item[128];
 			Entity_GetClassName(weaponIndex, item, sizeof(item));
-			if (inventory_givePlayerItem(client, item, primaryWeaponClip * 100 + primaryWeaponAmmo, "", "Weapon", "Weapon", 2, "Stashed Weapon")) {
+			if (inventory_givePlayerItem(client, item, primaryWeaponClip * 1000 + primaryWeaponAmmo, "", "Weapon", "Weapon", 2, "Stashed Weapon")) {
 				RemovePlayerItem(client, weaponIndex);
 				RemoveEdict(weaponIndex);
 				if (GetPlayerWeaponSlot(client, 2) != -1)
@@ -180,19 +180,22 @@ public void takeItemSuit(int client, char[] item) {
 	
 }
 
-public void takeItem(int client, char[] item, int weight) {
+public void takeItem(int client, char[] item, int islot) {	
 	char item2[128];
 	strcopy(item2, sizeof(item2), item);
-	if (inventory_removePlayerItems(client, item2, 1, "Taken from Inventory"))
-		GivePlayerItem(client, item);
 	
+	int weight = inventory_getItemWeightBySlot(client, islot);
+	inventory_deleteItemBySlot(client, islot, "Equiped Weapon");
+	GivePlayerItem(client, item);
+		
 	int slot = getSlot(item2);
+
 	if (GetPlayerWeaponSlot(client, slot) != -1 && slot != 3) {
 		EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, slot));
 		int weaponIndex;
 		if ((weaponIndex = GetPlayerWeaponSlot(client, slot)) != -1) {
-			Weapon_SetClips(weaponIndex, weight / 100, weight % 100);
-			SetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount", weight % 100);
+			Weapon_SetClips(weaponIndex, weight / 1000, weight % 1000);
+			SetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount", weight % 1000);
 		}
 	}
 }

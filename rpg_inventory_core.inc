@@ -59,9 +59,10 @@ native bool inventory_removePlayerItems(int client, char itemname[128], int amou
 		@Param5 -> category2[64]
 		@Param6 -> int rarity
 		@Param7 -> char timestamp[64]
+		@Param8 -> int slot
 	
 	*/
-forward void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]);
+forward void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64], int slot);
 
 
 /*
@@ -140,7 +141,17 @@ native bool inventory_getItemNameBySlotAndClient(int client, int slot, char Item
 		return true if usable false if not
 	*/
 native bool inventory_getItemCategoryBySlotAndClient(int client, int slot, char ItemNameBuffer[128], char FilterFlags[8]);
-	
+
+/*
+	Return the Weight of an Item Slot
+		
+	@Param1 -> int client
+	@Param2 -> int slot
+		
+	return weight of item if exists otherwise -1
+*/
+native int inventory_getItemWeightBySlot(int client, int slot);
+
 	/*
 		Transfer Item to Container
 		

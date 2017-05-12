@@ -180,7 +180,7 @@ public void changePlayerSkin(int client) {
 	SetEntityModel(client, g_ePlayerSkins[id][psPath]);
 }
 
-public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]) {
+public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64], int slot) {
 	if (!(StrEqual(category, "Skin")))
 		return;
 	

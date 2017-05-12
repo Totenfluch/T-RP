@@ -92,7 +92,7 @@ public void OnPluginStart() {
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, CreateTableQuery);
 }
 
-public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64]) {
+public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64], int slot) {
 	if (StrEqual(itemname, "Marijuana Seeds")) {
 		Menu m = CreateMenu(defaultItemHandleHandler);
 		char display[128];

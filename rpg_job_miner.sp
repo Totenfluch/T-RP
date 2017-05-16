@@ -44,7 +44,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	jobs_registerJob("Mining", "Mine Stones and Ores, melt them and sell them for money", 20, 300, 2.28);
+	jobs_registerJob("Mining", "Mine Stones and Ores, melt them and sell them for money", 20, 300, 2.08);
 	npc_registerNpcType(npctype);
 	RegConsoleCmd("sm_mstats", cmdOnMStats, "shows Mining stats");
 }
@@ -124,11 +124,11 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 	inventory_givePlayerItem(client, "Iron ore", 20, "", "Crafting Materials", "Mining", 1, addCurrencyReason);
 	
 	if (perks_hasPerk(client, "Mining Boost4"))
-		jobs_addExperience(client, 20, "Mining");
+		jobs_addExperience(client, 35, "Mining");
 	else if (perks_hasPerk(client, "Mining Boost2"))
-		jobs_addExperience(client, 15, "Mining");
+		jobs_addExperience(client, 30, "Mining");
 	else
-		jobs_addExperience(client, 10, "Mining");
+		jobs_addExperience(client, 25, "Mining");
 	setInfo(client);
 }
 

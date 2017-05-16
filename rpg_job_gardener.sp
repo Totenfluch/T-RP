@@ -44,7 +44,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	jobs_registerJob("Gardener", "Mow grass and do gardening stuff", 20, 200, 3.0);
+	jobs_registerJob("Gardener", "Mow grass and do gardening stuff", 20, 300, 2.11);
 	npc_registerNpcType(npctype);
 	RegConsoleCmd("sm_mstats", cmdOnMStats, "shows gardening stats");
 }
@@ -87,15 +87,15 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 				Format(infoString, sizeof(infoString), "Gardening (%i)", jobs_getLevel(client));
 				
 				if (perks_hasPerk(client, "Gardener Speed Boost4"))
-					jobs_startProgressBar(client, 5, infoString);
-				else if (perks_hasPerk(client, "Gardener Speed Boost3"))
 					jobs_startProgressBar(client, 10, infoString);
-				else if (perks_hasPerk(client, "Gardener Speed Boost2"))
+				else if (perks_hasPerk(client, "Gardener Speed Boost3"))
 					jobs_startProgressBar(client, 15, infoString);
-				else if (perks_hasPerk(client, "Gardener Speed Boost1"))
+				else if (perks_hasPerk(client, "Gardener Speed Boost2"))
 					jobs_startProgressBar(client, 20, infoString);
-				else
+				else if (perks_hasPerk(client, "Gardener Speed Boost1"))
 					jobs_startProgressBar(client, 25, infoString);
+				else
+					jobs_startProgressBar(client, 30, infoString);
 				setInfo(client);
 			}
 		}
@@ -115,7 +115,7 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 		g_iGardenerZoneCooldown[client][g_iPlayerZoneId[client]] = g_iZoneCooldown + GetRandomInt(0, 50);
 	char addCurrencyReason[256];
 	Format(addCurrencyReason, sizeof(addCurrencyReason), "Gardening (Level %i)", jobs_getLevel(client));
-	tConomy_addBankCurrency(client, 50 + jobs_getLevel(client) * 3, "Gardening");
+	tConomy_addBankCurrency(client, 35 + jobs_getLevel(client) * 5, "Gardening");
 	if (perks_hasPerk(client, "Gardener XP Boost4"))
 		jobs_addExperience(client, 45, "Gardener");
 	else if (perks_hasPerk(client, "Gardener XP Boost3"))

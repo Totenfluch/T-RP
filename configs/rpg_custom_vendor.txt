@@ -37,7 +37,7 @@
 		"vendor"	"Black Market Vendor"
 		"category2"	"Criminal"
 		"category"	"Drugs"
-		"price"		"1000"
+		"price"		"580"
 		"buy"		"0"
 	}
 	"Stolen Money"

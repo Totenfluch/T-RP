@@ -28,7 +28,7 @@ int g_iLoadedZones = 0;
 
 char activeZone[MAXPLAYERS + 1][128];
 
-int g_iZoneCooldown = 260;
+int g_iZoneCooldown = 320;
 int MAX_COLLECT = 5;
 
 char npctype[128] = "Mining Recruiter";
@@ -44,7 +44,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	jobs_registerJob("Mining", "Mine Stones and Ores, melt them and sell them for money", 20, 50, 2.0);
+	jobs_registerJob("Mining", "Mine Stones and Ores, melt them and sell them for money", 20, 300, 2.28);
 	npc_registerNpcType(npctype);
 	RegConsoleCmd("sm_mstats", cmdOnMStats, "shows Mining stats");
 }
@@ -266,22 +266,22 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			}
 		} else if (StrEqual(cValue, "sellIronBar")) {
 			if (inventory_hasPlayerItem(client, "Iron Bar")) {
-				tConomy_addCurrency(client, 60, "Sold Iron Bar to Vendor");
+				tConomy_addCurrency(client, 80, "Sold Iron Bar to Vendor");
 				inventory_removePlayerItems(client, "Iron Bar", 1, "Sold to Vendor");
 			}
 		} else if (StrEqual(cValue, "SellIronBars")) {
 			int itemamount = inventory_getPlayerItemAmount(client, "Iron Bar");
 			if (inventory_removePlayerItems(client, "Iron Bar", itemamount, "Sold to Vendor (Mass Sell)"))
-				tConomy_addCurrency(client, 60 * itemamount, "Sold Iron Bar to Vendor");
+				tConomy_addCurrency(client, 80 * itemamount, "Sold Iron Bar to Vendor");
 		} else if (StrEqual(cValue, "sellFosil")) {
 			if (inventory_hasPlayerItem(client, "Fosil")) {
-				tConomy_addCurrency(client, 50, "Sold Fosil to Vendor");
+				tConomy_addCurrency(client, 65, "Sold Fosil to Vendor");
 				inventory_removePlayerItems(client, "Fosil", 1, "Sold to Vendor");
 			}
 		} else if (StrEqual(cValue, "SellFosils")) {
 			int itemamount = inventory_getPlayerItemAmount(client, "Fosil");
 			if (inventory_removePlayerItems(client, "Fosil", itemamount, "Sold to Vendor (Mass Sell)"))
-				tConomy_addCurrency(client, 50 * itemamount, "Sold Fosil to Vendor");
+				tConomy_addCurrency(client, 65 * itemamount, "Sold Fosil to Vendor");
 		} else if (StrEqual(cValue, "refineCopper")) {
 			if (inventory_hasPlayerItem(client, "Copper ore") && tConomy_getCurrency(client) >= 25) {
 				tConomy_removeCurrency(client, 25, "Refined Copper");
@@ -305,13 +305,13 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 			}
 		} else if (StrEqual(cValue, "sellGoldBar")) {
 			if (inventory_hasPlayerItem(client, "Gold Bar")) {
-				tConomy_addCurrency(client, 850, "Sold Gold Bar to Vendor");
+				tConomy_addCurrency(client, 900, "Sold Gold Bar to Vendor");
 				inventory_removePlayerItems(client, "Gold Bar", 1, "Sold to Vendor");
 			}
 		} else if (StrEqual(cValue, "SellGoldBars")) {
 			int itemamount = inventory_getPlayerItemAmount(client, "Gold Bar");
 			if (inventory_removePlayerItems(client, "Gold Bar", itemamount, "Sold to Vendor (Mass Sell)"))
-				tConomy_addCurrency(client, 850 * itemamount, "Sold Gold Bar to Vendor");
+				tConomy_addCurrency(client, 900 * itemamount, "Sold Gold Bar to Vendor");
 		} else if (tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_getActiveJob(client, "Mining")) {
 			tConomy_removeCurrency(client, 15000, "Bought Skin");
 			inventory_givePlayerItem(client, "Barryv", 0, "", "Skin", "Skin", 1, "Bought from Mining Recruiter");

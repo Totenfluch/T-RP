@@ -52,7 +52,7 @@ public void OnPluginStart() {
 	RegAdminCmd("sm_garbagespawns", addSpawnPoints, ADMFLAG_ROOT, "Opens the Menu to add Garbage spawnpoints");
 	HookEvent("round_start", onRoundStart);
 	
-	jobs_registerJob("Garbage Collector", "Collect Garbage and put it in the Trash Cans", 20, 400, 3.0);
+	jobs_registerJob("Garbage Collector", "Collect Garbage and put it in the Trash Cans", 20, 300, 2.068);
 	npc_registerNpcType("Garbagerman Recruiter");
 	resetAmountVars();
 }

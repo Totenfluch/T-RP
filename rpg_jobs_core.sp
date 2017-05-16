@@ -378,7 +378,7 @@ public int Native_getExperienceForNextLevel(Handle plugin, int numParams) {
 		return 0;
 	
 	float level = float(g_ePlayerJob[client][pjJobLevel]);
-	int iExperienceNeeded = RoundToNearest(g_eLoadedJobs[jobId][gJobExperience] * (level * g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage]));
+	int iExperienceNeeded = RoundToNearest(g_eLoadedJobs[jobId][gJobExperience] * (Pow(level, g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage])));
 	
 	return iExperienceNeeded;
 }
@@ -576,10 +576,10 @@ public void increaseExperience(int client, int amount, char jobname[128]) {
 		return;
 	
 	float level = float(g_ePlayerJob[client][pjJobLevel]);
-	int iExperienceNeeded = RoundToNearest(g_eLoadedJobs[jobId][gJobExperience] * (level * g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage]));
+	int iExperienceNeeded = RoundToNearest(g_eLoadedJobs[jobId][gJobExperience] * (Pow(level, g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage])));
 	while ((g_ePlayerJob[client][pjJobExperience] >= iExperienceNeeded) && g_ePlayerJob[client][pjJobLevel] <= g_eLoadedJobs[jobId][gMaxJobLevels]) {
 		level = float(g_ePlayerJob[client][pjJobLevel]);
-		iExperienceNeeded = RoundToNearest(g_eLoadedJobs[jobId][gJobExperience] * (level * g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage]));
+		iExperienceNeeded = RoundToNearest(g_eLoadedJobs[jobId][gJobExperience] * (Pow(level, g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage])));
 		g_ePlayerJob[client][pjJobExperience] -= iExperienceNeeded;
 		g_ePlayerJob[client][pjJobLevel]++;
 		triggerLevelUp(client, jobname);

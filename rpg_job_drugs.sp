@@ -46,8 +46,9 @@ char g_cInPapaverZones[MAX_ZONES][PLATFORM_MAX_PATH];
 int g_iPapaverZoneCooldown[MAXPLAYERS + 1][MAX_ZONES];
 int g_iLoadedZones = 0;
 
-int g_iZoneCooldown = 44;
+int g_iZoneCooldown = 440;
 int MAX_COLLECT = 2;
+int TIME_TO_NEXT_STAGE = 120;
 
 char activeZone[MAXPLAYERS + 1][128];
 
@@ -135,7 +136,7 @@ public int papaverItemHandler(Handle menu, MenuAction action, int client, int it
 			int amount = inventory_getPlayerItemAmount(client, "Papaver");
 			inventory_removePlayerItems(client, "Papaver", amount, "Throwed all away");
 		} else if (StrEqual(info, "crush")) {
-			jobs_startProgressBar(client, 10, "Crush Papaver");
+			jobs_startProgressBar(client, 20, "Crush Papaver");
 		}
 	}
 	if (action == MenuAction_End) {
@@ -240,12 +241,12 @@ public int drugMenuHandler(Handle menu, MenuAction action, int client, int item)
 			tConomy_removeCurrency(client, 2500, "Bought Lockpick");
 			inventory_givePlayerItem(client, "Lockpick", 1, "", "Criminal", "Apartment Stuff", 1, "Bought from Vendor");
 		} else if (StrEqual(cValue, "sellDrugs") && inventory_hasPlayerItem(client, "Fresh Marijuana")) {
-			tConomy_addCurrency(client, 125, "Sold Fresh Marijuana");
+			tConomy_addCurrency(client, 150, "Sold Fresh Marijuana");
 			inventory_removePlayerItems(client, "Fresh Marijuana", 1, "Sold to Drug Dealer");
 		} else if (StrEqual(cValue, "sellAllMarijuana")) {
 			int itemamount = inventory_getPlayerItemAmount(client, "Fresh Marijuana");
 			if (inventory_removePlayerItems(client, "Fresh Marijuana", itemamount, "Sold to Vendor (Mass Sell)"))
-				tConomy_addCurrency(client, 125 * itemamount, "Sold Fresh Marijuana to Vendor");
+				tConomy_addCurrency(client, 150 * itemamount, "Sold Fresh Marijuana to Vendor");
 		} else if (StrEqual(cValue, "skin") && tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_isActiveJob(client, "Drug Planter")) {
 			tConomy_removeCurrency(client, 15000, "Bought Skin");
 			inventory_givePlayerItem(client, "Niko", 0, "", "Skin", "Skin", 1, "Bought from Drug Vendor");
@@ -268,7 +269,7 @@ public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 
 public void OnMapStart() {
 	npc_registerNpcType(npctype);
-	jobs_registerJob("Drug Planter", "Plant drugs to earn money but don't get cought by the Police", 20, 600, 3.0);
+	jobs_registerJob("Drug Planter", "Plant drugs to earn money but don't get cought by the Police", 20, 300, 2.02);
 	inventory_addItemHandle("Marijuana Seeds", 1);
 	inventory_addItemHandle("Papaver", 1);
 	CreateTimer(10.0, refreshTimer, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
@@ -282,7 +283,7 @@ public Action refreshTimer(Handle Timer) {
 	for (int plant = 0; plant < MAX_PLANTS; plant++) {
 		if (g_ePlayerPlants[plant][pActive] && g_ePlayerPlants[plant][pState] < 3) {
 			g_ePlayerPlants[plant][pTime] += 10;
-			if (g_ePlayerPlants[plant][pTime] >= 60) {
+			if (g_ePlayerPlants[plant][pTime] >= TIME_TO_NEXT_STAGE) {
 				g_ePlayerPlants[plant][pTime] = 0;
 				g_ePlayerPlants[plant][pState]++;
 				evolvePlant(g_ePlayerPlants[plant][pEntRef], g_ePlayerPlants[plant][pState]);
@@ -442,11 +443,11 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 								g_iHarvestIndex[client] = ent;
 							} else {
 								if (perks_hasPerk(client, "Drug Harvest Boost 2"))
-									jobs_startProgressBar(client, 60, "Harvest Plant");
+									jobs_startProgressBar(client, 90, "Harvest Plant");
 								else if (perks_hasPerk(client, "Drug Harvest Boost 1"))
-									jobs_startProgressBar(client, 80, "Harvest Plant");
+									jobs_startProgressBar(client, 120, "Harvest Plant");
 								else
-									jobs_startProgressBar(client, 100, "Harvest Plant");
+									jobs_startProgressBar(client, 150, "Harvest Plant");
 								g_iHarvestIndex[client] = ent;
 							}
 						} else {
@@ -702,5 +703,5 @@ public void furniture_OnFurnitureInteract(int entity, int client, char name[64],
 		return;
 	
 	if (inventory_hasPlayerItem(client, "Crushed Papaver") && inventory_hasPlayerItem(client, "Morphine"))
-		jobs_startProgressBar(client, 50, "Mix Heroin");
+		jobs_startProgressBar(client, 75, "Mix Heroin");
 }

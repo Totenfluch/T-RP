@@ -41,7 +41,7 @@ public void OnPluginStart() {
 }
 
 public void OnMapStart() {
-	jobs_registerJob("Medic", "Bandage all the bleeding people and infuse them with blood", 20, 400, 3.0);
+	jobs_registerJob("Medic", "Bandage all the bleeding people and infuse them with blood", 20, 600, 2.6);
 	npc_registerNpcType("Medic Recruiter");
 	interact_registerInteract("Bandage him");
 	interact_registerInteract("Infuse Bloodbag");
@@ -285,6 +285,11 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		AddMenuItem(panel, "bbb", "Buy Blood Bag -B- [3](120$)", tConomy_getCurrency(client) >= 120 && jobs_getLevel(client) >= 3 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 		AddMenuItem(panel, "bbab", "Buy Blood Bag -AB- [3](140$)", tConomy_getCurrency(client) >= 120 && jobs_getLevel(client) >= 3 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 		AddMenuItem(panel, "heal", "Heal to full 100Hp [5](450$)", tConomy_getCurrency(client) >= 450 && jobs_getLevel(client) >= 5 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		
+		AddMenuItem(panel, "skin1", "First Medic Skin [2](500$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 2 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "skin2", "First Medic Skin [3](1500$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 3 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "skin3", "First Medic Skin [5](2500$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 5 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "skin4", "First Medic Skin [8](5000$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 8 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 	}
 	DisplayMenu(panel, client, 60);
 }
@@ -332,6 +337,26 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 				CPrintToChat(client, "{green}[-T-] You were healed by the Medic Recruiter");
 				if (isValidClient(client) && IsPlayerAlive(client))
 					SetEntityHealth(client, 100);
+			}
+		} else if (StrEqual(cValue, "skin1")) {
+			if (tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 2) {
+				tConomy_removeCurrency(client, 500, "Bought Medic Skin1");
+				inventory_givePlayerItem(client, "Medic 1", 0, "", "Skin", "Skin", 1, "Bought from Medic Recruiter");
+			}
+		} else if (StrEqual(cValue, "skin2")) {
+			if (tConomy_getCurrency(client) >= 1500 && jobs_getLevel(client) >= 3) {
+				tConomy_removeCurrency(client, 1500, "Bought Medic Skin2");
+				inventory_givePlayerItem(client, "Medic 2", 0, "", "Skin", "Skin", 1, "Bought from Medic Recruiter");
+			}
+		} else if (StrEqual(cValue, "skin3")) {
+			if (tConomy_getCurrency(client) >= 2500 && jobs_getLevel(client) >= 5) {
+				tConomy_removeCurrency(client, 2500, "Bought Medic Skin3");
+				inventory_givePlayerItem(client, "Medic 3", 0, "", "Skin", "Skin", 1, "Bought from Medic Recruiter");
+			}
+		} else if (StrEqual(cValue, "skin4")) {
+			if (tConomy_getCurrency(client) >= 5000 && jobs_getLevel(client) >= 8) {
+				tConomy_removeCurrency(client, 5000, "Bought Medic Skin4");
+				inventory_givePlayerItem(client, "Medic 4", 0, "", "Skin", "Skin", 1, "Bought from Medic Recruiter");
 			}
 		}
 	}

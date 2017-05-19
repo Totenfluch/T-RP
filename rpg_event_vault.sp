@@ -15,6 +15,7 @@
 #pragma newdecls required
 
 #define MAX_BOMB_TIME 300
+#define MAX_SAW_TIME 50
 
 int g_iGateRef = -1;
 int g_iMoney1Ref = -1;
@@ -25,6 +26,9 @@ int g_iGlow = -1;
 int g_iBombTimeLeft = -1;
 
 int g_iExplosionSprite = -1;
+
+int g_iTablesawRef = -1;
+int g_iSawTimeLeft = -1;
 
 int g_iPlayerPrevButtons[MAXPLAYERS + 1];
 
@@ -58,6 +62,8 @@ public void OnMapStart() {
 	g_iGlow = -1;
 	g_iBombTimeLeft = -1;
 	g_iExplosionSprite = -1;
+	g_iTablesawRef = -1;
+	g_iSawTimeLeft = -1;
 	g_bEventOver = false;
 	
 	g_iGlow = PrecacheModel("sprites/ledglow.vmt");
@@ -72,6 +78,7 @@ public void clearEvent() {
 	int money1Ent = EntRefToEntIndex(g_iMoney1Ref);
 	int bombEnt = EntRefToEntIndex(g_iBombEnt);
 	int money2Ent = EntRefToEntIndex(g_iMoney2Ref);
+	int tablesawEnt = EntRefToEntIndex(g_iTablesawRef);
 	if (IsValidEntity(gateEnt))
 		AcceptEntityInput(gateEnt, "kill");
 	if (IsValidEntity(money1Ent))
@@ -80,12 +87,21 @@ public void clearEvent() {
 		AcceptEntityInput(bombEnt, "kill");
 	if (IsValidEntity(money2Ent))
 		AcceptEntityInput(money2Ent, "kill");
+	if (isValidClient(tablesawEnt))
+		AcceptEntityInput(tablesawEnt, "kill");
 	gateEnt = -1;
 	money1Ent = -1;
 	bombEnt = -1;
 	money2Ent = -1;
 	g_iBombTimeLeft = -1;
+	tablesawEnt = -1;
+	g_iSawTimeLeft = -1;
 	g_bEventOver = false;
+	if (findVaultDoor() != -1) {
+		SetVariantString("vault_close");
+		AcceptEntityInput(findVaultDoor(), "SetAnimation");
+		doorState = false;
+	}
 }
 
 public void resetEvent() {
@@ -183,7 +199,7 @@ public void setupEvent() {
 	g_bEventOver = false;
 }
 
-public void setupBomb(int client) {
+public void announceRobbery(int client) {
 	char robString[64];
 	Format(robString, sizeof(robString), "%N tries to rob the Bank!!!", client);
 	PrintToChatAll(robString, client);
@@ -192,13 +208,55 @@ public void setupBomb(int client) {
 	for (int i = 1; i < MAXPLAYERS; i++)
 	if (isValidClient(i))
 		showHudMsg(i, robString, 255, 0, 0, 0.0, 3.0, 5.0);
+}
+
+public void setupSaw(int client) {
+	announceRobbery(client);
+	/*[Measure] Got Point 1 at X:-2058.26 Y:-4047.40 Z:-112.18
+	[Measure] Got Point 2 at X:-2057.73 Y:-4047.40 Z:-74.34*/
+	/* Create Saw */
+	int sawEnt = CreateEntityByName("prop_dynamic_override");
+	if (sawEnt == -1)
+		return;
+		
+	char modelPath[128];
+	Format(modelPath, sizeof(modelPath), "models/props/cs_militia/circularsaw01.mdl");
+	PrecacheModel(modelPath, true);
+	SetEntityModel(sawEnt, modelPath);
+	DispatchKeyValue(sawEnt, "Solid", "6");
+	SetEntProp(sawEnt, Prop_Send, "m_nSolidType", 6);
+	SetEntProp(sawEnt, Prop_Data, "m_CollisionGroup", COLLISION_GROUP_NONE);
+	
+	float bombPos[3];
+	bombPos[0] = -2058.26;
+	bombPos[1] = -4047.40;
+	bombPos[2] = -112.18;
+	
+	float bombAngles[3];
+	bombAngles[1] = 180.0; // Korrekt
+	bombAngles[2] = 90.0; // Korrekt
+	bombAngles[0] = 270.0;
+	
+	TeleportEntity(sawEnt, bombPos, bombAngles, NULL_VECTOR);
+	
+	Entity_SetGlobalName(sawEnt, "Door Saw");
+	g_iTablesawRef = EntIndexToEntRef(sawEnt);
+	
+	SetVariantString("idle");
+	AcceptEntityInput(sawEnt, "SetAnimation");
+	
+	g_iSawTimeLeft = MAX_SAW_TIME;
+}
+
+public void setupBomb(int client) {
+	announceRobbery(client);
 	/* Create Bomb */
 	int bombEnt = CreateEntityByName("prop_dynamic_override");
 	if (bombEnt == -1)
 		return;
 	char modelPath[128];
 	Format(modelPath, sizeof(modelPath), "models/weapons/w_c4_planted.mdl");
-	PrecacheModel("models/weapons/w_c4_planted.mdl", true);
+	PrecacheModel(modelPath, true);
 	SetEntityModel(bombEnt, modelPath);
 	DispatchKeyValue(bombEnt, "Solid", "6");
 	SetEntProp(bombEnt, Prop_Send, "m_nSolidType", 6);
@@ -235,6 +293,36 @@ public Action refreshTimer(Handle Timer) {
 	if (IsValidEdict(g_iBombEnt))
 		if (IsValidEntity(EntRefToEntIndex(g_iBombEnt)))
 		bombBeep();
+	if (IsValidEdict(g_iTablesawRef)) {
+		if (IsValidEntity(EntRefToEntIndex(g_iTablesawRef))) {
+			if (g_iSawTimeLeft > 0)
+				g_iSawTimeLeft--;
+			if (g_iSawTimeLeft == 0) {
+				int tablesawEnt = EntRefToEntIndex(g_iTablesawRef);
+				if (IsValidEntity(tablesawEnt))
+					AcceptEntityInput(tablesawEnt, "kill");
+				tablesawEnt = -1;
+				g_iTablesawRef = -1;
+				if (findVaultDoor() != -1) {
+					SetVariantString("vault_open");
+					AcceptEntityInput(findVaultDoor(), "SetAnimation");
+					doorState = true;
+				}
+			}
+		}
+	}
+}
+
+public int findVaultDoor() {
+	int entity = 0;
+	while ((entity = FindEntityByClassname(entity, "prop_dynamic")) != INVALID_ENT_REFERENCE) {
+		char uniqueId[64];
+		GetEntPropString(entity, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
+		if (StrEqual(uniqueId, "vault_door_01")) {
+			return entity;
+		}
+	}
+	return -1;
 }
 
 public void bombBeep() {
@@ -319,7 +407,15 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 							jobs_startProgressBar(client, 300, "Steal Vault Money");
 							g_iLastMoneyTarget[client] = EntIndexToEntRef(ent);
 						}
-					} else if (StrEqual(entName, "vault_door_01")) {
+					} else if(!doorState && StrEqual(entName, "vault_door_01")) {
+						if(inventory_hasPlayerItem(client, "Tablesaw")){
+							if(inventory_removePlayerItems(client, "Tablesaw", 1, "Robbing Bank"))
+								setupSaw(client);
+						}
+					}
+					
+					
+					/* else if (StrEqual(entName, "vault_door_01")) {
 						if (!doorState) {
 							SetVariantString("vault_open");
 							AcceptEntityInput(ent, "SetAnimation");
@@ -329,7 +425,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 							AcceptEntityInput(ent, "SetAnimation");
 							doorState = false;
 						}
-					}
+					}*/
 				}
 			}
 		}

@@ -205,15 +205,15 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		AddMenuItem(menu, "sellAllMarijuana", sellAll);
 	}
 	
+	AddMenuItem(menu, "skin1", "First Drug Dealer Skin [2](500$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 2 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "skin2", "Second Drug Dealer Skin [5](1500$)", tConomy_getCurrency(client) >= 1500 && jobs_getLevel(client) >= 4 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+	AddMenuItem(menu, "skin3", "Third Drug Dealer Skin [8](2500$)", tConomy_getCurrency(client) >= 2500 && jobs_getLevel(client) >= 6 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+	
 	if (tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_isActiveJob(client, "Drug Planter"))
 		AddMenuItem(menu, "skin", "Buy Niko Skin (15000)[20]");
 	else
 		AddMenuItem(menu, "skin", "Buy Niko Skin (15000)[20]", ITEMDRAW_DISABLED);
 	
-	if (tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_isActiveJob(client, "Drug Planter"))
-		AddMenuItem(menu, "skin2", "Buy Gangster Skin (15000)[20]");
-	else
-		AddMenuItem(menu, "skin2", "Buy Gangster Skin (15000)[20]", ITEMDRAW_DISABLED);
 	
 	DisplayMenu(menu, client, 60);
 }
@@ -250,9 +250,15 @@ public int drugMenuHandler(Handle menu, MenuAction action, int client, int item)
 		} else if (StrEqual(cValue, "skin") && tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_isActiveJob(client, "Drug Planter")) {
 			tConomy_removeCurrency(client, 15000, "Bought Skin");
 			inventory_givePlayerItem(client, "Niko", 0, "", "Skin", "Skin", 1, "Bought from Drug Vendor");
-		} else if (StrEqual(cValue, "skin2") && tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_isActiveJob(client, "Drug Planter")) {
-			tConomy_removeCurrency(client, 15000, "Bought Skin");
+		} else if (StrEqual(cValue, "skin1") && tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 2 && jobs_isActiveJob(client, "Drug Planter")) {
+			tConomy_removeCurrency(client, 500, "Bought Skin");
 			inventory_givePlayerItem(client, "Gangster I", 0, "", "Skin", "Skin", 1, "Bought from Drug Vendor");
+		} else if (StrEqual(cValue, "skin2") && tConomy_getCurrency(client) >= 1500 && jobs_getLevel(client) >= 5 && jobs_isActiveJob(client, "Drug Planter")) {
+			tConomy_removeCurrency(client, 1500, "Bought Skin");
+			inventory_givePlayerItem(client, "Gangster II", 0, "", "Skin", "Skin", 1, "Bought from Drug Vendor");
+		} else if (StrEqual(cValue, "skin3") && tConomy_getCurrency(client) >= 2500 && jobs_getLevel(client) >= 8 && jobs_isActiveJob(client, "Drug Planter")) {
+			tConomy_removeCurrency(client, 2500, "Bought Skin");
+			inventory_givePlayerItem(client, "Gangster III", 0, "", "Skin", "Skin", 1, "Bought from Drug Vendor");
 		}
 	}
 	if (action == MenuAction_End) {

@@ -186,6 +186,7 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 	} else if (jobs_isActiveJob(client, "Gardener")) {
 		SetMenuTitle(panel, "Welcome Gardener!");
 		AddMenuItem(panel, "x", "Are you having a nice day?", ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "skin1", "First Gardener Skin [2](500$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 2 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 	}
 	DisplayMenu(panel, client, 60);
 }
@@ -196,6 +197,11 @@ public int JobPanelHandler(Handle menu, MenuAction action, int client, int item)
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		if (StrEqual(cValue, "givejob")) {
 			jobs_giveJob(client, "Gardener");
+		} else if (StrEqual(cValue, "skin1")) {
+			if (tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 2) {
+				tConomy_removeCurrency(client, 500, "Bought Medic Skin4");
+				inventory_givePlayerItem(client, "Gardener", 0, "", "Skin", "Skin", 1, "Bought from Gardener Recruiter");
+			}
 		}
 	}
 	if (action == MenuAction_End) {

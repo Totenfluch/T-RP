@@ -88,7 +88,7 @@ public void OnMapStart() {
 }
 
 public void furniture_OnFurnitureInteract(int entity, int client, char name[64], char lfBuf[64], char flags[8], char ownerId[20], int durability) {
-	if (!StrEqual(name, "Wardrobe"))
+	if (!StrEqual(name, "Wardrobe") && StrContains(lfBuf, "wardrobe", false) == -1)
 		return;
 	
 	g_iLastWardrobeUsed[client] = entity;

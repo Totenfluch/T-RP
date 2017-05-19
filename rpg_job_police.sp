@@ -194,7 +194,7 @@ public Plugin myinfo =
 };
 
 public void OnPluginStart() {
-	jobs_registerJob("Police", "Stop the criminals from beeing criminal", 7, 400, 6.0);
+	jobs_registerJob("Police", "Stop the criminals from beeing criminal", 7, 1200, 3.0);
 	npc_registerNpcType("Police Recruiter");
 	npc_registerNpcType("Police Weapon Vendor");
 	

@@ -14,8 +14,8 @@
 
 #pragma newdecls required
 
-#define MAX_BOMB_TIME 300
-#define MAX_SAW_TIME 50
+#define MAX_BOMB_TIME 30
+#define MAX_SAW_TIME 300
 
 int g_iGateRef = -1;
 int g_iMoney1Ref = -1;
@@ -207,7 +207,7 @@ public void announceRobbery(int client) {
 	PrintToChatAll(robString, client);
 	for (int i = 1; i < MAXPLAYERS; i++)
 	if (isValidClient(i))
-		showHudMsg(i, robString, 255, 0, 0, 0.0, 3.0, 5.0);
+		showHudMsg(i, robString, 255, 0, 0, 0.0, 0.5, 5.0);
 }
 
 public void setupSaw(int client) {
@@ -218,7 +218,7 @@ public void setupSaw(int client) {
 	int sawEnt = CreateEntityByName("prop_dynamic_override");
 	if (sawEnt == -1)
 		return;
-		
+	
 	char modelPath[128];
 	Format(modelPath, sizeof(modelPath), "models/props/cs_militia/circularsaw01.mdl");
 	PrecacheModel(modelPath, true);
@@ -288,15 +288,16 @@ public Action refreshTimer(Handle Timer) {
 		g_iEventOverSince++;
 	if (g_iEventOverSince == 7200)
 		resetEvent();
-	if (g_iBombEnt == -1)
-		return;
-	if (IsValidEdict(g_iBombEnt))
+	if (g_iBombEnt != -1)
+		if (IsValidEdict(g_iBombEnt))
 		if (IsValidEntity(EntRefToEntIndex(g_iBombEnt)))
 		bombBeep();
 	if (IsValidEdict(g_iTablesawRef)) {
 		if (IsValidEntity(EntRefToEntIndex(g_iTablesawRef))) {
 			if (g_iSawTimeLeft > 0)
 				g_iSawTimeLeft--;
+			if (g_iSawTimeLeft % 60 == 0 || g_iSawTimeLeft == 30)
+				PrintToChatAll("[-T-] %i seconds until the Vault is breached!!", g_iSawTimeLeft);
 			if (g_iSawTimeLeft == 0) {
 				int tablesawEnt = EntRefToEntIndex(g_iTablesawRef);
 				if (IsValidEntity(tablesawEnt))
@@ -407,11 +408,18 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 							jobs_startProgressBar(client, 300, "Steal Vault Money");
 							g_iLastMoneyTarget[client] = EntIndexToEntRef(ent);
 						}
-					} else if(!doorState && StrEqual(entName, "vault_door_01")) {
-						if(inventory_hasPlayerItem(client, "Tablesaw")){
-							if(inventory_removePlayerItems(client, "Tablesaw", 1, "Robbing Bank"))
-								setupSaw(client);
+					} else if (!doorState && StrEqual(entName, "vault_door_01")) {
+						if (getPoliceCount() >= 3) {
+							if (inventory_removePlayerItems(client, "c4", 1, "planted c4")) {
+								if (inventory_hasPlayerItem(client, "Tablesaw")) {
+									if (inventory_removePlayerItems(client, "Tablesaw", 1, "Robbing Bank"))
+										setupSaw(client);
+								}
+							}
+						} else {
+							PrintToChat(client, "[-T-] Not enough Police Officers online");
 						}
+						
 					}
 					
 					

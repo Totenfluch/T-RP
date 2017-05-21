@@ -8,6 +8,7 @@
 #include <smlib>
 #include <rpg_npc_core>
 #include <multicolors>
+#include <tStocks>
 
 #pragma newdecls required
 
@@ -508,7 +509,7 @@ public void SQLFindCooldownQuery(Handle owner, Handle hndl, const char[] error, 
 	int client = GetClientOfUserId(prepInfos.ReadCell());
 	char jobname[128];
 	prepInfos.ReadString(jobname, sizeof(jobname));
-	if(!isValidClient(client))
+	if (!isValidClient(client))
 		return;
 	
 	bool canAcceptJob = true;
@@ -518,12 +519,12 @@ public void SQLFindCooldownQuery(Handle owner, Handle hndl, const char[] error, 
 		PrintToChat(client, "[-T-] You have to wait %s until you can take another job", timediff);
 		canAcceptJob = false;
 	}
-
-	if(canAcceptJob)
+	
+	if (canAcceptJob)
 		performAcceptJob(client, jobname);
 }
 
-public void performAcceptJob(int client, char jobname[128]){
+public void performAcceptJob(int client, char jobname[128]) {
 	leaveJob(client);
 	
 	char playerid[20];
@@ -556,8 +557,15 @@ public void performAcceptJob(int client, char jobname[128]){
 	Call_PushString(g_ePlayerJob[client][pjJobname]);
 	Call_Finish();
 	
+	int cooldown = 60;
+	if (isVipRank2(client)) {
+		cooldown = 20;
+	} else if (isVipRank1(client)) {
+		cooldown = 30;
+	}
+	
 	char setCooldownQuery[1024];
-	Format(setCooldownQuery, sizeof(setCooldownQuery), "INSERT IGNORE INTO `t_rpg_jobs_cooldowns` (`playerid`, `startcd`, `endcd`) VALUES ('%s', CURRENT_TIMESTAMP, TIMESTAMPADD(HOUR,1,CURRENT_TIMESTAMP))", playerid);
+	Format(setCooldownQuery, sizeof(setCooldownQuery), "INSERT IGNORE INTO `t_rpg_jobs_cooldowns` (`playerid`, `startcd`, `endcd`) VALUES ('%s', CURRENT_TIMESTAMP, TIMESTAMPADD(MINUTE,%i,CURRENT_TIMESTAMP))", playerid, cooldown);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, setCooldownQuery);
 	loadClientJob(client);
 }
@@ -565,6 +573,12 @@ public void performAcceptJob(int client, char jobname[128]){
 public void increaseExperience(int client, int amount, char jobname[128]) {
 	if (StrEqual(g_ePlayerJob[client][pjJobname], ""))return;
 	if (!StrEqual(g_ePlayerJob[client][pjJobname], jobname))return;
+	
+	if (isVipRank2(client)) {
+		amount = RoundToFloor(amount * 1.05);
+	} else if (isVipRank1(client)) {
+		amount = RoundToFloor(amount * 1.03);
+	}
 	
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
@@ -634,17 +648,17 @@ public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error,
 
 public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
 	if (IsClientInGame(client) && IsPlayerAlive(client) && g_bProgressBarActive[client]) {
-		if (!(g_iPlayerPrevButtons[client] & IN_FORWARD) && iButtons & IN_FORWARD)
+		if (iButtons & IN_FORWARD)
 			interruptProgressBar(client);
-		if (!(g_iPlayerPrevButtons[client] & IN_BACK) && iButtons & IN_BACK)
+		if (iButtons & IN_BACK)
 			interruptProgressBar(client);
-		if (!(g_iPlayerPrevButtons[client] & IN_MOVELEFT) && iButtons & IN_MOVELEFT)
+		if (iButtons & IN_MOVELEFT)
 			interruptProgressBar(client);
-		if (!(g_iPlayerPrevButtons[client] & IN_MOVERIGHT) && iButtons & IN_MOVERIGHT)
+		if (iButtons & IN_MOVERIGHT)
 			interruptProgressBar(client);
-		if (!(g_iPlayerPrevButtons[client] & IN_DUCK) && iButtons & IN_DUCK)
+		if (iButtons & IN_DUCK)
 			interruptProgressBar(client);
-		if (!(g_iPlayerPrevButtons[client] & IN_JUMP) && iButtons & IN_JUMP)
+		if (iButtons & IN_JUMP)
 			interruptProgressBar(client);
 		
 		g_iPlayerPrevButtons[client] = iButtons;
@@ -653,6 +667,8 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 }
 
 public void startProgress(int client, int time, char info[64]) {
+	if (!(GetEntityFlags(client) & FL_ONGROUND))
+		return;
 	//SetEntPropFloat(client, Prop_Send, "m_flProgressBarStartTime", GetGameTime());
 	//SetEntProp(client, Prop_Send, "m_iProgressBarDuration", time);
 	if (g_bProgressBarActive[client])
@@ -700,13 +716,6 @@ public int findLoadedJobIdByName(char jobname[128]) {
 			return i;
 	}
 	return -1;
-}
-
-stock bool isValidClient(int client) {
-	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
-		return false;
-	
-	return true;
 }
 
 public Action cmdGiveXp(int client, int args) {

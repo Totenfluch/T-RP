@@ -562,7 +562,7 @@ public void SQLGetRentInfoCallback(Handle owner, Handle hndl, const char[] error
 		AddMenuItem(m, "x", startDisplay, ITEMDRAW_DISABLED);
 		AddMenuItem(m, "x", endDisplay, ITEMDRAW_DISABLED);
 		AddMenuItem(m, "x", timediffDisplay, ITEMDRAW_DISABLED);
-		AddMenuItem(m, "increase", "Extend Rent by 2 Weeks", hoursLeft < 168 ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+		AddMenuItem(m, "increase", "Extend Rent by 7 Days", ((hoursLeft < 168) || (isVipRank1(client) && (hoursLeft < 336))) ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 		DisplayMenu(m, client, 30);
 	}
 }
@@ -586,7 +586,14 @@ public int rentMenuHandler(Handle menu, MenuAction action, int client, int item)
 						Format(menuTitle, sizeof(menuTitle), "Extend Rent of: %s", ownedApartments[ownedId][oaApartmentName]);
 						SetMenuTitle(apartmentMenu, menuTitle);
 						char extendRentDisplay[70];
-						Format(extendRentDisplay, sizeof(extendRentDisplay), "Extend Rent by 7 Days for %i", RoundToNearest(existingApartments[zoneId][eaApartment_Price] * 0.1));
+						
+						int aptPrice = RoundToNearest(existingApartments[zoneId][eaApartment_Price] * 0.1);
+						if (isVipRank2(client))
+							aptPrice = RoundToNearest(aptPrice / 2.0);
+						else if (isVipRank1(client))
+							aptPrice = RoundToNearest(aptPrice - (aptPrice / 4.0));
+						
+						Format(extendRentDisplay, sizeof(extendRentDisplay), "Extend Rent by 7 Days for %i", aptPrice);
 						AddMenuItem(apartmentMenu, "x", "Do nothing");
 						bool hasMoney = float(existingApartments[zoneId][eaApartment_Price]) < RoundToNearest(tConomy_getCurrency(client) * 0.1);
 						AddMenuItem(apartmentMenu, "extendRent", extendRentDisplay, hasMoney ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
@@ -609,14 +616,20 @@ public int doRentMenuHandler(Handle menu, MenuAction action, int client, int ite
 		char cValue[32];
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		if (StrEqual(cValue, "extendRent")) {
-			if (float(tConomy_getCurrency(client)) >= RoundToNearest(existingApartments[increaseRentZoneId[client]][eaApartment_Price] * 0.1)) {
+			int aptPrice = RoundToNearest(existingApartments[increaseRentZoneId[client]][eaApartment_Price] * 0.1);
+			if (isVipRank2(client))
+				aptPrice = RoundToNearest(aptPrice / 2.0);
+			else if (isVipRank1(client))
+				aptPrice = RoundToNearest(aptPrice - (aptPrice / 4.0));
+			
+			if (float(tConomy_getCurrency(client)) >= aptPrice) {
 				char takeReason[256];
-				Format(takeReason, sizeof(takeReason), "Rented Apartment: %s for 7 Days", existingApartments[increaseRentZoneId[client]][eaApartment_Id]);
-				tConomy_removeCurrency(client, RoundToNearest(existingApartments[increaseRentZoneId[client]][eaApartment_Price] * 0.1), takeReason);
+				Format(takeReason, sizeof(takeReason), "Rented Apartment: %s for 7 more Days", aptPrice);
+				tConomy_removeCurrency(client, aptPrice, takeReason);
 				char updateRentQuery[1024];
 				Format(updateRentQuery, sizeof(updateRentQuery), "UPDATE t_rpg_apartment_rent SET endrent = TIMESTAMPADD(DAY,7,endrent) WHERE Id = (SELECT Id FROM t_rpg_apartments WHERE apartment_id = '%s');", existingApartments[increaseRentZoneId[client]][eaApartment_Id]);
 				SQL_TQuery(g_DB, SQLErrorCheckCallback, updateRentQuery);
-				PrintToChat(client, "Extended %s by 7 Days for %i$", existingApartments[increaseRentZoneId[client]][eaApartment_Id], float(RoundToNearest(existingApartments[increaseRentZoneId[client]][eaApartment_Price] * 0.1)));
+				PrintToChat(client, "Extended %s by 7 Days for %i$", existingApartments[increaseRentZoneId[client]][eaApartment_Id], aptPrice);
 				displayRentInfosToClient(client);
 			}
 		}

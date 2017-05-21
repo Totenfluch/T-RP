@@ -116,6 +116,7 @@ public void OnPlayerInteract(int client, int target, char interaction[64]) {
 					} else if (g_iBloodGroup[target] == 2) {
 						CPrintToChat(client, "{green}[-T-] %N has the Blood Group B", target);
 					}
+					jobs_addExperience(client, 5, "Tested Blood");
 				}
 			}
 		} else {
@@ -281,9 +282,9 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		SetMenuTitle(panel, "Medic Shop");
 		AddMenuItem(panel, "bandage", "Buy Bandage (40$)", tConomy_getCurrency(client) >= 40 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 		AddMenuItem(panel, "bt", "Buy Bloodtest [2](20$)", tConomy_getCurrency(client) >= 20 && jobs_getLevel(client) >= 2 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-		AddMenuItem(panel, "bba", "Buy Blood Bag -A- [3](120$)", tConomy_getCurrency(client) >= 120 && jobs_getLevel(client) >= 3 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-		AddMenuItem(panel, "bbb", "Buy Blood Bag -B- [3](120$)", tConomy_getCurrency(client) >= 120 && jobs_getLevel(client) >= 3 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-		AddMenuItem(panel, "bbab", "Buy Blood Bag -AB- [3](140$)", tConomy_getCurrency(client) >= 120 && jobs_getLevel(client) >= 3 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "bba", "Buy Blood Bag -A- [2](120$)", tConomy_getCurrency(client) >= 120 && jobs_getLevel(client) >= 2 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "bbb", "Buy Blood Bag -B- [2](120$)", tConomy_getCurrency(client) >= 120 && jobs_getLevel(client) >= 2 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "bbab", "Buy Blood Bag -AB- [2](140$)", tConomy_getCurrency(client) >= 120 && jobs_getLevel(client) >= 2 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 		AddMenuItem(panel, "heal", "Heal to full 100Hp [5](450$)", tConomy_getCurrency(client) >= 450 && jobs_getLevel(client) >= 5 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 		
 		AddMenuItem(panel, "skin1", "First Medic Skin [2](500$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 2 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);

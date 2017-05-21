@@ -85,8 +85,8 @@ public int giveMoneyMenuHandler(Handle menu, MenuAction action, int client, int 
 				return;
 			Format(reason1, sizeof(reason1), "Gave %i to %N", handMoney, g_iPlayerTarget[client]);
 			Format(reason2, sizeof(reason2), "Recieved %i from %N", handMoney, client);
-			tConomy_removeCurrency(client, handMoney, reason2);
-			tConomy_addCurrency(g_iPlayerTarget[client], handMoney, reason1);
+			tConomy_removeCurrency(client, handMoney, reason1);
+			tConomy_addCurrency(g_iPlayerTarget[client], handMoney, reason2);
 		} else {
 			int iValue = StringToInt(cValue);
 			if (iValue <= tConomy_getCurrency(client)) {

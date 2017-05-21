@@ -24,6 +24,7 @@ enum ItemCollection {
 	* n -> Doesn't use a Player inventory slot
 	* u -> Unique
 	* l -> locked (can't use)
+	* v -> VIP only
 	*/
 	String:iCategory[64], 
 	String:iCategory2[64], 
@@ -32,7 +33,8 @@ enum ItemCollection {
 	iRarity, 
 	bool:iBuyOrSell,  // Buy true
 	iItemPrice, 
-	String:iVendor[128]
+	String:iVendor[128],
+	iVipFlag
 }
 
 
@@ -124,6 +126,9 @@ public bool loadConfig() {
 		
 		kv.GetString("level", tempVars, 64, "0");
 		g_eLoadedItemCollection[g_iLoadedItems][iJobLevel] = StringToInt(tempVars);
+		
+		kv.GetString("vipflag", tempVars, 64, "-1");
+		g_eLoadedItemCollection[g_iLoadedItems][iVipFlag] = StringToInt(tempVars);
 		
 		char vendorTemp[128];
 		kv.GetString("vendor", vendorTemp, 128, "Custom Vendor");
@@ -230,7 +235,18 @@ public int openVendorMenuHandler(Handle menu, MenuAction action, int client, int
 				Format(requiresJobString, sizeof(requiresJobString), "Requires Job: %s (lvl %i)", jobName, g_eLoadedItemCollection[g_iLoadedItems][iJobLevel]);
 				AddMenuItem(menu2, "x", requiresJobString, ITEMDRAW_DISABLED);
 			}
-			AddMenuItem(menu2, info, "Confirm Purchase", hasMoney && hasJob && hasJobLevel ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+			if(g_eLoadedItemCollection[g_iLoadedItems][iVipFlag] != -1){
+				char requireVip[64];
+				Format(requireVip, sizeof(requireVip), "Requires VIP");
+				AddMenuItem(menu2, "x", requireVip, ITEMDRAW_DISABLED);
+			}
+			int isVipFlagValid = g_eLoadedItemCollection[g_iLoadedItems][iVipFlag] != -1;
+			int hasVipFlag = false;
+			if(isVipFlagValid){
+				hasVipFlag = CheckCommandAccess(client, "sm_vipcheck", (1 << g_eLoadedItemCollection[g_iLoadedItems][iVipFlag]), true);
+			}
+			
+			AddMenuItem(menu2, info, "Confirm Purchase", hasMoney && hasJob && hasJobLevel && hasVipFlag ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 		} else {
 			char itemName2[128];
 			strcopy(itemName2, sizeof(itemName2), g_eLoadedItemCollection[id][iItemname]);

@@ -31,6 +31,9 @@ public Action cmdUnstuck(int client, int args) {
 	if (isValidClient(client))
 		if (g_iCooldown[client] == 0)
 		jobs_startProgressBar(client, 300, "Unstuck");
+	else
+		PrintToChat(client, "[-T-] You have %is Cooldown left", g_iCooldown[client]);
+	return Plugin_Handled;
 }
 
 public void OnClientPostAdminCheck(int client) {

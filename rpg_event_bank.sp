@@ -1,7 +1,7 @@
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "Totenfluch"
-#define PLUGIN_VERSION "1.00"
+#define PLUGIN_VERSION "1.1"
 
 #include <sourcemod>
 #include <sdktools>
@@ -10,10 +10,11 @@
 #include <rpg_jobs_core>
 #include <tCrime>
 #include <map_workshop_functions>
+#include <tStocks>
 
 #pragma newdecls required
 
-#define DESPAWN_TIME 12
+#define DESPAWN_TIME 48
 #define MAX_SAFEPOINTS 10
 
 enum safeState {
@@ -230,8 +231,12 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					GetClientAbsOrigin(client, ppos);
 					if (GetVectorDistance(ppos, pos) < 100.0) {
 						if (inventory_hasPlayerItem(client, "Lockpick")) {
-							jobs_startProgressBar(client, 150, "Lockpick Safe");
-							g_iLastInteractedWith[client] = ent;
+							if (getPoliceCount() != 0) {
+								jobs_startProgressBar(client, 150, "Lockpick Safe");
+								g_iLastInteractedWith[client] = ent;
+							} else {
+								PrintToChat(client, "[-T-] There needs to be atleast one Police officer for you to do that");
+							}
 						}
 					} else {
 						PrintToChat(client, "This Safe is too far away (%.2f/100.0)", GetVectorDistance(ppos, pos));
@@ -264,17 +269,17 @@ public void jobs_OnProgressBarInterrupted(int client, char info[64]) {
 
 public void jobs_OnProgressBarFinished(int client, char info[64]) {
 	if (StrEqual(info, "Lockpick Safe")) {
-		if (GetRandomInt(0, 4) == 1) {
+		if (GetRandomInt(0, 6) == 1) {
 			openSafe();
 			PrintToChat(client, "lockpicked Safe");
-			tCrime_addCrime(client, 300);
+			tCrime_addCrime(client, 500);
 		} else {
 			PrintToChat(client, "lockpicking failed");
-			tCrime_addCrime(client, 75);
+			tCrime_addCrime(client, 100);
 		}
 		if (GetRandomInt(0, 2) == 1) {
 			inventory_removePlayerItems(client, "Lockpick", 1, "Lockpick broke");
-			tCrime_addCrime(client, 50);
+			tCrime_addCrime(client, 75);
 		}
 	}
 }
@@ -312,4 +317,13 @@ public void loadSafeSpawnPoints()
 		CloseHandle(hFile);
 	}
 	PrintToServer("Loaded %i Safe Spawn Points", g_iLoadedSafe);
+}
+
+public int getPoliceCount() {
+	int count = 0;
+	for (int i = 1; i < MAXPLAYERS; i++)
+	if (isValidClient(i))
+		if (jobs_isActiveJob(i, "Police"))
+		count++;
+	return count;
 } 

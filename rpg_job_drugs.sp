@@ -46,7 +46,7 @@ char g_cInPapaverZones[MAX_ZONES][PLATFORM_MAX_PATH];
 int g_iPapaverZoneCooldown[MAXPLAYERS + 1][MAX_ZONES];
 int g_iLoadedZones = 0;
 
-int g_iZoneCooldown = 440;
+int g_iZoneCooldown = 44;
 int MAX_COLLECT = 2;
 int TIME_TO_NEXT_STAGE = 120;
 
@@ -75,6 +75,7 @@ enum plantProperties {
 
 int g_ePlayerPlants[MAX_PLANTS][plantProperties];
 int g_iPlantsActive = 0;
+int g_iPlantCd[MAXPLAYERS + 1];
 
 int g_iPlayerPlanted[MAXPLAYERS + 1];
 
@@ -169,6 +170,7 @@ public void OnClientAuthorized(int client) {
 	
 	g_bPlayerInPapaverZone[client] = false;
 	g_iPlayerZoneId[client] = -1;
+	g_iPlantCd[client] = 0;
 	for (int zones = 0; zones < MAX_ZONES; zones++) {
 		g_iPapaverZoneCooldown[client][zones] = g_iZoneCooldown;
 		g_iCollectedLoot[client][zones] = 0;
@@ -299,6 +301,7 @@ public Action refreshTimer(Handle Timer) {
 	}
 	
 	for (int i = 1; i < MAXPLAYERS; i++) {
+		g_iPlantCd[i] = 0;
 		if (!isValidClient(i))
 			continue;
 		for (int x = 0; x < MAX_ZONES; x++) {
@@ -361,6 +364,11 @@ public Action cmdPlantCommand(int client, int args) {
 		CPrintToChat(client, "[-T-]{red} You can not have more than %i active plants (%i Active)", (4 + jobs_getLevel(client) / 5), g_iPlayerPlanted[client]);
 		return Plugin_Handled;
 	}
+	if (g_iPlantCd[client] != 0) {
+		CPrintToChat(client, "[-T-]{red} Planting is on delay");
+		return Plugin_Handled;
+	}
+	g_iPlantCd[client] = 1;
 	
 	if (jail_isInJail(client)) {
 		CPrintToChat(client, "[-T-]{red} You can't plant drugs in jail...'");
@@ -705,8 +713,13 @@ public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error,
 }
 
 public void furniture_OnFurnitureInteract(int entity, int client, char name[64], char lfBuf[64], char flags[8], char ownerId[20], int durability) {
-	if (!StrEqual(name, "Heroin laboratory"))
+	if (!StrEqual(name, "Heroin-Lab"))
 		return;
+	
+	if (!jobs_isActiveJob(client, "Drug Planter") || jobs_getLevel(client) < 5) {
+		PrintToChat(client, "[-T-] Your Skils insufficient for this...");
+		return;
+	}
 	
 	if (inventory_hasPlayerItem(client, "Crushed Papaver") && inventory_hasPlayerItem(client, "Morphine"))
 		jobs_startProgressBar(client, 75, "Mix Heroin");

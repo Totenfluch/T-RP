@@ -424,7 +424,7 @@ public void firstSpawnFurniture(int client, int id) {
 		if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2])) {
 			if (apartments_isClientOwner(client, activeZone[client])) {
 				int max = getApartmentFurnitureItemsCount(activeZone[client]);
-				int setMax = apartments_getBuyPrice(activeZone[client]) / 2500;
+				int setMax = apartments_getBuyPrice(activeZone[client]) / 12500;
 				if (max < setMax) {
 					// HURRA
 				} else {

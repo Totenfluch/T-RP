@@ -1,3 +1,21 @@
+/*
+							T-RP
+   			Copyright (C) 2017 Christian Ziegler
+   				 
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "Totenfluch"
@@ -47,11 +65,11 @@ ArrayList g_aHandledCategories2;
 
 public Plugin myinfo = 
 {
-	name = "Inventory for T-RP", 
+	name = "[T-RP] Inventory Core", 
 	author = PLUGIN_AUTHOR, 
 	description = "Adds an Item Inventory to T-RP", 
 	version = PLUGIN_VERSION, 
-	url = "http://ggc-base.de"
+	url = "https://totenfluch.de"
 };
 
 public void OnPluginStart() {
@@ -544,10 +562,13 @@ public void loadClientInventory(int client) {
 	
 	char loadClientInventoryQuery[1024];
 	Format(loadClientInventoryQuery, sizeof(loadClientInventoryQuery), "SELECT timestamp,playerid,playername,itemname,itemid,weight,flags,category,category2,rarity FROM t_rpg_items WHERE playerid = '%s' AND container = '';", playerid);
-	SQL_TQuery(g_DB, SQLLoadClientInventoryQuery, loadClientInventoryQuery, client);
+	SQL_TQuery(g_DB, SQLLoadClientInventoryQuery, loadClientInventoryQuery, GetClientUserId(client));
 }
 
 public void SQLLoadClientInventoryQuery(Handle owner, Handle hndl, const char[] error, any data) {
+	int client = GetClientOfUserId(data);
+	if(!isValidClient(client))
+		return;
 	while (SQL_FetchRow(hndl)) {
 		char timestamp[64];
 		char playerid[20];

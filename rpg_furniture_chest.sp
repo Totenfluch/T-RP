@@ -1,3 +1,21 @@
+/*
+							T-RP
+   			Copyright (C) 2017 Christian Ziegler
+   				 
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "Totenfluch"
@@ -8,19 +26,22 @@
 #include <rpg_furniture>
 #include <rpg_inventory_core>
 #include <multicolors>
+#include <tStocks>
 
 #pragma newdecls required
 
 Database g_DB;
 char dbconfig[] = "gsxh_multiroot";
 
+int g_iPlayerPrevButtons[MAXPLAYERS + 1];
+
 public Plugin myinfo = 
 {
-	name = "Furniture Chest for T-RP", 
+	name = "[T-RP] Furniture: Chest", 
 	author = PLUGIN_AUTHOR, 
 	description = "Adds options for the Chest in T-RP", 
 	version = PLUGIN_VERSION, 
-	url = "http://ggc-base.de"
+	url = "https://totenfluch.de"
 };
 
 public void OnPluginStart() {
@@ -70,8 +91,8 @@ public int chooserMenuHandler(Handle menu, MenuAction action, int client, int it
 			openChestForClient(client, g_iLastInteractedWith[client]);
 		}
 	}
-	if (action == MenuAction_End) { 
-    	delete menu; 
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -82,7 +103,16 @@ public void openChestForClient(int client, int ent) {
 	GetEntPropString(ent, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
 	
 	char selectItemsQuery[1024];
-	Format(selectItemsQuery, sizeof(selectItemsQuery), "SELECT itemname,itemid FROM t_rpg_items WHERE container = '%s';", uniqueId);
+	
+	char entName[256];
+	GetEntPropString(ent, Prop_Data, "m_iName", entName, sizeof(entName));
+	if (StrEqual(entName, "button_safes_01")) {
+		char playerid[20];
+		GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+		Format(selectItemsQuery, sizeof(selectItemsQuery), "SELECT itemname,itemid FROM t_rpg_items WHERE container = '%s' AND playerid = '%s';", uniqueId, playerid);
+	} else
+		Format(selectItemsQuery, sizeof(selectItemsQuery), "SELECT itemname,itemid FROM t_rpg_items WHERE container = '%s';", uniqueId);
+		
 	SQL_TQuery(g_DB, loadItemsFromChestCallback, selectItemsQuery, client);
 }
 
@@ -129,8 +159,8 @@ public int takeItemMenuHandler(Handle menu, MenuAction action, int client, int i
 		inventory_transferItemFromContainer(client, containerName, itemid);
 		openChestForClient(client, g_iLastInteractedWith[client]);
 	}
-	if (action == MenuAction_End) { 
-    	delete menu; 
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
@@ -139,7 +169,16 @@ public void getItemsInChest(int client, int entity) {
 	GetEntPropString(entity, Prop_Data, "m_iName", containerName, sizeof(containerName));
 	
 	char getTheItemsInChest[1024];
-	Format(getTheItemsInChest, sizeof(getTheItemsInChest), "SELECT Count(*) as amount from t_rpg_items WHERE container = '%s';", containerName);
+	
+	char entName[256];
+	GetEntPropString(entity, Prop_Data, "m_iName", entName, sizeof(entName));
+	if (StrEqual(entName, "button_safes_01")) {
+		char playerid[20];
+		GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+		Format(getTheItemsInChest, sizeof(getTheItemsInChest), "SELECT Count(*) as amount from t_rpg_items WHERE container = '%s' AND playerid = '%s';", containerName, playerid);
+	} else
+		Format(getTheItemsInChest, sizeof(getTheItemsInChest), "SELECT Count(*) as amount from t_rpg_items WHERE container = '%s';", containerName);
+	
 	SQL_TQuery(g_DB, SQLGetItemsInChestCallback, getTheItemsInChest, client);
 	g_iLastInteractedWith[client] = entity;
 }
@@ -148,7 +187,19 @@ public void SQLGetItemsInChestCallback(Handle owner, Handle hndl, const char[] e
 	int client = data;
 	while (SQL_FetchRow(hndl)) {
 		int amount = SQL_FetchInt(hndl, 0);
-		int maxAmount = furniture_getDurability(g_iLastInteractedWith[client]);
+		int maxAmount;
+		
+		char entName[256];
+		GetEntPropString(g_iLastInteractedWith[client], Prop_Data, "m_iName", entName, sizeof(entName));
+		if (StrEqual(entName, "button_safes_01")) {
+			if(isVipRank2(client))
+				maxAmount = 3;
+			else
+				maxAmount = 1;
+		} else {
+			maxAmount = furniture_getDurability(g_iLastInteractedWith[client]);
+		}
+		
 		if (amount < maxAmount)
 			openStoreChooserForClient(client, g_iLastInteractedWith[client], false, amount, maxAmount);
 		else
@@ -208,13 +259,27 @@ public int storeItemMenuHandler(Handle menu, MenuAction action, int client, int 
 			getItemsInChest(client, g_iLastInteractedWith[client]);
 		}
 	}
-	if (action == MenuAction_End) { 
-    	delete menu; 
+	if (action == MenuAction_End) {
+		delete menu;
 	}
 }
 
-stock bool isValidClient(int client) {
-	return (1 <= client <= MaxClients && IsClientInGame(client));
+public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
+	if (IsClientInGame(client) && IsPlayerAlive(client)) {
+		if (!(g_iPlayerPrevButtons[client] & IN_USE) && iButtons & IN_USE) {
+			int ent = getClientViewObject(client);
+			if (IsValidEntity(ent)) {
+				if (HasEntProp(ent, Prop_Data, "m_iName")) {
+					char entName[256];
+					GetEntPropString(ent, Prop_Data, "m_iName", entName, sizeof(entName));
+					if (StrEqual(entName, "button_safes_01")) {
+						openChooserMenuForClient(client, ent);
+					}
+				}
+			}
+		}
+	}
+	g_iPlayerPrevButtons[client] = iButtons;
 }
 
 public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error, any data) {

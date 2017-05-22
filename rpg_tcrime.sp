@@ -1,3 +1,21 @@
+/*
+							T-RP
+   			Copyright (C) 2017 Christian Ziegler
+   				 
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "Totenfluch"
@@ -6,6 +24,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <smlib>
+#include <tStocks>
 
 #pragma newdecls required
 
@@ -24,11 +43,11 @@ int g_ePlayerCrime[MAXPLAYERS + 1][crimeProperties];
 
 public Plugin myinfo = 
 {
-	name = "tCrime", 
+	name = "[T-RP] tCrime", 
 	author = PLUGIN_AUTHOR, 
 	description = "Crime System for T-RP", 
 	version = PLUGIN_VERSION, 
-	url = "http://ggc-base.de"
+	url = "https://totenfluch.de"
 };
 
 public void OnPluginStart()
@@ -218,7 +237,7 @@ public void OnClientAuthorized(int client) {
 	
 	char insertPlayerQuery[512];
 	Format(insertPlayerQuery, sizeof(insertPlayerQuery), "INSERT IGNORE INTO `t_rpg_tcrime` (`Id`, `timestamp`, `playername`, `playerid`, `crime`, `flags`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '0', '');", clean_playername, playerid);
-	SQL_TQuery(g_DB, SQLErrorCheckCallback, insertPlayerQuery, client);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, insertPlayerQuery);
 	
 	CreateTimer(1.0, loadCrime, client);
 }
@@ -237,10 +256,13 @@ public Action loadCrime(Handle Timer, int client) {
 	
 	char LoadCrimeQuery[512];
 	Format(LoadCrimeQuery, sizeof(LoadCrimeQuery), "SELECT crime,flags FROM t_rpg_tcrime WHERE playerid = '%s';", playerid);
-	SQL_TQuery(g_DB, SQLLoadCrimeCallback, LoadCrimeQuery, client);
+	SQL_TQuery(g_DB, SQLLoadCrimeCallback, LoadCrimeQuery, GetClientUserId(client));
 }
 
-public void SQLLoadCrimeCallback(Handle owner, Handle hndl, const char[] error, any client) {
+public void SQLLoadCrimeCallback(Handle owner, Handle hndl, const char[] error, any data) {
+	int client = GetClientOfUserId(data);
+	if(!isValidClient(client))
+		return;
 	while (SQL_FetchRow(hndl)) {
 		SQL_FetchStringByName(hndl, "flags", g_ePlayerCrime[client][cFlags], 64);
 		g_ePlayerCrime[client][cCrime] = SQL_FetchIntByName(hndl, "crime");
@@ -339,10 +361,3 @@ public void setFlags(int client, char flags[64]) {
 	Format(updateFlagsQuery, sizeof(updateFlagsQuery), "UPDATE t_rpg_tcrime SET flags = %s WHERE playerid = '%s'", g_ePlayerCrime[client][cFlags], playerid);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFlagsQuery);
 }
-
-
-stock bool isValidClient(int client) {
-	if (!(1 <= client <= MaxClients) || !IsClientAuthorized(client))
-		return false;
-	return true;
-} 

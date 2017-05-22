@@ -1,3 +1,21 @@
+/*
+							T-RP
+   			Copyright (C) 2017 Christian Ziegler
+   				 
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "Totenfluch"
@@ -49,15 +67,15 @@ char g_cLastNpcType[MAXPLAYERS + 1];
 
 public Plugin myinfo = 
 {
-	name = "Custom Vendors for T-RP", 
+	name = "[T-RP] Custom Vendors", 
 	author = PLUGIN_AUTHOR, 
 	description = "Adds custom Vendors with keyvalue files for T-RP", 
 	version = PLUGIN_VERSION, 
-	url = "http://ggc-base.de"
+	url = "https://totenfluch.de"
 };
 
 public void OnPluginStart() {
-	
+	loadConfig();
 }
 
 public void OnMapStart() {
@@ -227,23 +245,23 @@ public int openVendorMenuHandler(Handle menu, MenuAction action, int client, int
 		if (g_eLoadedItemCollection[id][iBuyOrSell]) {
 			bool hasMoney = tConomy_getCurrency(client) >= g_eLoadedItemCollection[id][iItemPrice];
 			char jobName[128];
-			strcopy(jobName, sizeof(jobName), g_eLoadedItemCollection[g_iLoadedItems][iJob]);
+			strcopy(jobName, sizeof(jobName), g_eLoadedItemCollection[id][iJob]);
 			bool hasJob = jobs_isActiveJob(client, jobName) || StrEqual(jobName, "");
-			bool hasJobLevel = (jobs_getLevel(client) >= g_eLoadedItemCollection[g_iLoadedItems][iJobLevel]) || (g_eLoadedItemCollection[g_iLoadedItems][iJobLevel] == 0);
+			bool hasJobLevel = (jobs_getLevel(client) >= g_eLoadedItemCollection[id][iJobLevel]) || (g_eLoadedItemCollection[id][iJobLevel] == 0);
 			if (!hasJob || !hasJobLevel) {
 				char requiresJobString[64];
-				Format(requiresJobString, sizeof(requiresJobString), "Requires Job: %s (lvl %i)", jobName, g_eLoadedItemCollection[g_iLoadedItems][iJobLevel]);
+				Format(requiresJobString, sizeof(requiresJobString), "Requires Job: %s (lvl %i)", jobName, g_eLoadedItemCollection[id][iJobLevel]);
 				AddMenuItem(menu2, "x", requiresJobString, ITEMDRAW_DISABLED);
 			}
-			if(g_eLoadedItemCollection[g_iLoadedItems][iVipFlag] != -1){
+			if(g_eLoadedItemCollection[id][iVipFlag] != -1){
 				char requireVip[64];
-				Format(requireVip, sizeof(requireVip), "Requires VIP");
+				Format(requireVip, sizeof(requireVip), "Requires VIP (%i)", g_eLoadedItemCollection[id][iVipFlag]);
 				AddMenuItem(menu2, "x", requireVip, ITEMDRAW_DISABLED);
 			}
-			int isVipFlagValid = g_eLoadedItemCollection[g_iLoadedItems][iVipFlag] != -1;
-			int hasVipFlag = false;
+			int isVipFlagValid = g_eLoadedItemCollection[id][iVipFlag] != -1;
+			int hasVipFlag = true;
 			if(isVipFlagValid){
-				hasVipFlag = CheckCommandAccess(client, "sm_vipcheck", (1 << g_eLoadedItemCollection[g_iLoadedItems][iVipFlag]), true);
+				hasVipFlag = CheckCommandAccess(client, "sm_vipcheck", (1 << g_eLoadedItemCollection[id][iVipFlag]), true);
 			}
 			
 			AddMenuItem(menu2, info, "Confirm Purchase", hasMoney && hasJob && hasJobLevel && hasVipFlag ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);

@@ -1,3 +1,21 @@
+/*
+							T-RP
+   			Copyright (C) 2017 Christian Ziegler
+   				 
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "Totenfluch"
@@ -9,6 +27,7 @@
 #include <multicolors>
 #include <rpg_licensing>
 #include <sha1>
+#include <tStocks>
 
 #pragma newdecls required
 
@@ -19,15 +38,17 @@ bool g_bLoaded[MAXPLAYERS + 1];
 char dbconfig[] = "gsxh_multiroot";
 Database g_DB;
 
+int g_iStartMoney = 300;
+
 char currencyName[] = "tCoins";
 
 public Plugin myinfo = 
 {
-	name = "tConomy", 
+	name = "[T-RP] tConomy", 
 	author = PLUGIN_AUTHOR, 
 	description = "Enonmy System for T-RP", 
 	version = PLUGIN_VERSION, 
-	url = "http://ggc-base.de"
+	url = "https://totenfluch.de"
 };
 
 public void OnPluginStart() {
@@ -261,7 +282,7 @@ public void OnClientPostAdminCheck(int client) {
 	char clean_playername[MAX_NAME_LENGTH * 2 + 16];
 	SQL_EscapeString(g_DB, playername, clean_playername, sizeof(clean_playername));
 	
-	Format(addClientQuery, sizeof(addClientQuery), "INSERT IGNORE INTO `t_rpg_tConomy` (`Id`, `playerid`, `playername`, `currency`, `bankCurrency`, `timestamp`) VALUES (NULL, '%s', '%s', '0', '0', CURRENT_TIMESTAMP);", playerid, clean_playername);
+	Format(addClientQuery, sizeof(addClientQuery), "INSERT IGNORE INTO `t_rpg_tConomy` (`Id`, `playerid`, `playername`, `currency`, `bankCurrency`, `timestamp`) VALUES (NULL, '%s', '%s', '%i', '0', CURRENT_TIMESTAMP);", playerid, clean_playername, g_iStartMoney);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, addClientQuery);
 	
 	g_bLoaded[client] = false;
@@ -324,7 +345,7 @@ public Action loadMoney(Handle Timer, int client) {
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	char loadMoneyQuery[512];
 	Format(loadMoneyQuery, sizeof(loadMoneyQuery), "SELECT currency,bankCurrency FROM t_rpg_tConomy WHERE playerid = '%s'", playerid);
-	SQL_TQuery(g_DB, SQLLoadMoneyQueryCallback, loadMoneyQuery, client);
+	SQL_TQuery(g_DB, SQLLoadMoneyQueryCallback, loadMoneyQuery, GetClientUserId(client));
 }
 
 public void logtConomyAction(int client, int amount, char reason[256], bool isBank) {
@@ -466,8 +487,10 @@ public Action cmdGiveBankedMoney(int client, int args) {
 }
 
 public void SQLLoadMoneyQueryCallback(Handle owner, Handle hndl, const char[] error, any data) {
+	int client = GetClientOfUserId(data);
+	if(!isValidClient(client))
+		return;
 	while (SQL_FetchRow(hndl)) {
-		int client = data;
 		g_iMoney[client] = SQL_FetchIntByName(hndl, "curency");
 		g_iBankedMoney[client] = SQL_FetchIntByName(hndl, "bankCurrency");
 		g_bLoaded[client] = true;

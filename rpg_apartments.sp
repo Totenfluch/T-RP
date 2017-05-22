@@ -1,3 +1,21 @@
+/*
+							T-RP
+   			Copyright (C) 2017 Christian Ziegler
+   				 
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "Totenfluch"
@@ -70,11 +88,11 @@ int playerProperties[MAXPLAYERS + 1][playerProperty];
 
 public Plugin myinfo = 
 {
-	name = "RPG Housing", 
+	name = "[T-RP] Apartment Core", 
 	author = PLUGIN_AUTHOR, 
-	description = "RPH Housing for T-RP", 
+	description = "Adds Housing for T-RP", 
 	version = PLUGIN_VERSION, 
-	url = "http://ggc-base.de"
+	url = "https://totenfluch.de"
 };
 
 public void OnPluginStart()
@@ -562,7 +580,7 @@ public void SQLGetRentInfoCallback(Handle owner, Handle hndl, const char[] error
 		AddMenuItem(m, "x", startDisplay, ITEMDRAW_DISABLED);
 		AddMenuItem(m, "x", endDisplay, ITEMDRAW_DISABLED);
 		AddMenuItem(m, "x", timediffDisplay, ITEMDRAW_DISABLED);
-		AddMenuItem(m, "increase", "Extend Rent by 7 Days", ((hoursLeft < 168) || (isVipRank1(client) && (hoursLeft < 336))) ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+		AddMenuItem(m, "increase", "Extend Rent by 7 Days", (hoursLeft < 168 || (isVipRank1(client) && (hoursLeft < 336))) ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 		DisplayMenu(m, client, 30);
 	}
 }
@@ -593,10 +611,9 @@ public int rentMenuHandler(Handle menu, MenuAction action, int client, int item)
 						else if (isVipRank1(client))
 							aptPrice = RoundToNearest(aptPrice - (aptPrice / 4.0));
 						
-						Format(extendRentDisplay, sizeof(extendRentDisplay), "Extend Rent by 7 Days for %i", aptPrice);
+						Format(extendRentDisplay, sizeof(extendRentDisplay), "Extend Rent by 7 Days for %i$", aptPrice);
 						AddMenuItem(apartmentMenu, "x", "Do nothing");
-						bool hasMoney = float(existingApartments[zoneId][eaApartment_Price]) < RoundToNearest(tConomy_getCurrency(client) * 0.1);
-						AddMenuItem(apartmentMenu, "extendRent", extendRentDisplay, hasMoney ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
+						AddMenuItem(apartmentMenu, "extendRent", extendRentDisplay, tConomy_getCurrency(client) >= aptPrice ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 						
 						DisplayMenu(apartmentMenu, client, 60);
 					} else {
@@ -624,7 +641,7 @@ public int doRentMenuHandler(Handle menu, MenuAction action, int client, int ite
 			
 			if (float(tConomy_getCurrency(client)) >= aptPrice) {
 				char takeReason[256];
-				Format(takeReason, sizeof(takeReason), "Rented Apartment: %s for 7 more Days", aptPrice);
+				Format(takeReason, sizeof(takeReason), "Rented Apartment: %s for 7 more Days", existingApartments[increaseRentZoneId[client]][eaApartment_Id]);
 				tConomy_removeCurrency(client, aptPrice, takeReason);
 				char updateRentQuery[1024];
 				Format(updateRentQuery, sizeof(updateRentQuery), "UPDATE t_rpg_apartment_rent SET endrent = TIMESTAMPADD(DAY,7,endrent) WHERE Id = (SELECT Id FROM t_rpg_apartments WHERE apartment_id = '%s');", existingApartments[increaseRentZoneId[client]][eaApartment_Id]);

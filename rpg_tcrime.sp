@@ -239,7 +239,7 @@ public void OnClientAuthorized(int client) {
 	Format(insertPlayerQuery, sizeof(insertPlayerQuery), "INSERT IGNORE INTO `t_rpg_tcrime` (`Id`, `timestamp`, `playername`, `playerid`, `crime`, `flags`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '0', '');", clean_playername, playerid);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, insertPlayerQuery);
 	
-	CreateTimer(1.0, loadCrime, client);
+	loadCrime(client);
 }
 
 public void OnClientDisconnect(int client) {
@@ -248,9 +248,7 @@ public void OnClientDisconnect(int client) {
 	strcopy(g_ePlayerCrime[client][cFlags], 64, "");
 }
 
-public Action loadCrime(Handle Timer, int client) {
-	if (!isValidClient(client))
-		return;
+public void loadCrime(int client) {
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
@@ -261,8 +259,6 @@ public Action loadCrime(Handle Timer, int client) {
 
 public void SQLLoadCrimeCallback(Handle owner, Handle hndl, const char[] error, any data) {
 	int client = GetClientOfUserId(data);
-	if(!isValidClient(client))
-		return;
 	while (SQL_FetchRow(hndl)) {
 		SQL_FetchStringByName(hndl, "flags", g_ePlayerCrime[client][cFlags], 64);
 		g_ePlayerCrime[client][cCrime] = SQL_FetchIntByName(hndl, "crime");

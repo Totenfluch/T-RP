@@ -565,10 +565,8 @@ public void loadClientInventory(int client) {
 	SQL_TQuery(g_DB, SQLLoadClientInventoryQuery, loadClientInventoryQuery, GetClientUserId(client));
 }
 
-public void SQLLoadClientInventoryQuery(Handle owner, Handle hndl, const char[] error, any data) {
+public void SQLLoadClientInventoryQuery(Handle owner, Handle hndl, const char[] error, int data) {
 	int client = GetClientOfUserId(data);
-	if(!isValidClient(client))
-		return;
 	while (SQL_FetchRow(hndl)) {
 		char timestamp[64];
 		char playerid[20];
@@ -590,7 +588,7 @@ public void SQLLoadClientInventoryQuery(Handle owner, Handle hndl, const char[] 
 		SQL_FetchStringByName(hndl, "category", category, sizeof(category));
 		SQL_FetchStringByName(hndl, "category2", category2, sizeof(category2));
 		rarity = SQL_FetchIntByName(hndl, "rarity");
-		addItemToLocalInventory(data, timestamp, playerid, playername, itemname, itemid, weight, flags, category, category2, rarity);
+		addItemToLocalInventory(client, timestamp, playerid, playername, itemname, itemid, weight, flags, category, category2, rarity);
 	}
 }
 

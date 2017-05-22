@@ -31,6 +31,8 @@
 int g_iLatestSlotUsed[MAXPLAYERS + 1];
 char g_cLastItemUsed[MAXPLAYERS + 1][128];
 
+int g_iPlayerPrevButtons[MAXPLAYERS + 1];
+
 /* 
 	CS:GO Grenades Indexes
 */
@@ -198,16 +200,16 @@ public void takeItemSuit(int client, char[] item) {
 	
 }
 
-public void takeItem(int client, char[] item, int islot) {	
+public void takeItem(int client, char[] item, int islot) {
 	char item2[128];
 	strcopy(item2, sizeof(item2), item);
 	
 	int weight = inventory_getItemWeightBySlot(client, islot);
 	inventory_deleteItemBySlot(client, islot, "Equiped Weapon");
 	GivePlayerItem(client, item);
-		
+	
 	int slot = getSlot(item2);
-
+	
 	if (GetPlayerWeaponSlot(client, slot) != -1 && slot != 3) {
 		EquipPlayerWeapon(client, GetPlayerWeaponSlot(client, slot));
 		int weaponIndex;
@@ -283,3 +285,22 @@ public bool isGrenade(char[] weaponName) {
 		return true;
 	return false;
 } 
+
+int g_iDuckPushedTimes[MAXPLAYERS + 1];
+public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
+	if (IsClientInGame(client) && IsPlayerAlive(client)) {
+		if (!(g_iPlayerPrevButtons[client] & IN_DUCK) && iButtons & IN_DUCK) {
+			if(g_iDuckPushedTimes[client] == 1)
+				cmdStashWeapon(client, 0);
+			else
+				g_iDuckPushedTimes[client] = 1;
+			CreateTimer(0.3, resetDucks, GetClientUserId(client));
+		}
+		g_iPlayerPrevButtons[client] = iButtons;
+	}
+}
+
+public Action resetDucks(Handle Timer, int client){
+	int theClient = GetClientOfUserId(client);
+	g_iDuckPushedTimes[theClient] = 0;
+}

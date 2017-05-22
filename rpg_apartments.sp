@@ -346,7 +346,9 @@ public void doorAction(int client, char zone[128], int doorEnt) {
 	if (StrContains(doorname, zone2) == -1) {
 		char rZone[64];
 		Zone_getMostRecentActiveZone(client, rZone);
-		PrintToChat(client, ":: not in zone but found :: %s ::", rZone);
+		if (!Zone_IsClientInZone(client, rZone))
+			strcopy(rZone, 64, "");
+		strcopy(activeZone[client], 128, rZone);
 		return;
 	}
 	int apartmentId;

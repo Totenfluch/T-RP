@@ -488,8 +488,6 @@ public Action cmdGiveBankedMoney(int client, int args) {
 
 public void SQLLoadMoneyQueryCallback(Handle owner, Handle hndl, const char[] error, any data) {
 	int client = GetClientOfUserId(data);
-	if(!isValidClient(client))
-		return;
 	while (SQL_FetchRow(hndl)) {
 		g_iMoney[client] = SQL_FetchIntByName(hndl, "curency");
 		g_iBankedMoney[client] = SQL_FetchIntByName(hndl, "bankCurrency");

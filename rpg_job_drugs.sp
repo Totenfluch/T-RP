@@ -397,6 +397,11 @@ public Action cmdPlantCommand(int client, int args) {
 		return Plugin_Handled;
 	}
 	
+	if (!(GetEntityFlags(client) & FL_ONGROUND)) {
+		CPrintToChat(client, "[-T-]{red} You have to stand on the Ground to plant...'");
+		return Plugin_Handled;
+	}
+	
 	if (inventory_hasPlayerItem(client, "Marijuana Seeds"))
 		inventory_removePlayerItems(client, "Marijuana Seeds", 1, "Planted Marijuana");
 	else

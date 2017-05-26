@@ -61,7 +61,7 @@ public void furniture_OnFurnitureInteract(int entity, int client, char name[64],
 	float ObjectOrigin[3];
 	GetEntPropVector(entity, Prop_Send, "m_vecOrigin", ObjectOrigin);
 	// https://forums.alliedmods.net/showthread.php?p=737647
-	EmitAmbientSoundAny("rp/elise2.mp3", ObjectOrigin, _, _, 2, _, _, _); // 2 -> 2 - Small Radius - Sound range is about 800 units at max volume.
+	EmitAmbientSoundAny("rp/elise2.mp3", ObjectOrigin, entity, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL, _, _); // 2 -> 2 - Small Radius - Sound range is about 800 units at max volume.
 }
 
 public Action refreshTimer(Handle Timer) {

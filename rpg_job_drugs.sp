@@ -224,9 +224,11 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		AddMenuItem(menu, "sellAllMarijuana", sellAll);
 	}
 	
-	AddMenuItem(menu, "skin1", "First Drug Dealer Skin [2](500$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 2 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-	AddMenuItem(menu, "skin2", "Second Drug Dealer Skin [5](1500$)", tConomy_getCurrency(client) >= 1500 && jobs_getLevel(client) >= 4 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-	AddMenuItem(menu, "skin3", "Third Drug Dealer Skin [8](2500$)", tConomy_getCurrency(client) >= 2500 && jobs_getLevel(client) >= 6 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+	if (jobs_isActiveJob(client, "Drug Planter")) {
+		AddMenuItem(menu, "skin1", "First Drug Dealer Skin [2](500$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 2 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(menu, "skin2", "Second Drug Dealer Skin [5](1500$)", tConomy_getCurrency(client) >= 1500 && jobs_getLevel(client) >= 4 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(menu, "skin3", "Third Drug Dealer Skin [8](2500$)", tConomy_getCurrency(client) >= 2500 && jobs_getLevel(client) >= 6 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+	}
 	
 	if (tConomy_getCurrency(client) >= 15000 && jobs_getLevel(client) >= 20 && jobs_isActiveJob(client, "Drug Planter"))
 		AddMenuItem(menu, "skin", "Buy Niko Skin (15000)[20]");
@@ -381,6 +383,12 @@ public Action cmdPlantCommand(int client, int args) {
 		CPrintToChat(client, "[-T-]{red} You can not have more than %i active plants (%i Active)", (4 + jobs_getLevel(client) / 5), g_iPlayerPlanted[client]);
 		return Plugin_Handled;
 	}
+	
+	if (!jobs_isActiveJob(client, "Drug Planter")) {
+		CPrintToChat(client, "[-T-]{red} You are not a drug Planter...");
+		return Plugin_Handled;
+	}
+	
 	if (g_iPlantCd[client] != 0) {
 		CPrintToChat(client, "[-T-]{red} Planting is on delay");
 		return Plugin_Handled;

@@ -112,7 +112,7 @@ public void openChestForClient(int client, int ent) {
 		Format(selectItemsQuery, sizeof(selectItemsQuery), "SELECT itemname,itemid FROM t_rpg_items WHERE container = '%s' AND playerid = '%s';", uniqueId, playerid);
 	} else
 		Format(selectItemsQuery, sizeof(selectItemsQuery), "SELECT itemname,itemid FROM t_rpg_items WHERE container = '%s';", uniqueId);
-		
+	
 	SQL_TQuery(g_DB, loadItemsFromChestCallback, selectItemsQuery, client);
 }
 
@@ -192,7 +192,7 @@ public void SQLGetItemsInChestCallback(Handle owner, Handle hndl, const char[] e
 		char entName[256];
 		GetEntPropString(g_iLastInteractedWith[client], Prop_Data, "m_iName", entName, sizeof(entName));
 		if (StrEqual(entName, "button_safes_01")) {
-			if(isVipRank2(client))
+			if (isVipRank2(client))
 				maxAmount = 3;
 			else
 				maxAmount = 1;

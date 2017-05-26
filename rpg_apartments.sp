@@ -135,7 +135,9 @@ public void OnPluginStart()
 }
 
 public Action checkZone(int client, int args) {
-	PrintToChat(client, "Z:%s| OZ:%s|-|x:%.2f y:%.2f z:%.2f|", activeZone[client], prevZone[client], zone_pos[client][0], zone_pos[client][1], zone_pos[client][2]);
+	char mraz[64];
+	Zone_getMostRecentActiveZone(client, mraz);
+	PrintToChat(client, "Z:%s| OZ:%s|-|x:%.2f y:%.2f z:%.2f|mraz: %s", activeZone[client], prevZone[client], zone_pos[client][0], zone_pos[client][1], zone_pos[client][2], mraz);
 	return Plugin_Handled;
 }
 
@@ -253,10 +255,6 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 					GetEntityClassname(ent, itemName, sizeof(itemName));
 					if (StrContains(itemName, "door", false) != -1) {
 						doorAction(client, activeZone[client], ent);
-						DataPack overPack = CreateDataPack();
-						WritePackCell(overPack, EntIndexToEntRef(client));
-						WritePackCell(overPack, EntIndexToEntRef(ent));
-						CreateTimer(0.0, makeGlowCb, overPack);
 					}
 				}
 				//if (StrContains(activeZone[client], "apartment", false) != -1)
@@ -343,14 +341,25 @@ public void doorAction(int client, char zone[128], int doorEnt) {
 	strcopy(zone2, sizeof(zone2), zone);
 	ReplaceString(zone2, sizeof(zone2), "apartment_", "");
 	ReplaceString(doorname, sizeof(doorname), "apartment_", "");
+	
 	if (StrContains(doorname, zone2) == -1) {
 		char rZone[64];
 		Zone_getMostRecentActiveZone(client, rZone);
-		if (!Zone_IsClientInZone(client, rZone))
+		float cpos[3];
+		GetClientAbsOrigin(client, cpos);
+		if (!Zone_isPositionInZone(rZone, cpos[0], cpos[1], cpos[2])) {
 			strcopy(rZone, 64, "");
+			return;
+		}
 		strcopy(activeZone[client], 128, rZone);
-		return;
+		PrintToConsole(client, "changed Active Zone to: %s | bug this", rZone);
 	}
+	
+	DataPack overPack = CreateDataPack();
+	WritePackCell(overPack, EntIndexToEntRef(client));
+	WritePackCell(overPack, EntIndexToEntRef(doorEnt));
+	CreateTimer(0.0, makeGlowCb, overPack);
+	
 	int apartmentId;
 	int ownedId;
 	if ((apartmentId = getLoadedIdFromApartmentId(zone)) != -1) {

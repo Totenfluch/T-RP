@@ -4,8 +4,10 @@
 #include <smlib>
 
 
-#define VERSION "2.2.2"
+#define VERSION "3.0"
 #pragma newdecls required
+
+#define MAX_ZONES 256
 
 int beamColorT[4] =  { 255, 0, 0, 255 };
 int beamColorCT[4] =  { 0, 0, 255, 255 };
@@ -34,7 +36,7 @@ enum g_eList {
 	bool:liThis
 };
 
-int g_iZones[MAXPLAYERS + 1][256][g_eList]; // max zones = 192
+int g_iZones[MAXPLAYERS + 1][MAX_ZONES][g_eList]; // max zones = 256
 
 
 // cvars
@@ -54,16 +56,14 @@ Handle cvar_timer = INVALID_HANDLE;
 // PLUGIN INFO
 public Plugin myinfo = 
 {
-	name = "RP Devzones", 
+	name = "[T-RP] Zones", 
 	author = "Totenfluch", 
 	description = "Adds Custom Zones for T-RP", 
 	version = VERSION, 
-	url = "https://ggc-base.de"
+	url = "https://totenfluch.de"
 };
 
-public void OnPluginStart()
-{
-	CreateConVar("sm_DevZones", VERSION, "plugin", FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
+public void OnPluginStart() {
 	cvar_filter = CreateConVar("sm_devzones_filter", "1", "0 = Only allow valid alive clients to be detected in the native zones. 1 = Detect entities and all (you need to add more checkers in the third party plugins).");
 	cvar_mode = CreateConVar("sm_devzones_mode", "1", "0 = Use checks every X seconds for check if a player join or leave a zone, 1 = hook zone entities with OnStartTouch and OnEndTouch (less CPU consume)");
 	cvar_checker = CreateConVar("sm_devzones_checker", "5.0", "checks and beambox refreshs per second, low value = more precise but more CPU consume, More hight = less precise but less CPU consume");
@@ -82,6 +82,11 @@ public void OnPluginStart()
 	HookConVarChange(cvar_mode, CVarChange);
 	HookConVarChange(cvar_model, CVarChange);
 	
+}
+
+public void resetClient(int client) {
+	for (int i = 0; i < MAX_ZONES; i++)
+	g_iZones[client][i][liThis] = false;
 }
 
 public void CVarChange(Handle convar_hndl, const char[] oldValue, const char[] newValue) {
@@ -106,6 +111,7 @@ public void OnClientPostAdminCheck(int client) {
 	g_ClientSelectedZone[client] = -1;
 	g_Editing[client] = 0;
 	g_bFixName[client] = false;
+	resetClient(client);
 }
 
 public Action Event_OnRoundStart(Handle event, const char[] name, bool dontBroadcast) {
@@ -219,6 +225,8 @@ public void EntOut_OnEndTouch(const char[] output, int caller, int activator, fl
 
 public void OnMapStart() {
 	OnConfigsExecuted();
+	for (int i = 1; i < MAXPLAYERS; i++)
+	resetClient(i);
 }
 
 public void OnConfigsExecuted() {
@@ -454,10 +462,10 @@ public int Native_InZone(Handle plugin, int argc) {
 
 public int Native_getMostRecentActiveZone(Handle plugin, int argc) {
 	int client = GetNativeCell(1);
-
+	
 	int size = GetArraySize(g_Zones);
-	for (int i = 0; i < size; ++i){
-		if (g_iZones[client][i][liThis]){
+	for (int i = 0; i < size; ++i) {
+		if (g_iZones[client][i][liThis]) {
 			SetNativeString(2, g_iZones[client][i][liName], 64);
 			return true;
 		}

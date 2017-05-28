@@ -47,7 +47,7 @@ public void OnPluginStart()
 
 public Action cmdUnstuck(int client, int args) {
 	if (isValidClient(client)) {
-		if (g_iCooldown[client] == 0) {
+		if (g_iCooldown[client] == 0 && isSpaceAbove(client)) {
 			jobs_startProgressBar(client, 300, "Unstuck");
 		}
 	} else
@@ -80,10 +80,43 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 public void unstuckClient(int client) {
 	float pos[3];
 	GetClientAbsOrigin(client, pos);
-	pos[2] += 50;
+	pos[2] += 20;
 	float speed[3];
 	speed[0] = 0.0;
 	speed[1] = 0.0;
 	speed[2] = 0.0;
 	TeleportEntity(client, pos, NULL_VECTOR, speed);
+}
+
+public bool isSpaceAbove(int client) {
+	float playerPos[3];
+	float playerAngles[3];
+	GetClientEyePosition(client, playerPos);
+	playerAngles[0] = -90.0;
+	playerAngles[1] = 0.0;
+	playerAngles[2] = 0.0;
+	
+	Handle trace = TR_TraceRayFilterEx(playerPos, playerAngles, MASK_VISIBLE, RayType_Infinite, TraceRayNoPlayers, client);
+	
+	if (TR_DidHit(trace)) {
+		float hOrigin[3];
+		float beam2Vector[3];
+		TR_GetEndPosition(hOrigin, trace);
+		MakeVectorFromPoints(playerPos, hOrigin, beam2Vector);
+		CloseHandle(trace);
+		
+		if (GetVectorLength(beam2Vector) < 80.0) {
+			return false;
+		} else {
+			return true;
+		}
+	}
+	CloseHandle(trace);
+	return true;
+}
+
+public bool TraceRayNoPlayers(int entity, int mask, any data) {
+	if (entity == data || (entity >= 1 && entity <= MaxClients))
+		return false;
+	return true;
 } 

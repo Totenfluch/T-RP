@@ -202,6 +202,10 @@ ConVar gc_sSoundCuffsPath;
 ConVar gc_sOverlayCuffsPath;
 ConVar gc_bSounds;
 
+
+char dbconfig[] = "gsxh_multiroot";
+Database g_DB;
+
 public Plugin myinfo = 
 {
 	name = "[T-RP] Job: Police", 
@@ -290,6 +294,14 @@ public void OnPluginStart() {
 	
 	AutoExecConfig_CleanFile();
 	AutoExecConfig_ExecuteFile();
+	
+	char error[255];
+	g_DB = SQL_Connect(dbconfig, true, error, sizeof(error));
+	SQL_SetCharset(g_DB, "utf8");
+	
+	char createTableQuery[1024];
+	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_police_log ( `Id` BIGINT NOT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `officer` VARCHAR(20) NOT NULL , `target` VARCHAR(20) NOT NULL , `action` VARCHAR(32) NOT NULL , `action_params` VARCHAR(64) NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB;");
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
@@ -941,7 +953,7 @@ public int SpecialWeaponsPanelHandler(Handle menu, MenuAction action, int client
 public void t_GiveClientItem(int client, char[] weaponItem) {
 	char item[128];
 	strcopy(item, sizeof(item), weaponItem);
-	inventory_givePlayerItem(client, item, 40, "", "Weapon", "Weapon", 1, "Bough from Police Weapon Vendor");
+	inventory_givePlayerItem(client, item, 40, "", "Police Weapon", "Weapon", 1, "Bough from Police Weapon Vendor");
 }
 
 public int policeRecruiterHandler(Handle menu, MenuAction action, int client, int item) {
@@ -1111,11 +1123,14 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				}
 			}
 		}
-	} else if (buttons & IN_USE) {
+	} else if (buttons & IN_USE || buttons & IN_ATTACK || buttons & IN_ATTACK2) {
 		if (g_bCuffed[client]) {
 			buttons = buttons & ~IN_USE;
+			buttons = buttons & ~IN_ATTACK;
+			buttons = buttons & ~IN_ATTACK2;
 			return Plugin_Changed;
 		}
+		
 		if (StrContains(wName, "taser") != -1 && jobs_isActiveJob(client, "Police")) {
 			int Target = GetClientAimTarget(client, true);
 			
@@ -1156,6 +1171,9 @@ public int searchMenuHandler(Handle menu, MenuAction action, int client, int ite
 		} else if (StrEqual(cValue, "licenses")) {
 			inventory_showInventoryOfClientToOtherClientByCategory(g_iOfficerTarget[client], client, "License");
 		} else if (StrEqual(cValue, "pardon")) {
+			char crime[12];
+			IntToString(tCrime_getCrime(g_iOfficerTarget[client]), crime, sizeof(crime));
+			logAction(client, g_iOfficerTarget[client], "Pardon", crime);
 			tCrime_setCrime(g_iOfficerTarget[client], 0);
 		} else if (StrEqual(cValue, "punish")) {
 			openPunishMenu(client, g_iOfficerTarget[client]);
@@ -1198,15 +1216,28 @@ public int punishMenuHandler(Handle menu, MenuAction action, int client, int ite
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
 		//PrintToChat(client, "o1: %i", overtake[client]);
 		if (StrEqual(cValue, "small")) {
+			char crime[12];
+			IntToString(100, crime, sizeof(crime));
+			logAction(client, overtake[client], "AddCrime", crime);
 			tCrime_addCrime(overtake[client], 100);
 		} else if (StrEqual(cValue, "medium")) {
+			char crime[12];
+			IntToString(200, crime, sizeof(crime));
+			logAction(client, overtake[client], "AddCrime", crime);
 			tCrime_addCrime(overtake[client], 200);
 		} else if (StrEqual(cValue, "high")) {
+			char crime[12];
+			IntToString(300, crime, sizeof(crime));
+			logAction(client, overtake[client], "AddCrime", crime);
 			tCrime_addCrime(overtake[client], 300);
 		} else if (StrEqual(cValue, "deleteAll")) {
+			logAction(client, overtake[client], "StripWeapons", "");
 			StripAllPlayerWeapons(overtake[client]);
 			GivePlayerItem(overtake[client], "weapon_knife");
 		} else if (StrEqual(cValue, "arrest")) {
+			char crime[12];
+			IntToString(tCrime_getCrime(g_iOfficerTarget[client]), crime, sizeof(crime));
+			logAction(client, overtake[client], "Arrest", crime);
 			putInJail(client, overtake[client]);
 		} else if (StrEqual(cValue, "deleteIllegal")) {
 			deleteItems(client, overtake[client]);
@@ -1258,6 +1289,10 @@ public int giveTicketmenuHandler(Handle menu, MenuAction action, int client, int
 				tCrime_setCrime(client, 0);
 				tConomy_addCurrency(g_iLatestTicket[client], RoundToNearest(g_iTickpriceOvertake[client] / 2.0), "Ticket Split");
 				jobs_addExperience(g_iLatestTicket[client], RoundToNearest(g_iTickpriceOvertake[client] / 10.0), "Police");
+				
+				char ticketprice[12];
+				IntToString(g_iTickpriceOvertake[client], ticketprice, sizeof(ticketprice));
+				logAction(g_iLatestTicket[client], client, "Ticket", ticketprice);
 			}
 		}
 	}
@@ -1341,6 +1376,10 @@ public int setCrimeMenuHandler(Handle menu, MenuAction action, int client, int i
 		if (!isValidClient(g_iOfficerSetCrimeMenuTarget[client]))
 			return;
 		tCrime_addCrime(g_iOfficerSetCrimeMenuTarget[client], theAmount);
+		
+		char crime[12];
+		IntToString(theAmount, crime, sizeof(crime));
+		logAction(client, g_iOfficerSetCrimeMenuTarget[client], "SetCrime", crime);
 	}
 	if (action == MenuAction_End) {
 		delete menu;
@@ -1386,6 +1425,10 @@ public int deleteItemsMenuHandler(Handle menu, MenuAction action, int client, in
 		inventory_deleteItemBySlot(g_iOfficerDeleteItemsTaget[client], id, reason);
 		deleteItems(client, g_iOfficerDeleteItemsTaget[client]);
 		jobs_addExperience(client, 10, "Police");
+		
+		char deleted[64];
+		Format(deleted, sizeof(deleted), "1x %s", itemBuffer);
+		logAction(client, g_iOfficerDeleteItemsTaget[client], "DeleteItem", deleted);
 	}
 	if (action == MenuAction_End) {
 		delete menu;
@@ -1429,6 +1472,10 @@ public int deleteItemsByGroupMenuHandler(Handle menu, MenuAction action, int cli
 		inventory_removePlayerItems(g_iOfficerDeleteItemsTaget[client], itemBuffer, amount, "Deleted by Police Officer");
 		CPrintToChat(client, "{olive}[POLICE]{darkred}Removed {olive}%ix{darkred} {olive}%s{darkred} from {olive}%N{darkred} Inventory.", amount, itemBuffer, g_iOfficerDeleteItemsTaget[client]);
 		deleteItemsByGroup(client, g_iOfficerDeleteItemsTaget[client]);
+		
+		char deleted[64];
+		Format(deleted, sizeof(deleted), "%i %s", amount, itemBuffer);
+		logAction(client, g_iOfficerDeleteItemsTaget[client], "DeleteItem", deleted);
 	}
 	if (action == MenuAction_End) {
 		delete menu;
@@ -1461,11 +1508,15 @@ public Action OnTakedamage(int victim, int &attacker, int &inflictor, float &dam
 	if ((g_iPlayerHandCuffs[attacker] == 0) && (g_iCuffed == 0))
 		return Plugin_Continue;
 	
-	if (g_bCuffed[victim])
+	if (g_bCuffed[victim]) {
+		logAction(attacker, victim, "ControlFree", "");
 		FreeEm(victim, attacker);
-	else
-		if (!jobs_isActiveJob(victim, "Police"))
-		CuffsEm(victim, attacker);
+	} else {
+		if (!jobs_isActiveJob(victim, "Police")) {
+			logAction(attacker, victim, "ControlCuff", "");
+			CuffsEm(victim, attacker);
+		}
+	}
 	
 	return Plugin_Handled;
 }
@@ -1481,8 +1532,10 @@ public void OnClientDisconnect(int client) {
 	}
 	if (g_bCuffed[client])g_iCuffed--;
 	
-	if (isValidClient(client))
+	if (isValidClient(client)) {
 		SDKUnhook(client, SDKHook_OnTakeDamage, OnTakedamage);
+		SDKUnhook(client, SDKHook_WeaponDrop, onWeaponDrop);
+	}
 }
 
 public void OnClientPostAdminCheck(int client) {
@@ -1524,8 +1577,10 @@ public Action incomeTimer(Handle Timer) {
 }
 
 public void OnClientPutInServer(int client) {
-	if (isValidClient(client))
+	if (isValidClient(client)) {
 		SDKHook(client, SDKHook_OnTakeDamage, OnTakedamage);
+		SDKHook(client, SDKHook_WeaponDrop, onWeaponDrop);
+	}
 }
 
 public Action CuffsEm(int client, int attacker) {
@@ -1790,4 +1845,29 @@ stock bool IsPlayerOnUpperStuck(int client) {
 
 public bool TraceRayDontHitPlayerAndWorld(int entityhit, int mask) {
 	return (entityhit < 1 || entityhit > MaxClients);
+}
+
+public Action onWeaponDrop(int client, int weapon) {
+	if (jobs_isActiveJob(client, "Police")) {
+		PrintToChat(client, "You can not Drop weapons as Police officer");
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
+}
+
+public void logAction(int officer, int target, char[] action, char[] action_params) {
+	char officerId[20];
+	GetClientAuthId(officer, AuthId_Steam2, officerId, sizeof(officerId));
+	
+	char targetId[20];
+	GetClientAuthId(target, AuthId_Steam2, targetId, sizeof(targetId));
+	
+	char logQuery[256];
+	Format(logQuery, sizeof(logQuery), "INSERT INTO `t_rpg_police_log` (`Id`, `timestamp`, `officer`, `target`, `action`, `action_params`) VALUES (NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s');", officerId, targetId, action, action_params);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, logQuery);
+}
+
+public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error, any data) {
+	if (!StrEqual(error, ""))
+		LogError(error);
 } 

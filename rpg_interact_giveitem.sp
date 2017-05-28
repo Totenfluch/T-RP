@@ -86,6 +86,13 @@ public int giveItemMenuHandler(Handle menu, MenuAction action, int client, int i
 		char reason[256];
 		Format(reason, sizeof(reason), "Transfered from %N to %N", client, g_iPlayerTarget[client]);
 		
+		char categoryBuffer[128];
+		inventory_getItemCategoryBySlotAndClient(client, theId, categoryBuffer, "");
+		if (StrContains(categoryBuffer, "Police Weapon") != -1) {
+			PrintToChat(client, "Cannot transfer this Item");
+			return;
+		}
+		
 		if (inventory_isValidItem(client, theId)) {
 			inventory_transferItemToPlayerBySlot(client, g_iPlayerTarget[client], theId, reason);
 		}

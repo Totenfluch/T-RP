@@ -118,8 +118,6 @@ public Action refreshTimer(Handle Timer) {
 			continue;
 		if (!isValidClient(i))
 			continue;
-		if (g_iPlayerDelay[i] == 0)
-			continue;
 		if (g_iPlayerDelay[i] > 0) {
 			g_iPlayerDelay[i]--;
 			char info[128];
@@ -130,15 +128,16 @@ public Action refreshTimer(Handle Timer) {
 				jobs_setCurrentInfo(i, info);
 			
 		}
+		if (g_iPlayerDelay[i] == 1) {
+			jobs_setCurrentInfo(i, "> Teleport Rdy <");
+			PrintToChat(i, "Type !enter or reenter the teleporter to join the game!!!");
+		}
 		if (g_iPlayerDelay[i] == 0) {
 			float pos[3];
 			GetClientAbsOrigin(i, pos);
 			if (Zone_isPositionInZone("spawn_teleporter", pos[0], pos[1], pos[2])) {
 				teleportPlayer(i);
 				jobs_setCurrentInfo(i, "");
-			} else {
-				jobs_setCurrentInfo(i, "> Teleport Rdy <");
-				PrintToChat(i, "Type !enter or reenter the teleporter to join the game!!!");
 			}
 		}
 	}

@@ -306,9 +306,9 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 		AddMenuItem(panel, "heal", "Heal to full 100Hp [5](450$)", tConomy_getCurrency(client) >= 450 && jobs_getLevel(client) >= 5 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 		
 		AddMenuItem(panel, "skin1", "First Medic Skin [2](500$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 2 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-		AddMenuItem(panel, "skin2", "First Medic Skin [3](1500$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 3 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-		AddMenuItem(panel, "skin3", "First Medic Skin [5](2500$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 5 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
-		AddMenuItem(panel, "skin4", "First Medic Skin [8](5000$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 8 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "skin2", "Second Medic Skin [3](1500$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 3 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "skin3", "Third Medic Skin [5](2500$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 5 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+		AddMenuItem(panel, "skin4", "Fourth Medic Skin [8](5000$)", tConomy_getCurrency(client) >= 500 && jobs_getLevel(client) >= 8 ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 	}
 	DisplayMenu(panel, client, 60);
 }

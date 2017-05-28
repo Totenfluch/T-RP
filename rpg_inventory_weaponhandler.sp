@@ -284,13 +284,13 @@ public bool isGrenade(char[] weaponName) {
 	if (StrContains(weaponName, "grenade") != -1 || StrContains(weaponName, "decoy") != -1 || StrContains(weaponName, "molotov") != -1 || StrContains(weaponName, "flashbang") != -1)
 		return true;
 	return false;
-} 
+}
 
 int g_iDuckPushedTimes[MAXPLAYERS + 1];
 public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
 	if (IsClientInGame(client) && IsPlayerAlive(client)) {
 		if (!(g_iPlayerPrevButtons[client] & IN_DUCK) && iButtons & IN_DUCK) {
-			if(g_iDuckPushedTimes[client] == 1)
+			if (g_iDuckPushedTimes[client] == 1)
 				cmdStashWeapon(client, 0);
 			else
 				g_iDuckPushedTimes[client] = 1;
@@ -300,7 +300,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 	}
 }
 
-public Action resetDucks(Handle Timer, int client){
+public Action resetDucks(Handle Timer, int client) {
 	int theClient = GetClientOfUserId(client);
 	g_iDuckPushedTimes[theClient] = 0;
-}
+} 

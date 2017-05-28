@@ -999,7 +999,7 @@ public void transferItemFromContainer(int client, char containerName[64], char u
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateContainerQuery);
 }
 
-public Action cmdTableInvCb(int client, int args){
+public Action cmdTableInvCb(int client, int args) {
 	for (int i = 0; i < MAX_ITEMS; i++) {
 		if (g_ePlayerInventory[client][i][iIsActive]) {
 			char output[512];

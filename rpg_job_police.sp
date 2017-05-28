@@ -842,13 +842,13 @@ public int ArmorAndHPPanelHandler(Handle menu, MenuAction action, int client, in
 			if (tConomy_removeCurrency(client, g_iSmokegrenadePrice, "Bought Item from Police Weapon Vendor") >= 0)
 				t_GiveClientItem(client, "weapon_smokegrenade");
 		} else if (id == 7) {
-			if (tConomy_removeCurrency(client, g_iSmokegrenadePrice, "Bought Item from Police Weapon Vendor") >= 0)
+			if (tConomy_removeCurrency(client, g_iSkin1Value, "Bought Item from Police Weapon Vendor") >= 0)
 				inventory_givePlayerItem(client, "Police 1", 0, "", "Skin", "Skin", 1, "Bought from Police Vendor");
 		} else if (id == 8) {
-			if (tConomy_removeCurrency(client, g_iSmokegrenadePrice, "Bought Item from Police Weapon Vendor") >= 0)
+			if (tConomy_removeCurrency(client, g_iSkin2Value, "Bought Item from Police Weapon Vendor") >= 0)
 				inventory_givePlayerItem(client, "Police 2", 0, "", "Skin", "Skin", 1, "Bought from Police Vendor");
 		} else if (id == 9) {
-			if (tConomy_removeCurrency(client, g_iSmokegrenadePrice, "Bought Item from Police Weapon Vendor") >= 0)
+			if (tConomy_removeCurrency(client, g_iSkin3Value, "Bought Item from Police Weapon Vendor") >= 0)
 				inventory_givePlayerItem(client, "Police 3", 0, "", "Skin", "Skin", 1, "Bought from Police Vendor");
 		}
 	} else if (action == MenuAction_Cancel) {

@@ -75,7 +75,7 @@ public void OnPluginStart() {
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
 	
 	char createTableQuery2[4096];
-	Format(createTableQuery2, sizeof(createTableQuery2), "CREATE TABLE IF NOT EXISTS `t_rpg_tConomy_log` ( `Id` INT NULL DEFAULT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `amount` INT NOT NULL , `reason` VARCHAR(512) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
+	Format(createTableQuery2, sizeof(createTableQuery2), "CREATE TABLE IF NOT EXISTS `t_rpg_tConomy_log` ( `Id` INT NOT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `amount` INT NOT NULL , `reason` VARCHAR(512) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , PRIMARY KEY (`Id`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery2);
 }
 

@@ -57,11 +57,11 @@ public void OnPluginStart()
 	SQL_SetCharset(g_DB, "utf8");
 	
 	char CreateCrimeTableQuery[512];
-	Format(CreateCrimeTableQuery, sizeof(CreateCrimeTableQuery), "CREATE TABLE IF NOT EXISTS `t_rpg_tcrime` ( `Id` BIGINT NULL DEFAULT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP on update CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playername` VARCHAR(40) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `playerid` VARCHAR(20) NOT NULL , `crime` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , PRIMARY KEY (`Id`, `playerid`), UNIQUE KEY `playerid` (`playerid`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
+	Format(CreateCrimeTableQuery, sizeof(CreateCrimeTableQuery), "CREATE TABLE IF NOT EXISTS `t_rpg_tcrime` ( `Id` BIGINT NOT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP on update CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playername` VARCHAR(40) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL , `playerid` VARCHAR(20) NOT NULL , `crime` INT NOT NULL , `flags` VARCHAR(64) NOT NULL , PRIMARY KEY (`Id`, `playerid`), UNIQUE KEY `playerid` (`playerid`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, CreateCrimeTableQuery);
 	
 	char createTableQuery2[4096];
-	Format(createTableQuery2, sizeof(createTableQuery2), "CREATE TABLE IF NOT EXISTS `t_rpg_tcrime_log` ( `Id` INT NULL DEFAULT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `amount` INT NOT NULL, PRIMARY KEY (`Id`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
+	Format(createTableQuery2, sizeof(createTableQuery2), "CREATE TABLE IF NOT EXISTS `t_rpg_tcrime_log` ( `Id` INT NOT NULL AUTO_INCREMENT , `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , `playerid` VARCHAR(20) NOT NULL , `amount` INT NOT NULL, PRIMARY KEY (`Id`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_bin;");
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery2);
 	
 	RegAdminCmd("sm_resetCrime", cmdResetCrime, ADMFLAG_ROOT, "resets the crime");
@@ -82,6 +82,8 @@ public void OnMapStart() {
 public Action refreshTimer(Handle Timer) {
 	for (int i = 1; i < MAXPLAYERS; i++) {
 		if (!isValidClient(i))
+			continue;
+		if (GetClientTeam(i) != 2 && GetClientTeam(i) != 3)
 			continue;
 		if (g_ePlayerCrime[i][cCrime] == -1)
 			continue;
@@ -356,4 +358,4 @@ public void setFlags(int client, char flags[64]) {
 	char updateFlagsQuery[512];
 	Format(updateFlagsQuery, sizeof(updateFlagsQuery), "UPDATE t_rpg_tcrime SET flags = %s WHERE playerid = '%s'", g_ePlayerCrime[client][cFlags], playerid);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFlagsQuery);
-}
+} 

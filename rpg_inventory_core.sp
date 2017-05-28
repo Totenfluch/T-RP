@@ -265,6 +265,17 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("inventory_getItemWeightBySlot", Native_getItemWeightBySlot);
 	
 	/*
+		Return the Flags of an Item Slot
+		
+		@Param1 -> int client
+		@Param2 -> int slot
+		@Param3 -> char flags[8] 
+		
+		return - (Saves into Param3)
+	*/
+	CreateNative("inventory_getItemFlagsBySlot", Native_getItemFlagsBySlot);
+	
+	/*
 		Transfer Item to Container
 		
 		@Param1 -> int client
@@ -453,6 +464,12 @@ public int Native_getItemCategoryBySlotAndClient(Handle plugin, int numParams) {
 	return true;
 }
 
+public int Native_getItemFlagsBySlot(Handle plugin, int numParams) {
+	int client = GetNativeCell(1);
+	int slot = GetNativeCell(2);
+	SetNativeString(3, g_ePlayerInventory[client][slot][iFlags], 8);
+}
+
 public int Native_getItemWeightBySlot(Handle plugin, int numParams) {
 	int client = GetNativeCell(1);
 	int slot = GetNativeCell(2);
@@ -631,13 +648,13 @@ public bool givePlayerItem(int client, char itemname[128], int weight, char flag
 
 public int maxPlayerItems(int client) {
 	if (hasPlayerItem(client, "Gigantic Backpack"))
-		return 500;
+		return 200;
 	else if (hasPlayerItem(client, "Enormous Backpack"))
-		return 375;
+		return 175;
 	else if (hasPlayerItem(client, "Big Backpack"))
-		return 250;
-	else if (hasPlayerItem(client, "Large Backpack"))
 		return 150;
+	else if (hasPlayerItem(client, "Large Backpack"))
+		return 125;
 	else if (hasPlayerItem(client, "Medium Backpack"))
 		return 100;
 	else if (hasPlayerItem(client, "Small Backpack"))
@@ -857,6 +874,8 @@ public void openTheInventory(int client) {
 		if (g_ePlayerInventory[client][i][iIsActive]) {
 			if (FindStringInArray(containedItems, g_ePlayerInventory[client][i][iItemname]) == -1) {
 				if (StrContains(g_ePlayerInventory[client][i][iFlags], "i") != -1)
+					continue;
+				if (StrContains(g_ePlayerInventory[client][i][iCategory], "Weapon") != -1)
 					continue;
 				PushArrayString(containedItems, g_ePlayerInventory[client][i][iItemname]);
 				char id[8];

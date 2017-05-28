@@ -162,6 +162,18 @@ native int inventory_getItemWeightBySlot(int client, int slot);
 		noreturn
 	*/
 native void inventory_transferItemToContainer(int client, int slot, char containerName[64]);
+
+	/*
+		Return the Flags of an Item Slot
+		
+		@Param1 -> int client
+		@Param2 -> int slot
+		@Param3 -> char flags[8] 
+		
+		return - (Saves into Param3)
+	*/
+native void inventory_getItemFlagsBySlot(int client, int slot, char flags[8]);
+	
 	
 	/*
 		Delete Item by Slot

@@ -25,6 +25,7 @@
 #include <sdktools>
 #include <rpg_inventory_core>
 #include <rpg_interact>
+#include <tStocks>
 
 #pragma newdecls required
 
@@ -93,6 +94,13 @@ public int giveItemMenuHandler(Handle menu, MenuAction action, int client, int i
 			return;
 		}
 		
+		char flags[8];
+		inventory_getItemFlagsBySlot(client, theId, flags);
+		if (StrContains(flags, "v") != -1 && !isVipRank2(g_iPlayerTarget[client])) {
+			PrintToChat(client, "Cannot transfer this Item (VIP Only)");
+			return;
+		}
+		
 		if (inventory_isValidItem(client, theId)) {
 			inventory_transferItemToPlayerBySlot(client, g_iPlayerTarget[client], theId, reason);
 		}
@@ -109,7 +117,3 @@ public void OnClientPostAdminCheck(int client) {
 public void OnPlayerInteractionStarted(int client, int target) {
 	g_iPlayerTarget[client] = target;
 }
-
-stock bool isValidClient(int client) {
-	return (1 <= client <= MaxClients && IsClientInGame(client));
-} 

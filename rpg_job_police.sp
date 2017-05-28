@@ -1236,7 +1236,7 @@ public int punishMenuHandler(Handle menu, MenuAction action, int client, int ite
 			GivePlayerItem(overtake[client], "weapon_knife");
 		} else if (StrEqual(cValue, "arrest")) {
 			char crime[12];
-			IntToString(tCrime_getCrime(g_iOfficerTarget[client]), crime, sizeof(crime));
+			IntToString(tCrime_getCrime(overtake[client]), crime, sizeof(crime));
 			logAction(client, overtake[client], "Arrest", crime);
 			putInJail(client, overtake[client]);
 		} else if (StrEqual(cValue, "deleteIllegal")) {

@@ -1012,7 +1012,7 @@ public void transferItemFromContainer(int client, char containerName[64], char u
 	
 	char loadClientInventoryQuery[1024];
 	Format(loadClientInventoryQuery, sizeof(loadClientInventoryQuery), "SELECT timestamp,playerid,playername,itemname,itemid,weight,flags,category,category2,rarity FROM t_rpg_items WHERE playerid = '%s' AND container = '%s' AND itemid = '%s';", playerid, containerName, uniqueId);
-	SQL_TQuery(g_DB, SQLLoadClientInventoryQuery, loadClientInventoryQuery, client);
+	SQL_TQuery(g_DB, SQLLoadClientInventoryQuery, loadClientInventoryQuery, GetClientUserId(client));
 	
 	Format(updateContainerQuery, sizeof(updateContainerQuery), "UPDATE t_rpg_items SET container = '' WHERE itemid = '%s' AND container = '%s';", uniqueId, containerName);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateContainerQuery);

@@ -64,10 +64,10 @@ public void OnPlayerInteract(int client, int target, char interact[64]) {
 		AddMenuItem(m, "steal", "Steal Money (beeing reworked)", ITEMDRAW_DISABLED);
 		AddMenuItem(m, "ziptie", "Ziptie Player", inventory_hasPlayerItem(client, "ziptie") ? ITEMDRAW_DEFAULT:ITEMDRAW_DISABLED);
 		DisplayMenu(m, client, 30);
-		g_iPlayerTarget[client] = target;
+		g_iPlayerTarget[client] = GetClientUserId(target);
 	} else if (StrEqual(interact, "Try to free")) {
 		if (g_bIsZiptied[target]) {
-			g_iPlayerTarget[client] = target;
+			g_iPlayerTarget[client] = GetClientUserId(target);
 			jobs_startProgressBar(client, 10, "Free Player");
 		} else
 			PrintToChat(client, "[-T-] %N doesn't need to be freed", target);
@@ -78,13 +78,13 @@ public int criminalInteractionsMenuHandler(Handle menu, MenuAction action, int c
 	if (action == MenuAction_Select) {
 		char cValue[32];
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
-		
+		int target = GetClientOfUserId(g_iPlayerTarget[client]);
 		if (StrEqual(cValue, "steal")) {
-			if (isValidClient(g_iPlayerTarget[client]))
-				PrintToChat(g_iPlayerTarget[client], "[-T-] %N tries to steal your money!!!!", client);
+			if (isValidClient(target))
+				PrintToChat(target, "[-T-] %N tries to steal your money!!!!", client);
 			jobs_startProgressBar(client, 75, "Steal Money");
 		} else if (StrEqual(cValue, "ziptie")) {
-			jobs_startProgressBar(client, 15, "Ziptie Player");
+			jobs_startProgressBar(client, 25, "Ziptie Player");
 		}
 	}
 	if (action == MenuAction_End) {
@@ -99,30 +99,32 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 	float ppos[3];
 	float tpos[3];
 	GetClientAbsOrigin(client, ppos);
-	if (isValidClient(g_iPlayerTarget[client]))
-		GetClientAbsOrigin(g_iPlayerTarget[client], tpos);
+	int target = GetClientOfUserId(g_iPlayerTarget[client]);
+	if (isValidClient(target))
+		GetClientAbsOrigin(target, tpos);
 	else
 		return;
-	if (GetVectorDistance(ppos, tpos) > 150.0) {
+	
+	if (GetVectorDistance(ppos, tpos) > 50.0) {
 		PrintToChat(client, "[-T-] Target is too far away...");
 		return;
 	}
 	
 	if (StrEqual(info, "Steal Money")) {
-		int amount = RoundToNearest(tConomy_getCurrency(g_iPlayerTarget[client]) / 10.0);
+		int amount = RoundToNearest(tConomy_getCurrency(target) / 10.0);
 		char reason[256];
-		Format(reason, sizeof(reason), "Stolen from %N", g_iPlayerTarget[client]);
+		Format(reason, sizeof(reason), "Stolen from %N", target);
 		tConomy_addCurrency(client, amount, reason);
 		Format(reason, sizeof(reason), "Stolen by %N", client);
-		tConomy_removeCurrency(g_iPlayerTarget[client], amount, reason);
+		tConomy_removeCurrency(target, amount, reason);
 		tCrime_addCrime(client, amount * 2);
 	} else if (StrEqual(info, "Ziptie Player")) {
 		if (inventory_removePlayerItems(client, "ziptie", 1, "Ziptied Player")) {
-			ziptiePlayer(g_iPlayerTarget[client], client);
+			ziptiePlayer(target, client);
 			tCrime_addCrime(client, 100);
 		}
 	} else if (StrEqual(info, "Free Player")) {
-		unzipPlayer(g_iPlayerTarget[client], client);
+		unzipPlayer(target, client);
 	}
 }
 
@@ -142,8 +144,15 @@ public void unzipPlayer(int client, int initiator) {
 	g_bIsZiptied[client] = false;
 	SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 1.0);
 	SetEntityMoveType(client, MOVETYPE_WALK);
-	PrintToChat(client, "[-T-] You were freed by %N", initiator);
+	if (initiator != 0)
+		PrintToChat(client, "[-T-] You were freed by %N", initiator);
 	SetEntityRenderColor(client, 255, 255, 255, 255);
+}
+
+public void OnClientDisconnect(int client) {
+	if (!isValidClient(client))
+		return;
+	unzipPlayer(client, 0);
 }
 
 stock bool isValidClient(int client) {
@@ -188,9 +197,11 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			}
 		}
 		return Plugin_Changed;
-	} else if (buttons & IN_USE) {
+	} else if (buttons & IN_USE || buttons & IN_ATTACK || buttons & IN_ATTACK2) {
 		if (g_bIsZiptied[client]) {
 			buttons = buttons & ~IN_USE;
+			buttons = buttons & ~IN_ATTACK;
+			buttons = buttons & ~IN_ATTACK2;
 			return Plugin_Changed;
 		}
 	}

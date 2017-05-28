@@ -34,7 +34,7 @@
 #pragma newdecls required
 
 #define MAX_FURNITURE 1024
-#define MAX_SPAWNABLE 400
+#define MAX_SPAWNABLE 800
 
 #define MAX_NPCS 8
 
@@ -413,8 +413,10 @@ public void inventory_onItemUsed(int client, char itemname[128], int weight, cha
 	int id;
 	char itemName2[64];
 	strcopy(itemName2, sizeof(itemName2), itemname);
-	if ((id = getLoadedIdByName(itemName2)) == -1)
+	if ((id = getLoadedIdByName(itemName2)) == -1) {
+		PrintToChat(client, "[-T-] This is an Invalid Furniture Item (No longer usable)");
 		return;
+	}
 	
 	firstSpawnFurniture(client, id);
 }
@@ -438,29 +440,40 @@ public void firstSpawnFurniture(int client, int id) {
 		return;
 	}
 	
-	if (Zone_CheckIfZoneExists(activeZone[client], true, true)) {
-		if (Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2])) {
-			if (apartments_isClientOwner(client, activeZone[client])) {
-				int max = getApartmentFurnitureItemsCount(activeZone[client]);
-				int setMax = apartments_getBuyPrice(activeZone[client]) / 12500;
-				if (max < setMax) {
-					// HURRA
-				} else {
-					PrintToChat(client, "[-T-] (%s) Too much Furniture in this Apartment (%i/%i)", activeZone[client], max, setMax);
-					return;
-				}
-			} else {
-				PrintToChat(client, "[-T-] (%s) You do not own this Apartment", activeZone[client]);
-				return;
-			}
-		} else {
-			PrintToChat(client, "[-T-] (%s) Not in your Apartment", activeZone[client]);
+	if (!Zone_CheckIfZoneExists(activeZone[client], true, true)) {
+		char rZone[64];
+		Zone_getMostRecentActiveZone(client, rZone);
+		float cpos[3];
+		GetClientAbsOrigin(client, cpos);
+		if (!Zone_isPositionInZone(rZone, cpos[0], cpos[1], cpos[2])) {
+			strcopy(rZone, 64, "");
 			return;
 		}
-	} else {
+		strcopy(activeZone[client], 128, rZone);
+		PrintToConsole(client, "changed Active Zone to: %s | bug this (ne)", rZone);
+		
 		PrintToChat(client, "[-T-] (%s) Not an Apartment", activeZone[client]);
 		return;
 	}
+	
+	if (!Zone_isPositionInZone(activeZone[client], pos[0], pos[1], pos[2])) {
+		PrintToChat(client, "[-T-] (%s) Not in an Apartment", activeZone[client]);
+		return;
+	}
+	
+	if (!apartments_isClientOwner(client, activeZone[client])) {
+		PrintToChat(client, "[-T-] (%s) You do not own this Apartment", activeZone[client]);
+		return;
+	}
+	
+	int max = getApartmentFurnitureItemsCount(activeZone[client]);
+	int setMax = apartments_getBuyPrice(activeZone[client]) / 12500;
+	setMax = setMax >= 50 ? 50 : setMax;
+	if (max >= setMax) {
+		PrintToChat(client, "[-T-] (%s) Too much Furniture in this Apartment (%i/%i)", activeZone[client], max, setMax);
+		return;
+	}
+	
 	
 	char uniqueId[64];
 	Format(uniqueId, sizeof(uniqueId), "%i %s %i", id, playerid, GetTime());
@@ -472,8 +485,10 @@ public void firstSpawnFurniture(int client, int id) {
 	char mapName[128];
 	GetCurrentMap(mapName, sizeof(mapName));
 	
-	if (!spawnFurniture(id, playerid, pos, angles, uniqueId, activeZone[client], LoadedFurnitureItems[id][lfBaseDurability]))
+	if (!spawnFurniture(id, playerid, pos, angles, uniqueId, activeZone[client], LoadedFurnitureItems[id][lfBaseDurability])) {
+		PrintToChat(client, "[-T-] Server cap reached; contact an Administrator");
 		return;
+	}
 	
 	char addFurnitureQuery[2048];
 	Format(addFurnitureQuery, sizeof(addFurnitureQuery), "INSERT IGNORE INTO `t_rpg_furniture`(`Id`, `timestamp`, `playername`, `playerid`, `uniqueId`, `map`, `name`, `model`, `price`, `pos_x`, `pos_y`, `pos_z`, `angle_x`, `angle_y`, `angle_z`, `apartmentId`, `durability`)VALUES(NULL, CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', '%s', '%s', '%i', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%.2f', '%s', '%i');", clean_playername, playerid, uniqueId, mapName, LoadedFurnitureItems[id][lfName], LoadedFurnitureItems[id][lfModelPath], LoadedFurnitureItems[id][lfPrice], pos[0], pos[1], pos[2], angles[0], angles[1], angles[2], activeZone[client], LoadedFurnitureItems[id][lfBaseDurability]);
@@ -532,13 +547,16 @@ public bool spawnFurniture(int id, char playerid[20], float pos[3], float angles
 	TeleportEntity(furnitureEnt, pos, angles, NULL_VECTOR);
 	Entity_SetGlobalName(furnitureEnt, LoadedFurnitureItems[id][lfName]);
 	
-	SpawnedFurnitureItems[spawnedId][sfId] = g_iSpawnedFurniture++;
+	SpawnedFurnitureItems[spawnedId][sfId] = spawnedId;
 	SpawnedFurnitureItems[spawnedId][sfLoadedId] = id;
 	SpawnedFurnitureItems[spawnedId][sfRef] = EntIndexToEntRef(furnitureEnt);
 	SpawnedFurnitureItems[spawnedId][sfDurability] = durability;
 	SpawnedFurnitureItems[spawnedId][sfIsActive] = true;
 	strcopy(SpawnedFurnitureItems[spawnedId][sfApartment], 64, apartmentId);
 	strcopy(SpawnedFurnitureItems[spawnedId][sfOwner], 20, playerid);
+	
+	if (spawnedId > g_iSpawnedFurniture)
+		g_iSpawnedFurniture = spawnedId;
 	
 	return true;
 }

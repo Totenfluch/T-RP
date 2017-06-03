@@ -127,7 +127,7 @@ public Action cmdTestBar(int client, int args) {
 }
 
 void showAllHudMessages(int client) {
-	showHudMsg(client, "by ggc-base.de & painlessgaming.eu", 0, 188, 212, 0.01, 0.01, 1.05);
+	showHudMsg(client, "by ggc-base.de", 0, 188, 212, 0.01, 0.01, 1.05);
 	//showHudMsg(client, "Donator: No", 							103, 58, 183, 	0.01, 0.05, 1.05);
 	//showHudMsg(client, "In Steam Group: No", 					63, 81, 181, 	0.01,  0.1, 1.05);
 }

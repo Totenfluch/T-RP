@@ -38,6 +38,8 @@
 
 #define MAX_NPCS 8
 
+bool loaded = false;
+
 enum LoadedFurniture {
 	lfId, 
 	bool:lfActive, 
@@ -268,14 +270,14 @@ public int getFirstFreeSpawnedSlot() {
 
 public int getApartmentFurnitureItemsCount(char aId[128]) {
 	int count = 0;
-	for (int i = 0; i < g_iSpawnedFurniture; i++)
+	for (int i = 0; i <= g_iSpawnedFurniture; i++)
 	if (StrEqual(SpawnedFurnitureItems[i][sfApartment], aId))
 		count++;
 	return count;
 }
 
 public void PrintFurnitureListByZoneToClient(int client, char aId[128]) {
-	for (int i = 0; i < g_iSpawnedFurniture; i++)
+	for (int i = 0; i <= g_iSpawnedFurniture; i++)
 	if (StrEqual(SpawnedFurnitureItems[i][sfApartment], aId))
 		printFurnitureById(client, i);
 }
@@ -675,27 +677,11 @@ public int buildMenuHandler(Handle menu, MenuAction action, int client, int item
 			PrintToChat(client, "[-T-] Hold R for Placement, W,A,S,D for Angles JUMP for up, Crouch for down and E to Exit");
 			SetEntityMoveType(client, MOVETYPE_NONE);
 		} else if (StrEqual(cValue, "stash")) {
-			char mapName[128];
-			GetCurrentMap(mapName, sizeof(mapName));
-			resetSlot(id);
-			char updateFurnitureQuery[256];
-			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
-			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
-			
-			if (IsValidEntity(id))
-				AcceptEntityInput(id, "kill");
-			inventory_givePlayerItem(client, globalName, 100, "", "Furniture", "Apartment Stuff", 1, "Stashed Furniture");
+			if(resetFurnitureByRef(EntIndexToEntRef(id)))
+				inventory_givePlayerItem(client, globalName, 100, "", "Furniture", "Apartment Stuff", 1, "Stashed Furniture");
 		} else if (StrEqual(cValue, "delete")) {
-			char mapName[128];
-			GetCurrentMap(mapName, sizeof(mapName));
-			resetSlot(id);
-			char updateFurnitureQuery[256];
-			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
-			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
-			
-			if (IsValidEntity(id))
-				AcceptEntityInput(id, "kill");
-			PrintToChat(client, "[-T-] Deleted %s", globalName);
+			if(resetFurnitureByRef(EntIndexToEntRef(id)))
+				PrintToChat(client, "[-T-] Deleted %s", globalName);
 		}
 	}
 	if (action == MenuAction_End) {
@@ -769,11 +755,11 @@ public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int
 			PrintToChat(client, "[-T-] Hold R for Placement, A & D for Angles JUMP for up, Crouch for down and E to Exit");
 			SetEntityMoveType(client, MOVETYPE_NONE);
 		} else if (StrEqual(cValue, "stash")) {
-			resetFurnitureByRef(EntIndexToEntRef(id));
-			inventory_givePlayerItem(client, globalName, 100, "", "Furniture", "Apartment Stuff", 1, "Stashed Furniture");
+			if(resetFurnitureByRef(EntIndexToEntRef(id)))
+				inventory_givePlayerItem(client, globalName, 100, "", "Furniture", "Apartment Stuff", 1, "Stashed Furniture");
 		} else if (StrEqual(cValue, "delete")) {
-			resetFurnitureByRef(EntIndexToEntRef(id));
-			PrintToChat(client, "[-T-] Deleted %s", globalName);
+			if(resetFurnitureByRef(EntIndexToEntRef(id)))
+				PrintToChat(client, "[-T-] Deleted %s", globalName);
 		}
 	}
 	if (action == MenuAction_End) {
@@ -782,18 +768,24 @@ public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int
 	return 1;
 }
 
-public void resetFurnitureByRef(int ref){
-	int id; 
-	if((id = findSpawnedEntByRef(ref)) == -1)
-		return;
+public bool resetFurnitureByRef(int ref) {
+	int id;
+	if ((id = findSpawnedEntByRef(ref)) == -1){
+		return false;
+	}
 	
 	char uniqueId[64];
-	GetEntPropString(id, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
-		
-	if(IsValidEdict(ref)){
+	
+	if (IsValidEdict(ref)) {
 		int ent = EntRefToEntIndex(ref);
-		if(IsValidEntity(ent))
+		if (IsValidEntity(ent)) {
+			GetEntPropString(ent, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
 			AcceptEntityInput(ent, "kill");
+		} else {
+			return false;
+		}
+	} else {
+		return false;
 	}
 	clearSpawnedFurniture(id);
 	
@@ -802,6 +794,8 @@ public void resetFurnitureByRef(int ref){
 	char updateFurnitureQuery[256];
 	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
 	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
+	
+	return true;
 }
 
 public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
@@ -1052,7 +1046,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 }
 
 int findSpawnedEntByRef(int ref) {
-	for (int i = 0; i < g_iSpawnedFurniture; i++)
+	for (int i = 0; i <= g_iSpawnedFurniture; i++)
 	if (SpawnedFurnitureItems[i][sfRef] == ref)
 		return i;
 	return -1;
@@ -1110,6 +1104,7 @@ public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error,
 
 public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 	clearAllSpawnedFurniture();
+	loaded = false;
 	loadFurnitureFromDatabase();
 }
 
@@ -1123,6 +1118,8 @@ public void loadFurnitureFromDatabase() {
 }
 
 public void loadFurnitureQueryCallback(Handle owner, Handle hndl, const char[] error, any data) {
+	if(loaded)
+		return;
 	while (SQL_FetchRow(hndl)) {
 		char uniqueId[64];
 		char name[64];
@@ -1159,6 +1156,7 @@ public void loadFurnitureQueryCallback(Handle owner, Handle hndl, const char[] e
 		if ((theId = getLoadedIdByName(name)) != -1)
 			spawnFurniture(theId, playerid, pos, angles, uniqueId, apartmentId, durability);
 	}
+	loaded = true;
 }
 
 public int Zone_OnClientEntry(int client, char[] zone) {
@@ -1198,7 +1196,7 @@ public bool isVendorPartOfPlugin(char npcType[64]) {
 }
 
 public Action cmdListFurniture(int client, int args) {
-	for (int i = 0; i < g_iSpawnedFurniture; i++)
+	for (int i = 0; i <= g_iSpawnedFurniture; i++)
 	printFurnitureById(client, i);
 	return Plugin_Handled;
 }
@@ -1215,7 +1213,7 @@ public void printFurnitureById(int client, int i) {
 }
 
 public void removeFurnituresByZone(char zone[128]) {
-	for (int i = 0; i < g_iSpawnedFurniture; i++) {
+	for (int i = 0; i <= g_iSpawnedFurniture; i++) {
 		if (StrEqual(SpawnedFurnitureItems[i][sfApartment], zone)) {
 			resetFurnitureByRef(SpawnedFurnitureItems[i][sfRef]);
 		}

@@ -54,5 +54,8 @@ public void OnPlayerInteract(int client, int target, char interaction[64]) {
 	if (!StrEqual(g_cInteraction, interaction))
 		return;
 	
-	aparments_allowPlayer(client, target);
+	if (inventory_hasPlayerItem(client, "Apartment Key"))
+		aparments_allowPlayer(client, target);
+	else
+		PrintToChat(client, "[-T-] You don't have a key");
 } 

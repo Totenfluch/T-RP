@@ -464,7 +464,7 @@ public void loadClientJob(int client) {
 	
 	char loadJobQuery[512];
 	Format(loadJobQuery, sizeof(loadJobQuery), "SELECT jobname,level,experience,flags,special_flags FROM t_rpg_jobs WHERE playerid = '%s' AND flags != 'i';", playerid);
-	SQL_TQuery(g_DB, SQLLoadJobQueryCallback, loadJobQuery, client);
+	SQL_TQuery(g_DB, SQLLoadJobQueryCallback, loadJobQuery, GetClientUserId(client));
 }
 
 public void registerJob(char jobname[128], char jobdescription[512], int maxJobLevels, int jobExperience, float jobExperienceIncreasePercentage) {
@@ -609,11 +609,12 @@ public void increaseExperience(int client, int amount, char jobname[128]) {
 	
 	float level = float(g_ePlayerJob[client][pjJobLevel]);
 	int iExperienceNeeded = RoundToNearest(g_eLoadedJobs[jobId][gJobExperience] * (Pow(level, g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage])));
+	
 	while ((g_ePlayerJob[client][pjJobExperience] >= iExperienceNeeded) && g_ePlayerJob[client][pjJobLevel] <= g_eLoadedJobs[jobId][gMaxJobLevels]) {
-		level = float(g_ePlayerJob[client][pjJobLevel]);
-		iExperienceNeeded = RoundToNearest(g_eLoadedJobs[jobId][gJobExperience] * (Pow(level, g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage])));
 		g_ePlayerJob[client][pjJobExperience] -= iExperienceNeeded;
 		g_ePlayerJob[client][pjJobLevel]++;
+		level = float(g_ePlayerJob[client][pjJobLevel]);
+		iExperienceNeeded = RoundToNearest(g_eLoadedJobs[jobId][gJobExperience] * (Pow(level, g_eLoadedJobs[jobId][gJobExperienceIncreasePercentage])));
 		triggerLevelUp(client, jobname);
 	}
 	
@@ -652,10 +653,11 @@ public void triggerLevelUp(int client, char jobname[128]) {
 }
 
 public void SQLLoadJobQueryCallback(Handle owner, Handle hndl, const char[] error, any data) {
+	int client = GetClientOfUserId(data);
 	while (SQL_FetchRow(hndl)) {
-		SQL_FetchStringByName(hndl, "jobname", g_ePlayerJob[data][pjJobname], 128);
-		g_ePlayerJob[data][pjJobLevel] = SQL_FetchIntByName(hndl, "level");
-		g_ePlayerJob[data][pjJobExperience] = SQL_FetchIntByName(hndl, "experience");
+		SQL_FetchStringByName(hndl, "jobname", g_ePlayerJob[client][pjJobname], 128);
+		g_ePlayerJob[client][pjJobLevel] = SQL_FetchIntByName(hndl, "level");
+		g_ePlayerJob[client][pjJobExperience] = SQL_FetchIntByName(hndl, "experience");
 	}
 }
 
@@ -746,8 +748,8 @@ public Action cmdGiveXp(int client, int args) {
 	GetCmdArg(2, tempExperienceString, sizeof(tempExperienceString));
 	
 	int tempexperience = StringToInt(tempExperienceString);
-	if (tempexperience < -100000 || tempexperience > 100000) {
-		ReplyToCommand(client, "Invalid Amount | < -100000 || > 100000");
+	if (tempexperience < -1000000 || tempexperience > 1000000) {
+		ReplyToCommand(client, "Invalid Amount | < -1000000 || > 1000000");
 		return Plugin_Handled;
 	}
 	

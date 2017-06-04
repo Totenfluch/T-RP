@@ -162,7 +162,7 @@ stock bool isValidClient(int client) {
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon) {
 	char wName[128];
 	GetClientWeapon(client, wName, sizeof(wName));
-	if ((buttons & IN_ATTACK2)) {
+	if ((buttons & IN_ATTACK2) && !g_bIsZiptied[client]) {
 		int Target = GetClientAimTarget(client, true);
 		if (isValidClient(Target) && g_bIsZiptied[Target]) {
 			float distance = Entity_GetDistance(client, Target);

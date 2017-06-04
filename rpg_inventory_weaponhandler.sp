@@ -195,9 +195,12 @@ public bool stashWeaponSlot(int client, int slot) {
 public void takeItemSuit(int client, char[] item) {
 	char item2[128];
 	strcopy(item2, sizeof(item2), item);
-	if (inventory_removePlayerItems(client, item2, 1, "Taken from Inventory"))
-		GivePlayerItem(client, item);
-	
+	if (inventory_removePlayerItems(client, item2, 1, "Taken from Inventory")){
+		SetEntProp(client, Prop_Data, "m_ArmorValue", 100, 1);
+		if(StrContains(item2, "assaultsuit") != -1){
+			SetEntProp(client, Prop_Send, "m_bHasHelmet", 1);
+		}
+	}
 }
 
 public void takeItem(int client, char[] item, int islot) {

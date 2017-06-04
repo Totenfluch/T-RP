@@ -6,6 +6,7 @@
 #include <tConomy>
 #include <emitsoundany>
 #include <rpg_npc_core>
+#include <rpg_inventory_core>
 
 #define	MAX_CARS						128
 #define	MAX_ENTITIES					2048
@@ -158,8 +159,8 @@ public OnPluginStart()
 	MoneyOffset = FindSendPropOffs("CCSPlayer", "m_iAccount");
 	
 	// Commands
-	//RegConsoleCmd("sm_car_menu", Car_Menu, " -- Open the Car Menu.");
-	//RegConsoleCmd("sm_menu_voiture", Car_Menu, " -- Ouvrir le menu voiture.");
+	RegConsoleCmd("sm_car_menu", Car_Menu, " -- Open the Car Menu.");
+	RegConsoleCmd("sm_menu_voiture", Car_Menu, " -- Ouvrir le menu voiture.");
 	RegConsoleCmd("sm_car_stow", Car_Stow_R, "Stow Your Car");
 	RegConsoleCmd("sm_ranger_voiture", Car_Stow_R, " -- Ranger la voiture.");
 	RegConsoleCmd("sm_car_on", Car_On, " -- Turn your car on.");
@@ -4294,7 +4295,10 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 	if (!StrEqual(npcType, npctype, true))
 		return;
 	g_iLastInteractedWith[client] = entIndex;
-	Car_Menu(client, 0);
+	if(inventory_hasPlayerItem(client, "Bike License"))
+		Car_Menu(client, 0);
+	else
+		PrintToChat(client, "[-T-] You don't have a bike License");
 }
 
 stock bool isValidClient(int client) {

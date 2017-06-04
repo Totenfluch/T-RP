@@ -1264,7 +1264,7 @@ public void changeDoorLock(int client, int state/* 1 = Locked | 0 = Unlocked */)
 public void sellApartment(int client) {
 	char zone[128];
 	strcopy(zone, sizeof(zone), playerProperties[client][ppZone]);
-	if(!isOwnedBy(client, zone)){
+	if (!isOwnedBy(client, zone)) {
 		PrintToChat(client, "[-T-] You actually do not own this apartment... try again");
 		return;
 	}
@@ -1337,7 +1337,8 @@ public int chooserMenuHandler(Handle menu, MenuAction action, int client, int it
 	if (action == MenuAction_Select) {
 		char cValue[128];
 		GetMenuItem(menu, item, cValue, sizeof(cValue));
-		allowPlayerToApartment(client, g_iPlayerTargetKey[client], cValue);
+		if (inventory_removePlayerItems(client, "Apartment Key", 1, "Allowed Players to Apartment"))
+			allowPlayerToApartment(client, g_iPlayerTargetKey[client], cValue);
 	}
 	if (action == MenuAction_End) {
 		delete menu;

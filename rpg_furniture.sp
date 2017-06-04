@@ -677,10 +677,10 @@ public int buildMenuHandler(Handle menu, MenuAction action, int client, int item
 			PrintToChat(client, "[-T-] Hold R for Placement, W,A,S,D for Angles JUMP for up, Crouch for down and E to Exit");
 			SetEntityMoveType(client, MOVETYPE_NONE);
 		} else if (StrEqual(cValue, "stash")) {
-			if(resetFurnitureByRef(EntIndexToEntRef(id)))
+			if (resetFurnitureByRef(EntIndexToEntRef(id)))
 				inventory_givePlayerItem(client, globalName, 100, "", "Furniture", "Apartment Stuff", 1, "Stashed Furniture");
 		} else if (StrEqual(cValue, "delete")) {
-			if(resetFurnitureByRef(EntIndexToEntRef(id)))
+			if (resetFurnitureByRef(EntIndexToEntRef(id)))
 				PrintToChat(client, "[-T-] Deleted %s", globalName);
 		}
 	}
@@ -755,10 +755,10 @@ public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int
 			PrintToChat(client, "[-T-] Hold R for Placement, A & D for Angles JUMP for up, Crouch for down and E to Exit");
 			SetEntityMoveType(client, MOVETYPE_NONE);
 		} else if (StrEqual(cValue, "stash")) {
-			if(resetFurnitureByRef(EntIndexToEntRef(id)))
+			if (resetFurnitureByRef(EntIndexToEntRef(id)))
 				inventory_givePlayerItem(client, globalName, 100, "", "Furniture", "Apartment Stuff", 1, "Stashed Furniture");
 		} else if (StrEqual(cValue, "delete")) {
-			if(resetFurnitureByRef(EntIndexToEntRef(id)))
+			if (resetFurnitureByRef(EntIndexToEntRef(id)))
 				PrintToChat(client, "[-T-] Deleted %s", globalName);
 		}
 	}
@@ -770,7 +770,7 @@ public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int
 
 public bool resetFurnitureByRef(int ref) {
 	int id;
-	if ((id = findSpawnedEntByRef(ref)) == -1){
+	if ((id = findSpawnedEntByRef(ref)) == -1) {
 		return false;
 	}
 	
@@ -1118,7 +1118,7 @@ public void loadFurnitureFromDatabase() {
 }
 
 public void loadFurnitureQueryCallback(Handle owner, Handle hndl, const char[] error, any data) {
-	if(loaded)
+	if (loaded)
 		return;
 	while (SQL_FetchRow(hndl)) {
 		char uniqueId[64];

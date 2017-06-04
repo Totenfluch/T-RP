@@ -43,6 +43,10 @@ Handle g_hTeleportDelay;
 
 int g_iPlayerDelay[MAXPLAYERS + 1];
 
+Database g_DB;
+char dbconfig[] = "gsxh_multiroot";
+
+bool g_bIsClientLoaded[MAXPLAYERS + 1];
 
 public Plugin myinfo = 
 {
@@ -69,6 +73,14 @@ public void OnPluginStart()
 	HookEvent("player_death", onPlayerDeath);
 	RegConsoleCmd("sm_ttr", timetoRespawnCommand);
 	RegConsoleCmd("sm_enter", enterGameCommand);
+	
+	char error[255];
+	g_DB = SQL_Connect(dbconfig, true, error, sizeof(error));
+	SQL_SetCharset(g_DB, "utf8");
+	
+	char createTableQuery[1024];
+	Format(createTableQuery, sizeof(createTableQuery), "CREATE TABLE IF NOT EXISTS t_rpg_spawndelay ( `playerid` VARCHAR(20) NOT NULL , `time` INT NOT NULL , PRIMARY KEY (`playerid`)) ENGINE = InnoDB;");
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, createTableQuery);
 }
 
 public Action onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {
@@ -106,6 +118,47 @@ public void OnConfigsExecuted() {
 
 public void OnClientPostAdminCheck(int client) {
 	g_iPlayerDelay[client] = 0;
+	g_bIsClientLoaded[client] = false;
+	loadClient(client);
+}
+
+public void OnClientDisconnect(int client) {
+	if (g_iPlayerDelay[client] <= 0)
+		return;
+		
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	char saveQuery[256];
+	Format(saveQuery, sizeof(saveQuery), "INSERT IGNORE INTO `t_rpg_spawndelay` (`playerid`, `time`) VALUES ('%s', '%i')", playerid, g_iPlayerDelay[client]);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, saveQuery);
+	
+	
+}
+
+public void loadClient(int client) {
+	char playerid[20];
+	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+	
+	char findQuery[256];
+	Format(findQuery, sizeof(findQuery), "SELECT time FROM t_rpg_spawndelay WHERE playerid = '%s';", playerid);
+	SQL_TQuery(g_DB, SQLLoadPlayerCallback, findQuery, GetClientUserId(client));
+}
+
+public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error, any data) {
+	int client = GetClientOfUserId(data);
+	if(!isValidClient(client))
+		return;
+	while (SQL_FetchRow(hndl)) {
+		g_iPlayerDelay[client] = SQL_FetchInt(hndl, 0);
+		
+		char playerid[20];
+		GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
+		char cleanupQuery[256];
+		Format(cleanupQuery, sizeof(cleanupQuery), "DELETE FROM t_rpg_spawndelay WHERE playerid = '%s';", playerid);
+		SQL_TQuery(g_DB, SQLLoadPlayerCallback, cleanupQuery);
+	}
+	g_bIsClientLoaded[client] = true;
 }
 
 public void OnMapStart() {
@@ -158,6 +211,8 @@ public void teleportPlayer(int client) {
 		return;
 	if (!rpg_hasGameStarted())
 		return;
+	if (!g_bIsClientLoaded[client])
+		return;
 	g_iPlayerDelay[client] = g_iTeleportDelay;
 	float pos[3];
 	pos[0] = g_fSpawnX;
@@ -165,3 +220,8 @@ public void teleportPlayer(int client) {
 	pos[2] = g_fSpawnZ;
 	TeleportEntity(client, pos, NULL_VECTOR, NULL_VECTOR);
 }
+
+public void SQLErrorCheckCallback(Handle owner, Handle hndl, const char[] error, any data) {
+	if (!StrEqual(error, ""))
+		LogError(error);
+} 

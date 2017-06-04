@@ -153,6 +153,12 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	*/
 	CreateNative("furniture_setDurability", Native_setDurability);
 	
+	/*
+		@Param1 -> char zone[128]
+		return -	
+	*/
+	CreateNative("furniture_removeAllFurnitureFromApartment", Native_removeAllFurnitureFromApartment);
+	
 	
 	/*
 		Forward when a Player interacts with a furniture Item
@@ -200,6 +206,12 @@ public int Native_setDurability(Handle plugin, int numParams) {
 	if ((index = findSpawnedEntByRef(EntIndexToEntRef(entity))) == -1)
 		return -1;
 	return (SpawnedFurnitureItems[index][sfDurability] = GetNativeCell(2));
+}
+
+public int Native_removeAllFurnitureFromApartment(Handle plugin, int numParams) {
+	char zone[128];
+	GetNativeString(1, zone, sizeof(zone));
+	removeFurnituresByZone(zone);
 }
 
 public void OnMapStart() {
@@ -260,6 +272,12 @@ public int getApartmentFurnitureItemsCount(char aId[128]) {
 	if (StrEqual(SpawnedFurnitureItems[i][sfApartment], aId))
 		count++;
 	return count;
+}
+
+public void PrintFurnitureListByZoneToClient(int client, char aId[128]) {
+	for (int i = 0; i < g_iSpawnedFurniture; i++)
+	if (StrEqual(SpawnedFurnitureItems[i][sfApartment], aId))
+		printFurnitureById(client, i);
 }
 
 public bool loadFurniture() {
@@ -470,7 +488,8 @@ public void firstSpawnFurniture(int client, int id) {
 	int setMax = apartments_getBuyPrice(activeZone[client]) / 12500;
 	setMax = setMax >= 50 ? 50 : setMax;
 	if (max >= setMax) {
-		PrintToChat(client, "[-T-] (%s) Too much Furniture in this Apartment (%i/%i)", activeZone[client], max, setMax);
+		PrintToChat(client, "[-T-] (%s) Too much Furniture in this Apartment (%i/%i) - see console for info", activeZone[client], max, setMax);
+		PrintFurnitureListByZoneToClient(client, activeZone[client]);
 		return;
 	}
 	
@@ -750,26 +769,10 @@ public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int
 			PrintToChat(client, "[-T-] Hold R for Placement, A & D for Angles JUMP for up, Crouch for down and E to Exit");
 			SetEntityMoveType(client, MOVETYPE_NONE);
 		} else if (StrEqual(cValue, "stash")) {
-			char mapName[128];
-			GetCurrentMap(mapName, sizeof(mapName));
-			
-			char updateFurnitureQuery[256];
-			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
-			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
-			
-			if (IsValidEntity(id))
-				AcceptEntityInput(id, "kill");
+			resetFurnitureByRef(EntIndexToEntRef(id));
 			inventory_givePlayerItem(client, globalName, 100, "", "Furniture", "Apartment Stuff", 1, "Stashed Furniture");
 		} else if (StrEqual(cValue, "delete")) {
-			char mapName[128];
-			GetCurrentMap(mapName, sizeof(mapName));
-			
-			char updateFurnitureQuery[256];
-			Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
-			SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
-			
-			if (IsValidEntity(id))
-				AcceptEntityInput(id, "kill");
+			resetFurnitureByRef(EntIndexToEntRef(id));
 			PrintToChat(client, "[-T-] Deleted %s", globalName);
 		}
 	}
@@ -777,6 +780,28 @@ public int adminBuildMenuHandler(Handle menu, MenuAction action, int client, int
 		delete menu;
 	}
 	return 1;
+}
+
+public void resetFurnitureByRef(int ref){
+	int id; 
+	if((id = findSpawnedEntByRef(ref)) == -1)
+		return;
+	
+	char uniqueId[64];
+	GetEntPropString(id, Prop_Data, "m_iName", uniqueId, sizeof(uniqueId));
+		
+	if(IsValidEdict(ref)){
+		int ent = EntRefToEntIndex(ref);
+		if(IsValidEntity(ent))
+			AcceptEntityInput(id, "kill");
+	}
+	clearSpawnedFurniture(id);
+	
+	char mapName[128];
+	GetCurrentMap(mapName, sizeof(mapName));
+	char updateFurnitureQuery[256];
+	Format(updateFurnitureQuery, sizeof(updateFurnitureQuery), "DELETE FROM t_rpg_furniture WHERE map = '%s' AND uniqueId = '%s';", mapName, uniqueId);
+	SQL_TQuery(g_DB, SQLErrorCheckCallback, updateFurnitureQuery);
 }
 
 public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
@@ -1173,15 +1198,26 @@ public bool isVendorPartOfPlugin(char npcType[64]) {
 }
 
 public Action cmdListFurniture(int client, int args) {
-	for (int i = 0; i < g_iSpawnedFurniture; i++) {
-		PrintToConsole(client, "%i %i %i %i %d %s %s", 
-			SpawnedFurnitureItems[i][sfId], 
-			SpawnedFurnitureItems[i][sfLoadedId], 
-			SpawnedFurnitureItems[i][sfRef], 
-			SpawnedFurnitureItems[i][sfDurability], 
-			SpawnedFurnitureItems[i][sfIsActive], 
-			SpawnedFurnitureItems[i][sfApartment], 
-			SpawnedFurnitureItems[i][sfOwner]);
-	}
+	for (int i = 0; i < g_iSpawnedFurniture; i++)
+	printFurnitureById(client, i);
 	return Plugin_Handled;
+}
+
+public void printFurnitureById(int client, int i) {
+	PrintToConsole(client, "%i %i %i %i %d %s %s", 
+		SpawnedFurnitureItems[i][sfId], 
+		SpawnedFurnitureItems[i][sfLoadedId], 
+		SpawnedFurnitureItems[i][sfRef], 
+		SpawnedFurnitureItems[i][sfDurability], 
+		SpawnedFurnitureItems[i][sfIsActive], 
+		SpawnedFurnitureItems[i][sfApartment], 
+		SpawnedFurnitureItems[i][sfOwner]);
+}
+
+public void removeFurnituresByZone(char zone[128]) {
+	for (int i = 0; i < g_iSpawnedFurniture; i++) {
+		if (StrEqual(SpawnedFurnitureItems[i][sfApartment], zone)) {
+			resetFurnitureByRef(SpawnedFurnitureItems[i][sfRef]);
+		}
+	}
 } 

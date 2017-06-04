@@ -36,6 +36,13 @@ native int furniture_setDurability(int entity, int amount);
 
 
 /*
+	@Param1 -> char zone[128]
+	return -	
+*/
+native void furniture_removeAllFurnitureFromApartment(char zone[128]);
+
+
+/*
 	Forward when a Player interacts with a furniture Item
 		
 	@Param1 -> int entity

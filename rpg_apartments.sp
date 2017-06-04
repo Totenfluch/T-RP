@@ -31,6 +31,7 @@
 #include <tCrime>
 #include <sdkhooks>
 #include <tStocks>
+#include <rpg_furniture>
 
 #pragma newdecls required
 
@@ -1261,34 +1262,19 @@ public void changeDoorLock(int client, int state/* 1 = Locked | 0 = Unlocked */)
 }
 
 public void sellApartment(int client) {
+	char zone[128];
+	strcopy(zone, sizeof(zone), playerProperties[client][ppZone]);
+	if(!isOwnedBy(client, zone)){
+		PrintToChat(client, "[-T-] You actually do not own this apartment... try again");
+		return;
+	}
 	int aptId = getOwnedApartmentFromKey(playerProperties[client][ppZone]);
-	int sellPrice = RoundToNearest(ownedApartments[aptId][oaPrice_of_purchase] * 0.80);
+	int sellPrice = RoundToNearest(ownedApartments[aptId][oaPrice_of_purchase] * 0.70);
 	tConomy_addCurrency(client, sellPrice, "Sold Apartment");
 	
 	changeDoorLock(client, 0);
 	
-	char mapName[128];
-	GetCurrentMap(mapName, sizeof(mapName));
-	
-	char sellApartmentQuery[4096];
-	Format(sellApartmentQuery, sizeof(sellApartmentQuery), "DELETE FROM `t_rpg_boughtApartments` WHERE apartment_id = '%s' AND map = '%s';", ownedApartments[aptId][oaApartment_Id], mapName);
-	SQL_TQuery(g_DB, SQLErrorCheckCallback, sellApartmentQuery);
-	
-	Format(sellApartmentQuery, sizeof(sellApartmentQuery), "UPDATE `t_rpg_apartments` SET bought = 0 WHERE apartment_id = '%s' AND map = '%s';", ownedApartments[aptId][oaApartment_Id], mapName);
-	SQL_TQuery(g_DB, SQLErrorCheckCallback, sellApartmentQuery);
-	
-	existingApartments[getLoadedIdFromApartmentId(ownedApartments[aptId][oaApartment_Id])][eaBuyable] = true;
-	existingApartments[getLoadedIdFromApartmentId(ownedApartments[aptId][oaApartment_Id])][eaBought] = false;
-	
-	ownedApartments[aptId][oaId] = -1;
-	strcopy(ownedApartments[aptId][oaTime_of_purchase], 64, "");
-	ownedApartments[aptId][oaPrice_of_purchase] = -1;
-	strcopy(ownedApartments[aptId][oaApartment_Id], 128, "");
-	strcopy(ownedApartments[aptId][oaPlayerid], 20, "");
-	strcopy(ownedApartments[aptId][oaPlayername], 48, "");
-	strcopy(ownedApartments[aptId][oaApartmentName], 255, "");
-	strcopy(ownedApartments[aptId][oaAllowed_players], 550, "");
-	ownedApartments[aptId][oaDoor_locked] = false;
+	evictApartment(zone);
 }
 
 
@@ -1485,7 +1471,7 @@ public void evictApartment(char apartmentId[128]) {
 	strcopy(ownedApartments[aptId][oaApartmentName], 255, "");
 	strcopy(ownedApartments[aptId][oaAllowed_players], 550, "");
 	ownedApartments[aptId][oaDoor_locked] = false;
-	// TODO delete Furniture
+	furniture_removeAllFurnitureFromApartment(apartmentId);
 }
 
 public Action listAps(int client, int args) {

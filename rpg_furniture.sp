@@ -793,7 +793,7 @@ public void resetFurnitureByRef(int ref){
 	if(IsValidEdict(ref)){
 		int ent = EntRefToEntIndex(ref);
 		if(IsValidEntity(ent))
-			AcceptEntityInput(id, "kill");
+			AcceptEntityInput(ent, "kill");
 	}
 	clearSpawnedFurniture(id);
 	

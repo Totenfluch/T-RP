@@ -510,7 +510,7 @@ public Action apartmentCommand(int client, int args) {
 				AddMenuItem(apartmentMenu, "unlock", "Unlock Door");
 				char sellPriceDisplay[128];
 				Format(sellPriceDisplay, sizeof(sellPriceDisplay), "Sell Apartment for %.1f", ownedApartments[ownedId][oaPrice_of_purchase] * 0.80);
-				AddMenuItem(apartmentMenu, "sell", sellPriceDisplay, ITEMDRAW_DISABLED);
+				AddMenuItem(apartmentMenu, "sell", sellPriceDisplay);
 				AddMenuItem(apartmentMenu, "rentInfos", "Rent Informations");
 				strcopy(playerProperties[client][ppZone], 128, activeZone[client]);
 				DisplayMenu(apartmentMenu, client, 60);

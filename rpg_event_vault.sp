@@ -413,9 +413,7 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 						if (!IsValidEntity(EntRefToEntIndex(g_iBombEnt))) {
 							if (inventory_hasPlayerItem(client, "c4")) {
 								if (getPoliceCount() >= 3) {
-									if (inventory_removePlayerItems(client, "c4", 1, "planted c4")) {
-										jobs_startProgressBar(client, 600, "Plant Bomb");
-									}
+									jobs_startProgressBar(client, 600, "Plant Bomb");
 								} else {
 									PrintToChat(client, "[-T-] Not enough Police Officers online");
 								}
@@ -428,11 +426,9 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 						}
 					} else if (!doorState && StrEqual(entName, "vault_door_01")) {
 						if (getPoliceCount() >= 3) {
-							if (inventory_removePlayerItems(client, "c4", 1, "planted c4")) {
-								if (inventory_hasPlayerItem(client, "Tablesaw")) {
-									if (inventory_removePlayerItems(client, "Tablesaw", 1, "Robbing Bank"))
-										setupSaw(client);
-								}
+							if (inventory_hasPlayerItem(client, "Tablesaw")) {
+								if (inventory_removePlayerItems(client, "Tablesaw", 1, "Robbing Bank"))
+									setupSaw(client);
 							}
 						} else {
 							PrintToChat(client, "[-T-] Not enough Police Officers online");
@@ -474,7 +470,17 @@ public void jobs_OnProgressBarFinished(int client, char info[64]) {
 			}
 		}
 	} else if (StrEqual(info, "Plant Bomb")) {
-		setupBomb(client);
+		if (inventory_hasPlayerItem(client, "c4")) {
+			if (getPoliceCount() >= 3) {
+				if (inventory_removePlayerItems(client, "c4", 1, "planted c4")) {
+					setupBomb(client);
+				} else {
+					PrintToChat(client, "[-T-] You dont have c4 anymore....");
+				}
+			} else {
+				PrintToChat(client, "[-T-] Not enough Police Officers online");
+			}
+		}
 	}
 }
 

@@ -26,6 +26,7 @@
 #include <rpg_inventory_core>
 #include <rpg_interact>
 #include <tStocks>
+#include <rpg_jobs_core>
 
 #pragma newdecls required
 
@@ -89,15 +90,15 @@ public int giveItemMenuHandler(Handle menu, MenuAction action, int client, int i
 		
 		char categoryBuffer[128];
 		inventory_getItemCategoryBySlotAndClient(client, theId, categoryBuffer, "");
-		if (StrContains(categoryBuffer, "Police Weapon") != -1) {
-			PrintToChat(client, "Cannot transfer this Item");
+		if (StrEqual(categoryBuffer, "Police Weapon") && !jobs_isActiveJob(client, "Police")) {
+			PrintToChat(client, "[-T-] Cannot transfer this Item");
 			return;
 		}
 		
 		char flags[8];
 		inventory_getItemFlagsBySlot(client, theId, flags);
 		if (StrContains(flags, "v") != -1 && !isVipRank2(g_iPlayerTarget[client])) {
-			PrintToChat(client, "Cannot transfer this Item (VIP Only)");
+			PrintToChat(client, "[-T-] Cannot transfer this Item (VIP Only)");
 			return;
 		}
 		

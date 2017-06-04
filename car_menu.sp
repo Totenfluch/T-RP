@@ -4295,7 +4295,7 @@ public void OnNpcInteract(int client, char npcType[64], char UniqueId[128], int 
 	if (!StrEqual(npcType, npctype, true))
 		return;
 	g_iLastInteractedWith[client] = entIndex;
-	if(inventory_hasPlayerItem(client, "Bike License"))
+	if (inventory_hasPlayerItem(client, "Bike License"))
 		Car_Menu(client, 0);
 	else
 		PrintToChat(client, "[-T-] You don't have a bike License");

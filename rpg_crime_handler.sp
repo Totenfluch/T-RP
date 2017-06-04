@@ -88,7 +88,8 @@ public void onPlayerHurt(Handle event, const char[] name, bool dontBroadcast) {
 	GetClientWeapon(attacker, weapon, sizeof(weapon));
 	
 	int crime = RoundToNearest(hurtdmg * g_fCrimeForDamage);
-	tCrime_addCrime(attacker, crime);
+	if (!jobs_isActiveJob(attacker, "Police"))
+		tCrime_addCrime(attacker, crime);
 }
 
 public void onPlayerDeath(Handle event, const char[] name, bool dontBroadcast) {

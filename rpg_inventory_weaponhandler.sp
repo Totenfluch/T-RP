@@ -25,6 +25,7 @@
 #include <sdktools>
 #include <rpg_inventory_core>
 #include <smlib>
+#include <rpg_jobs_core>
 
 #pragma newdecls required
 
@@ -76,6 +77,10 @@ public Action cmdStashWeapon(int client, int args) {
 public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64], int slot) {
 	if (!(StrContains(category, "Weapon") != -1 || StrEqual(itemname, "item_kevlar") || StrEqual(itemname, "item_assaultsuit")))
 		return;
+	if(StrEqual(category, "Police Weapon") && !jobs_isActiveJob(client, "Police")){
+		PrintToChat(client, "[-T-] Can not use Police Weapon");
+		return;
+	}
 	Menu wMenu = CreateMenu(weaponMenuHandler);
 	strcopy(g_cLastItemUsed[client], 128, itemname);
 	g_iLatestSlotUsed[client] = slot;
@@ -156,13 +161,26 @@ public void stashWeapon(int client, bool useOverride, char[] weapon) {
 		if (weaponIndex != -1) {
 			int primaryWeaponClip = Weapon_GetPrimaryClip(weaponIndex);
 			int primaryWeaponAmmo = GetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount");
-			if (inventory_givePlayerItem(client, item, primaryWeaponClip * 1000 + primaryWeaponAmmo, "", "Weapon", "Weapon", 2, "Stashed Weapon")) {
+			
+			char weaponType[64];
+			if (jobs_isActiveJob(client, "Police"))
+				strcopy(weaponType, sizeof(weaponType), "Police Weapon");
+			else
+				strcopy(weaponType, sizeof(weaponType), "Weapon");
+			
+			if (inventory_givePlayerItem(client, item, primaryWeaponClip * 1000 + primaryWeaponAmmo, "", weaponType, "Weapon", 2, "Stashed Weapon")) {
 				RemovePlayerItem(client, weaponIndex);
 				RemoveEdict(weaponIndex);
 			}
 		}
 	} else if (slot == 3) {
-		if (inventory_givePlayerItem(client, item, 1, "", "Weapon", "Weapon", 2, "Stashed Grenade"))
+		char weaponType[64];
+		if (jobs_isActiveJob(client, "Police"))
+			strcopy(weaponType, sizeof(weaponType), "Police Weapon");
+		else
+			strcopy(weaponType, sizeof(weaponType), "Weapon");
+		
+		if (inventory_givePlayerItem(client, item, 1, "", weaponType, "Weapon", 2, "Stashed Grenade"))
 			Client_RemoveWeapon(client, item, true, true);
 	}
 	
@@ -178,7 +196,12 @@ public bool stashWeaponSlot(int client, int slot) {
 			int primaryWeaponAmmo = GetEntProp(weaponIndex, Prop_Send, "m_iPrimaryReserveAmmoCount");
 			char item[128];
 			Entity_GetClassName(weaponIndex, item, sizeof(item));
-			if (inventory_givePlayerItem(client, item, primaryWeaponClip * 1000 + primaryWeaponAmmo, "", "Weapon", "Weapon", 2, "Stashed Weapon")) {
+			char weaponType[64];
+			if (jobs_isActiveJob(client, "Police"))
+				strcopy(weaponType, sizeof(weaponType), "Police Weapon");
+			else
+				strcopy(weaponType, sizeof(weaponType), "Weapon");
+			if (inventory_givePlayerItem(client, item, primaryWeaponClip * 1000 + primaryWeaponAmmo, "", weaponType, "Weapon", 2, "Stashed Weapon")) {
 				RemovePlayerItem(client, weaponIndex);
 				RemoveEdict(weaponIndex);
 				if (GetPlayerWeaponSlot(client, 2) != -1)
@@ -195,9 +218,9 @@ public bool stashWeaponSlot(int client, int slot) {
 public void takeItemSuit(int client, char[] item) {
 	char item2[128];
 	strcopy(item2, sizeof(item2), item);
-	if (inventory_removePlayerItems(client, item2, 1, "Taken from Inventory")){
+	if (inventory_removePlayerItems(client, item2, 1, "Taken from Inventory")) {
 		SetEntProp(client, Prop_Data, "m_ArmorValue", 100, 1);
-		if(StrContains(item2, "assaultsuit") != -1){
+		if (StrContains(item2, "assaultsuit") != -1) {
 			SetEntProp(client, Prop_Send, "m_bHasHelmet", 1);
 		}
 	}

@@ -29,6 +29,9 @@
 #include <rpg_jobs_core>
 #include <tStocks>
 
+#define HIDE_CROSSHAIR_CSGO 1<<8
+#define HIDE_RADAR_CSGO 1<<12
+
 #pragma newdecls required
 
 public Plugin myinfo = 
@@ -42,6 +45,21 @@ public Plugin myinfo =
 
 public void OnPluginStart() {
 	RegConsoleCmd("sm_testbar", cmdTestBar);
+	for (int i = 1; i < MAXPLAYERS; i++)
+		if(isValidClient(i))
+			CreateTimer(0.0, setHudOptions, i);
+	HookEvent("player_spawn", onPlayerSpawn);
+}
+
+public Action onPlayerSpawn(Handle event, const char[] name, bool dontBroadcast) {
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	CreateTimer(0.0, setHudOptions, client);
+}
+
+public Action setHudOptions(Handle Timer, int client){
+	SetEntProp(client, Prop_Send, "m_iHideHUD", GetEntProp(client, Prop_Send, "m_iHideHUD") | HIDEHUD_CROSSHAIR);
+	SetEntProp(client, Prop_Send, "m_iHideHUD", GetEntProp(client, Prop_Send, "m_iHideHUD") | HIDEHUD_VEHICLE_CROSSHAIR);
+	SetEntProp(client, Prop_Send, "m_iHideHUD", GetEntProp(client, Prop_Send, "m_iHideHUD") | HIDEHUD_INVEHICLE);
 }
 
 public void OnMapStart() {
@@ -127,7 +145,7 @@ public Action cmdTestBar(int client, int args) {
 }
 
 void showAllHudMessages(int client) {
-	showHudMsg(client, "by ggc-base.de", 0, 188, 212, 0.01, 0.01, 1.05);
+	showHudMsg(client, "from ggc-base.de by Totenfluch", 0, 188, 212, 0.01, 0.01, 1.05);
 	//showHudMsg(client, "Donator: No", 							103, 58, 183, 	0.01, 0.05, 1.05);
 	//showHudMsg(client, "In Steam Group: No", 					63, 81, 181, 	0.01,  0.1, 1.05);
 }

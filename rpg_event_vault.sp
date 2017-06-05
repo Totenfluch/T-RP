@@ -105,7 +105,7 @@ public void clearEvent() {
 		AcceptEntityInput(bombEnt, "kill");
 	if (IsValidEntity(money2Ent))
 		AcceptEntityInput(money2Ent, "kill");
-	if (isValidClient(tablesawEnt))
+	if (IsValidEntity(tablesawEnt))
 		AcceptEntityInput(tablesawEnt, "kill");
 	gateEnt = -1;
 	money1Ent = -1;
@@ -115,8 +115,9 @@ public void clearEvent() {
 	tablesawEnt = -1;
 	g_iSawTimeLeft = -1;
 	g_bEventOver = false;
+	g_iEventOverSince = 0;
 	if (findVaultDoor() != -1) {
-		SetVariantString("vault_close");
+		SetVariantString("vault_close_idle");
 		AcceptEntityInput(findVaultDoor(), "SetAnimation");
 		doorState = false;
 	}
@@ -425,13 +426,17 @@ public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVe
 							g_iLastMoneyTarget[client] = EntIndexToEntRef(ent);
 						}
 					} else if (!doorState && StrEqual(entName, "vault_door_01")) {
-						if (getPoliceCount() >= 3) {
-							if (inventory_hasPlayerItem(client, "Tablesaw")) {
-								if (inventory_removePlayerItems(client, "Tablesaw", 1, "Robbing Bank"))
-									setupSaw(client);
+						if (!IsValidEntity(EntRefToEntIndex(g_iTablesawRef))) {
+							if (getPoliceCount() >= 3) {
+								if (inventory_hasPlayerItem(client, "Tablesaw")) {
+									if (inventory_removePlayerItems(client, "Tablesaw", 1, "Robbing Bank"))
+										setupSaw(client);
+								}
+							} else {
+								PrintToChat(client, "[-T-] Not enough Police Officers online");
 							}
 						} else {
-							PrintToChat(client, "[-T-] Not enough Police Officers online");
+							PrintToChat(client, "[-T-] Breach is already in progress");
 						}
 						
 					}

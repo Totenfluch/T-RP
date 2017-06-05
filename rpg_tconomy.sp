@@ -438,7 +438,7 @@ public Action cmdGiveMoney(int client, int args) {
 			if (tempCurrency >= 0)
 				addCurrency(target, tempCurrency, reason, false);
 			else
-				removeCurrency(target, tempCurrency, reason, false);
+				removeCurrency(target, -tempCurrency, reason, false);
 		}
 	}
 	
@@ -479,7 +479,7 @@ public Action cmdGiveBankedMoney(int client, int args) {
 			if (tempCurrency >= 0)
 				addCurrency(target, tempCurrency, reason, true);
 			else
-				removeCurrency(target, tempCurrency, reason, true);
+				removeCurrency(target, -tempCurrency, reason, true);
 		}
 	}
 	

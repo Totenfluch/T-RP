@@ -953,7 +953,7 @@ public int SpecialWeaponsPanelHandler(Handle menu, MenuAction action, int client
 public void t_GiveClientItem(int client, char[] weaponItem) {
 	char item[128];
 	strcopy(item, sizeof(item), weaponItem);
-	inventory_givePlayerItem(client, item, 40, "", "Police Weapon", "Weapon", 1, "Bough from Police Weapon Vendor");
+	inventory_givePlayerItem(client, item, 10120, "", "Police Weapon", "Weapon", 1, "Bough from Police Weapon Vendor");
 }
 
 public int policeRecruiterHandler(Handle menu, MenuAction action, int client, int item) {

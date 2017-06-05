@@ -29,9 +29,6 @@
 #include <rpg_jobs_core>
 #include <tStocks>
 
-#define HIDE_CROSSHAIR_CSGO 1<<8
-#define HIDE_RADAR_CSGO 1<<12
-
 #pragma newdecls required
 
 public Plugin myinfo = 
@@ -46,8 +43,8 @@ public Plugin myinfo =
 public void OnPluginStart() {
 	RegConsoleCmd("sm_testbar", cmdTestBar);
 	for (int i = 1; i < MAXPLAYERS; i++)
-		if(isValidClient(i))
-			CreateTimer(0.0, setHudOptions, i);
+	if (isValidClient(i))
+		CreateTimer(0.0, setHudOptions, i);
 	HookEvent("player_spawn", onPlayerSpawn);
 }
 
@@ -56,7 +53,7 @@ public Action onPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 	CreateTimer(0.0, setHudOptions, client);
 }
 
-public Action setHudOptions(Handle Timer, int client){
+public Action setHudOptions(Handle Timer, int client) {
 	SetEntProp(client, Prop_Send, "m_iHideHUD", GetEntProp(client, Prop_Send, "m_iHideHUD") | HIDEHUD_CROSSHAIR);
 	SetEntProp(client, Prop_Send, "m_iHideHUD", GetEntProp(client, Prop_Send, "m_iHideHUD") | HIDEHUD_VEHICLE_CROSSHAIR);
 	SetEntProp(client, Prop_Send, "m_iHideHUD", GetEntProp(client, Prop_Send, "m_iHideHUD") | HIDEHUD_INVEHICLE);
@@ -84,26 +81,22 @@ public Action updateHUD(Handle Timer) {
 		if (jobs_isInProgressBar(client))
 			continue;
 		
-		
 		char printHudString[1024];
 		if (GetClientAimTarget(client, true) > -1) {
-			int target = GetClientAimTarget(client, true);
-			float tpos[3];
-			GetClientAbsOrigin(target, tpos);
-			float pos[3];
-			GetClientAbsOrigin(client, pos);
-			if (GetVectorDistance(tpos, pos) < 300.0)
-				Format(printHudString, sizeof(printHudString), "<font size='16'>Target: %N\n", target);
-			else
-				Format(printHudString, sizeof(printHudString), "<font size='16'>Target: Out of Range\n");
-			/*} else if (GetClientAimTarget(client, false) > -1) {
-			int ent = GetClientAimTarget(client, false);
-			if (HasEntProp(ent, Prop_Data, "m_iName") && HasEntProp(ent, Prop_Data, "m_iGlobalname")) {
-				char entName[256];
-				Entity_GetGlobalName(ent, entName, sizeof(entName));
-				//GetEntPropString(ent, Prop_Data, "m_iGlobalName", entName, sizeof(entName));
-				Format(printHudString, sizeof(printHudString), "<font size='16'>Target: %s\n", entName);
-			}*/
+			int target = getClientViewClient(client);
+			if (target != -1) {
+				float tpos[3];
+				GetClientAbsOrigin(target, tpos);
+				float pos[3];
+				GetClientAbsOrigin(client, pos);
+				if (GetVectorDistance(tpos, pos) < 350.0) {
+					Format(printHudString, sizeof(printHudString), "<font size='16'>Target: %N\n", target);
+				} else {
+					Format(printHudString, sizeof(printHudString), "<font size='16'>Target: Out of Range\n");
+				}
+			} else {
+				Format(printHudString, sizeof(printHudString), "<font size='16'>Target: none\n");
+			}
 		} else {
 			Format(printHudString, sizeof(printHudString), "<font size='16'>Target: none\n");
 		}
@@ -161,4 +154,32 @@ public bool isValidRef(int ref) {
 		return true;
 	}
 	return false;
+}
+
+stock int getClientViewClient(int client) {
+	float m_vecOrigin[3];
+	float m_angRotation[3];
+	GetClientEyePosition(client, m_vecOrigin);
+	GetClientEyeAngles(client, m_angRotation);
+	Handle tr = TR_TraceRayFilterEx(m_vecOrigin, m_angRotation, MASK_VISIBLE, RayType_Infinite, TRDontHitSelf, client);
+	int pEntity = -1;
+	if (TR_DidHit(tr)) {
+		pEntity = TR_GetEntityIndex(tr);
+		delete tr;
+		if (!isValidClient(client))
+			return -1;
+		if (!IsValidEntity(pEntity))
+			return -1;
+		if (!isValidClient(pEntity))
+			return -1;
+		float playerPos[3];
+		float entPos[3];
+		GetClientAbsOrigin(client, playerPos);
+		GetEntPropVector(pEntity, Prop_Data, "m_vecOrigin", entPos);
+		if (GetVectorDistance(playerPos, entPos) > 500.0)
+			return -1;
+		return pEntity;
+	}
+	delete tr;
+	return -1;
 } 

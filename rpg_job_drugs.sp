@@ -69,6 +69,8 @@ int TIME_TO_NEXT_STAGE = 120;
 
 char activeZone[MAXPLAYERS + 1][128];
 
+bool loaded = false;
+
 public Plugin myinfo = 
 {
 	name = "[T-RP] Job: Drug Planter", 
@@ -291,6 +293,7 @@ public void onRoundStart(Handle event, const char[] name, bool dontBroadcast) {
 	for (int i = 0; i < MAX_PLANTS; i++)
 	g_ePlayerPlants[i][pActive] = false;
 	g_iPlantsActive = 0;
+	loaded = false;
 	loadPlants();
 }
 
@@ -359,6 +362,8 @@ public void loadPlants() {
 }
 
 public void SQLLoadPlantsQuery(Handle owner, Handle hndl, const char[] error, any data) {
+	if (loaded)
+		return;
 	while (SQL_FetchRow(hndl)) {
 		char plantowner[20];
 		SQL_FetchStringByName(hndl, "playerid", plantowner, sizeof(plantowner));
@@ -376,6 +381,7 @@ public void SQLLoadPlantsQuery(Handle owner, Handle hndl, const char[] error, an
 		if (isValidClient(i))
 			g_iPlayerPlanted[i] = getActivePlantsOfPlayerAmount(i);
 	}
+	loaded = true;
 }
 
 public Action cmdPlantCommand(int client, int args) {
@@ -461,7 +467,9 @@ public void spawnPlant(char owner[20], int state, int time, float pos[3], char f
 	g_ePlayerPlants[whereToStore][pPos_y] = pos[1];
 	g_ePlayerPlants[whereToStore][pPos_z] = pos[2];
 	g_ePlayerPlants[whereToStore][pActive] = true;
-	g_iPlantsActive++;
+	
+	if (g_iPlantsActive <= whereToStore)
+		g_iPlantsActive = whereToStore + 1;
 }
 
 public Action OnPlayerRunCmd(int client, int &iButtons, int &iImpulse, float fVelocity[3], float fAngles[3], int &iWeapon, int &tickcount) {
@@ -747,7 +755,7 @@ public void furniture_OnFurnitureInteract(int entity, int client, char name[64],
 		return;
 	
 	if (!jobs_isActiveJob(client, "Drug Planter") || jobs_getLevel(client) < 5) {
-		PrintToChat(client, "[-T-] Your Skils insufficient for this...");
+		PrintToChat(client, "[-T-] Your Skils are insufficient for this...");
 		return;
 	}
 	

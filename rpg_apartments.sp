@@ -1270,7 +1270,9 @@ public void sellApartment(int client) {
 	}
 	int aptId = getOwnedApartmentFromKey(playerProperties[client][ppZone]);
 	int sellPrice = RoundToNearest(ownedApartments[aptId][oaPrice_of_purchase] * 0.70);
-	tConomy_addCurrency(client, sellPrice, "Sold Apartment");
+	char reason[256];
+	Format(reason, sizeof(reason), "Sold Apartment %s", zone);
+	tConomy_addCurrency(client, sellPrice, reason);
 	
 	changeDoorLock(client, 0);
 	

@@ -57,6 +57,14 @@ public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &dam
 	if (!isValidClient(victim))
 		return Plugin_Continue;
 	
+	if (damagetype & DMG_FALL) {
+		int health = GetClientHealth(victim);
+		if (damage >= health) {
+			damage = float(health) - 1.0;
+			return Plugin_Changed;
+		}
+	}
+	
 	if (!isValidClient(attacker))
 		return Plugin_Continue;
 	

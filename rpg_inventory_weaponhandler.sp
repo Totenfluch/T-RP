@@ -77,7 +77,7 @@ public Action cmdStashWeapon(int client, int args) {
 public void inventory_onItemUsed(int client, char itemname[128], int weight, char category[64], char category2[64], int rarity, char timestamp[64], int slot) {
 	if (!(StrContains(category, "Weapon") != -1 || StrEqual(itemname, "item_kevlar") || StrEqual(itemname, "item_assaultsuit")))
 		return;
-	if(StrEqual(category, "Police Weapon") && !jobs_isActiveJob(client, "Police")){
+	if (StrEqual(category, "Police Weapon") && !jobs_isActiveJob(client, "Police")) {
 		PrintToChat(client, "[-T-] Can not use Police Weapon");
 		return;
 	}

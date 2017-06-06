@@ -117,4 +117,4 @@ public void OnClientPostAdminCheck(int client) {
 
 public void OnPlayerInteractionStarted(int client, int target) {
 	g_iPlayerTarget[client] = target;
-}
+} 

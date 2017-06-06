@@ -244,11 +244,11 @@ public Action delayedLoad(Handle Timer, int client) {
 	
 	char loadQueryString[1024];
 	Format(loadQueryString, sizeof(loadQueryString), "SELECT * FROM t_rpg_playercontroller WHERE playerid = '%s' AND map = '%s';", playerid, mapName);
-	SQL_TQuery(g_DB, SQLLoadPlayerCallback, loadQueryString, client);
+	SQL_TQuery(g_DB, SQLLoadPlayerCallback, loadQueryString, GetClientUserId(client));
 }
 
 public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error, any data) {
-	int client = data;
+	int client = GetClientOfUserId(data);
 	if (!isValidClient(client))
 		return;
 	if (g_bIsPlayerLoaded[client])

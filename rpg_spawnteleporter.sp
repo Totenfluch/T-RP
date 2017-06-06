@@ -125,7 +125,7 @@ public void OnClientPostAdminCheck(int client) {
 public void OnClientDisconnect(int client) {
 	if (g_iPlayerDelay[client] <= 0)
 		return;
-		
+	
 	char playerid[20];
 	GetClientAuthId(client, AuthId_Steam2, playerid, sizeof(playerid));
 	
@@ -147,7 +147,7 @@ public void loadClient(int client) {
 
 public void SQLLoadPlayerCallback(Handle owner, Handle hndl, const char[] error, any data) {
 	int client = GetClientOfUserId(data);
-	if(!isValidClient(client))
+	if (!isValidClient(client))
 		return;
 	while (SQL_FetchRow(hndl)) {
 		g_iPlayerDelay[client] = SQL_FetchInt(hndl, 0);
@@ -182,8 +182,12 @@ public Action refreshTimer(Handle Timer) {
 			
 		}
 		if (g_iPlayerDelay[i] == 1) {
-			jobs_setCurrentInfo(i, "> Teleport Rdy <");
-			PrintToChat(i, "Type !enter or reenter the teleporter to join the game!!!");
+			float pos[3];
+			GetClientAbsOrigin(i, pos);
+			if (Zone_isPositionInZone("spawn_teleporter", pos[0], pos[1], pos[2])) {
+				jobs_setCurrentInfo(i, "> Teleport Rdy <");
+				PrintToChat(i, "Type !enter or reenter the teleporter to join the game!!!");
+			}
 		}
 		if (g_iPlayerDelay[i] == 0) {
 			float pos[3];
